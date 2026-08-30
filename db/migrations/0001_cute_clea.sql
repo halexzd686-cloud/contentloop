@@ -1,0 +1,1 @@
+ALTER TABLE "contents" ADD CONSTRAINT "contents_source_signal_id_unique" UNIQUE("source_signal_id");

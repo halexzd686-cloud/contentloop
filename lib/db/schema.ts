@@ -332,7 +332,10 @@ export const contents = pgTable(
       .notNull(),
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
   },
-  (table) => [index("contents_brand_status_idx").on(table.brandId, table.status)]
+  (table) => [
+    index("contents_brand_status_idx").on(table.brandId, table.status),
+    unique("contents_source_signal_id_unique").on(table.sourceSignalId),
+  ]
 );
 
 export const sources = pgTable("sources", {
