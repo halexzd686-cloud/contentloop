@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { createSignalSchema, updateSignalStatusSchema } from "@/lib/validation/signal";
+import { createSignalSchema, updateSignalStatusSchema, skipSignalSchema, createContentFromSignalSchema, SKIP_REASONS } from "@/lib/validation/signal";
 
 /**
  * M1.1 Tests — Signal validation and business rules
@@ -177,5 +177,149 @@ describe("requireSingleBrand invariant", () => {
   it("5 brands → explicit configuration error", () => {
     const many = Array.from({ length: 5 }, (_, i) => ({ id: `${i}` }));
     expect(checkBrandCount(many)).toContain("Expected exactly 1 brand, found 5");
+  });
+});
+
+// ─── 5. Skip Signal Validation ──────────────────────────────────────────────
+
+describe("skipSignalSchema", () => {
+  it("accepts skipped with valid reason", () => {
+    for (const reason of SKIP_REASONS) {
+      const result = skipSignalSchema.safeParse({
+        status: "skipped",
+        skipReason: reason,
+      });
+      expect(result.success).toBe(true);
+    }
+  });
+
+  it("rejects skipped without skipReason", () => {
+    const result = skipSignalSchema.safeParse({
+      status: "skipped",
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects skipped with null skipReason", () => {
+    const result = skipSignalSchema.safeParse({
+      status: "skipped",
+      skipReason: null,
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects skipped with invalid reason", () => {
+    const result = skipSignalSchema.safeParse({
+      status: "skipped",
+      skipReason: "not_a_valid_reason",
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects non-skipped status in skip schema", () => {
+    const result = skipSignalSchema.safeParse({
+      status: "new",
+      skipReason: "too_late",
+    });
+    expect(result.success).toBe(false);
+  });
+});
+
+// ─── 6. Create Content Validation ───────────────────────────────────────────
+
+describe("createContentFromSignalSchema", () => {
+  const validUuid = "550e8400-e29b-41d4-a716-446655440000";
+
+  it("accepts valid input", () => {
+    const result = createContentFromSignalSchema.safeParse({
+      primaryPlatform: "xiaohongshu",
+      selectedAngle: "Hands-on review",
+      ownerId: validUuid,
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects invalid platform", () => {
+    const result = createContentFromSignalSchema.safeParse({
+      primaryPlatform: "tiktok",
+      selectedAngle: "Review",
+      ownerId: validUuid,
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects empty selectedAngle", () => {
+    const result = createContentFromSignalSchema.safeParse({
+      primaryPlatform: "bilibili",
+      selectedAngle: "",
+      ownerId: validUuid,
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects missing selectedAngle", () => {
+    const result = createContentFromSignalSchema.safeParse({
+      primaryPlatform: "bilibili",
+      ownerId: validUuid,
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects invalid ownerId (not UUID)", () => {
+    const result = createContentFromSignalSchema.safeParse({
+      primaryPlatform: "douyin",
+      selectedAngle: "Quick demo",
+      ownerId: "not-a-uuid",
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects missing ownerId", () => {
+    const result = createContentFromSignalSchema.safeParse({
+      primaryPlatform: "douyin",
+      selectedAngle: "Quick demo",
+    });
+    expect(result.success).toBe(false);
+  });
+});
+
+// ─── 7. Business Invariants (logic-level) ───────────────────────────────────
+
+describe("Signal → Content business invariants", () => {
+  // These test the guard logic used in the create-content transaction.
+  // No DB mock — we validate the decision logic directly.
+
+  function canCreateContent(signalStatus: string, hasExistingContent: boolean): string | null {
+    if (signalStatus !== "new" && signalStatus !== "reviewing") {
+      return `Cannot create content from signal with status "${signalStatus}". Only new or reviewing signals can be selected.`;
+    }
+    if (hasExistingContent) {
+      return "This signal already has a linked content.";
+    }
+    return null; // allowed
+  }
+
+  it("new signal without content → allowed", () => {
+    expect(canCreateContent("new", false)).toBeNull();
+  });
+
+  it("reviewing signal without content → allowed", () => {
+    expect(canCreateContent("reviewing", false)).toBeNull();
+  });
+
+  it("selected signal → rejected", () => {
+    expect(canCreateContent("selected", false)).toContain("Cannot create content");
+  });
+
+  it("skipped signal → rejected", () => {
+    expect(canCreateContent("skipped", false)).toContain("Cannot create content");
+  });
+
+  it("new signal with existing content → rejected (duplicate)", () => {
+    expect(canCreateContent("new", true)).toContain("already has a linked content");
+  });
+
+  it("reviewing signal with existing content → rejected (duplicate)", () => {
+    expect(canCreateContent("reviewing", true)).toContain("already has a linked content");
   });
 });

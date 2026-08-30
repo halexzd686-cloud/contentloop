@@ -4,13 +4,14 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { SignalCard } from "@/components/radar/signal-card";
 import { AddSignalDialog } from "@/components/radar/add-signal-dialog";
 import { SignalFilters } from "@/components/radar/signal-filters";
+import { QuickReview } from "@/components/radar/quick-review";
 import { Button } from "@/components/ui/button";
 import { RefreshCw } from "lucide-react";
 
 /**
  * Radar Page — design.md §33
  * Layout: Signals Feed 65% | Quick Review 35%
- * Quick Review is empty placeholder for M1.1.
+ * M1.2A: Signal selection, Quick Review, Skip, Create Content.
  */
 
 interface Signal {
@@ -23,6 +24,10 @@ interface Signal {
   publishedAt: string | null;
   status: "new" | "reviewing" | "selected" | "skipped";
   topicScore: number | null;
+  skipReason: string | null;
+  selectedAngle: string | null;
+  primaryPlatform: string | null;
+  ownerId: string | null;
   createdAt: string;
 }
 
@@ -33,8 +38,8 @@ export default function RadarPage() {
   const [statusFilter, setStatusFilter] = useState("");
   const [search, setSearch] = useState("");
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [selectedSignalId, setSelectedSignalId] = useState<string | null>(null);
 
-  // Use a ref to track the latest fetch function without causing effect re-runs
   const fetchRef = useRef<() => Promise<void>>(async () => {});
 
   const fetchSignals = useCallback(async () => {
@@ -58,12 +63,10 @@ export default function RadarPage() {
     }
   }, [statusFilter, search]);
 
-  // Keep ref up to date
   useEffect(() => {
     fetchRef.current = fetchSignals;
   }, [fetchSignals]);
 
-  // Initial fetch + refetch when filters change
   useEffect(() => {
     let cancelled = false;
 
@@ -93,7 +96,6 @@ export default function RadarPage() {
       }
     };
 
-    // Debounce search, immediate for filter changes
     const timer = setTimeout(doFetch, search ? 300 : 0);
     return () => {
       cancelled = true;
@@ -112,7 +114,6 @@ export default function RadarPage() {
 
       if (!res.ok) throw new Error("Failed to update status");
 
-      // Update local state
       setSignals((prev) =>
         prev.map((s) => (s.id === id ? { ...s, status } : s))
       );
@@ -124,6 +125,47 @@ export default function RadarPage() {
       setUpdatingId(null);
     }
   }
+
+  async function handleSkip(id: string, reason: string) {
+    const res = await fetch(`/api/signals/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: "skipped", skipReason: reason }),
+    });
+
+    if (!res.ok) {
+      const data = await res.json();
+      throw new Error(data.error || "Failed to skip signal");
+    }
+
+    // Refetch to get updated data
+    await fetchRef.current();
+  }
+
+  async function handleCreateContent(
+    id: string,
+    data: { primaryPlatform: string; selectedAngle: string; ownerId: string }
+  ): Promise<string | null> {
+    const res = await fetch(`/api/signals/${id}/create-content`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+
+    if (!res.ok) {
+      const errData = await res.json();
+      throw new Error(errData.error || "Failed to create content");
+    }
+
+    const result = await res.json();
+
+    // Refetch to get updated signal status
+    await fetchRef.current();
+
+    return result.content?.id || null;
+  }
+
+  const selectedSignal = signals.find((s) => s.id === selectedSignalId) || null;
 
   // Compute counts for filter tabs
   const counts: Record<string, number> = { total: signals.length };
@@ -158,7 +200,6 @@ export default function RadarPage() {
 
           <div className="mt-4 space-y-3">
             {loading && signals.length === 0 ? (
-              // Loading skeleton
               Array.from({ length: 3 }).map((_, i) => (
                 <div
                   key={i}
@@ -170,7 +211,6 @@ export default function RadarPage() {
                 </div>
               ))
             ) : error ? (
-              // Error state
               <div className="rounded-[10px] border border-danger/20 bg-danger/5 p-6 text-center">
                 <p className="text-sm text-danger">{error}</p>
                 <Button
@@ -184,7 +224,6 @@ export default function RadarPage() {
                 </Button>
               </div>
             ) : signals.length === 0 ? (
-              // Empty state
               <div className="flex flex-col items-center justify-center py-16 text-center">
                 <p className="text-sm text-ink-secondary">
                   Add your first signal to start deciding what to create.
@@ -194,31 +233,28 @@ export default function RadarPage() {
                 </div>
               </div>
             ) : (
-              // Signal list
               signals.map((signal) => (
                 <SignalCard
                   key={signal.id}
                   signal={signal}
                   onStatusChange={handleStatusChange}
                   updating={updatingId === signal.id}
+                  selected={selectedSignalId === signal.id}
+                  onSelect={setSelectedSignalId}
                 />
               ))
             )}
           </div>
         </div>
 
-        {/* Quick Review — placeholder for M1.1 */}
+        {/* Quick Review */}
         <div className="w-[35%] overflow-y-auto bg-workspace p-6">
-          <div className="flex h-full items-center justify-center">
-            <div className="text-center">
-              <p className="text-sm text-ink-muted">
-                Select a signal to review
-              </p>
-              <p className="mt-1 text-xs text-ink-faint">
-                Quick Review will appear here
-              </p>
-            </div>
-          </div>
+          <QuickReview
+            signal={selectedSignal}
+            onSkip={handleSkip}
+            onCreateContent={handleCreateContent}
+            onClose={() => setSelectedSignalId(null)}
+          />
         </div>
       </div>
     </div>

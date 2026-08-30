@@ -25,6 +25,35 @@ export const signalQuerySchema = z.object({
   search: z.string().optional(),
 });
 
+// ─── M1.2A: Skip Flow ────────────────────────────────────────────────────────
+
+export const SKIP_REASONS = [
+  "too_late",
+  "saturated",
+  "low_audience_fit",
+  "insufficient_information",
+  "high_production_cost",
+  "no_clear_angle",
+  "other",
+] as const;
+
+export const skipSignalSchema = z.object({
+  status: z.literal("skipped"),
+  skipReason: z.enum(SKIP_REASONS),
+});
+
+// ─── M1.2A: Create Content Flow ──────────────────────────────────────────────
+
+export const createContentFromSignalSchema = z.object({
+  primaryPlatform: z.enum(["xiaohongshu", "bilibili", "douyin"]),
+  selectedAngle: z.string().min(1, "Selected angle is required").max(500),
+  ownerId: z.string().uuid("Invalid owner ID"),
+});
+
 export type CreateSignalInput = z.infer<typeof createSignalSchema>;
 export type UpdateSignalStatusInput = z.infer<typeof updateSignalStatusSchema>;
 export type SignalQuery = z.infer<typeof signalQuerySchema>;
+export type SkipSignalInput = z.infer<typeof skipSignalSchema>;
+export type CreateContentFromSignalInput = z.infer<
+  typeof createContentFromSignalSchema
+>;

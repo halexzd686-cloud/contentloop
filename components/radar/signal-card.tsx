@@ -18,11 +18,13 @@ import {
   Building,
   HelpCircle,
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 /**
  * Signal Card — design.md §33.2
  * Medium density. Shows: source type, title, time, summary, status.
  * Topic Score: null → not displayed (never 0).
+ * Click to select for Quick Review.
  */
 
 // ─── Types ─────────────────────────────────────────────
@@ -37,6 +39,10 @@ interface Signal {
   publishedAt: string | null;
   status: "new" | "reviewing" | "selected" | "skipped";
   topicScore: number | null;
+  skipReason: string | null;
+  selectedAngle: string | null;
+  primaryPlatform: string | null;
+  ownerId: string | null;
   createdAt: string;
 }
 
@@ -95,7 +101,7 @@ function StatusMenu({
   if (availableActions.length === 0) return null;
 
   return (
-    <div className="relative">
+    <div className="relative" onClick={(e) => e.stopPropagation()}>
       <Button
         variant="ghost"
         size="sm"
@@ -138,10 +144,14 @@ export function SignalCard({
   signal,
   onStatusChange,
   updating,
+  selected,
+  onSelect,
 }: {
   signal: Signal;
   onStatusChange: (id: string, status: "new" | "reviewing") => void;
   updating: boolean;
+  selected: boolean;
+  onSelect: (id: string) => void;
 }) {
   const sourceConfig = signal.sourceType
     ? SOURCE_TYPE_CONFIG[signal.sourceType]
@@ -152,7 +162,13 @@ export function SignalCard({
     : new Date(signal.createdAt).toLocaleDateString();
 
   return (
-    <Card className="transition-colors duration-150 hover:border-border-strong">
+    <Card
+      className={cn(
+        "cursor-pointer transition-colors duration-150 hover:border-border-strong",
+        selected && "border-mint-600 ring-1 ring-mint-600/20"
+      )}
+      onClick={() => onSelect(signal.id)}
+    >
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0">
