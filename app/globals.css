@@ -1,26 +1,105 @@
 @import "tailwindcss";
 
+/*
+ * ContentLoop V1 — Design Tokens
+ * Source of truth: docs/ContentLoop_design_v1.md
+ *
+ * Editorial SaaS: 75% Professional SaaS, 20% Editorial, 5% Experimental
+ * Theme: Warm Paper + White, Mint accent, Sans primary, Serif semantic accent
+ * Border-first, Medium density, Light theme only
+ */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* ── Background System ────────────────────────────── */
+  --canvas: #F5F4EF;           /* App global bg, editorial areas, Home, Radar feed */
+  --workspace: #FFFFFF;        /* Studio center, Analytics data, Settings forms, Modals */
+  --surface-subtle: #EFEEE9;   /* Sources panel, Ask Loop panel, filters, secondary */
+
+  /* ── Ink Palette ──────────────────────────────────── */
+  --ink-primary: #181A18;      /* Page title, body main, core data, active nav */
+  --ink-secondary: #5F625D;    /* Descriptions, secondary metrics, card metadata */
+  --ink-muted: #92968F;        /* Time, source, helper text, placeholder */
+  --ink-faint: #B8BBB5;        /* Disabled, empty metadata, decorative dividers */
+
+  /* ── Accent: Mint ─────────────────────────────────── */
+  --mint-600: #4E9F84;         /* Primary action, active state, selected */
+  --mint-500: #68B79B;
+  --mint-300: #A9D9C7;
+  --mint-100: #E7F3EE;         /* Mint background tint */
+
+  /* ── Semantic Colors ──────────────────────────────── */
+  --success: #4E9F84;          /* Above baseline, completed, approved, published */
+  --warning: #C38A3A;          /* Needs review, evidence missing, pending */
+  --danger: #B85B57;           /* Overdue, failed, blocking risk, delete */
+  --neutral-status: #858982;   /* Default / inactive status */
+
+  /* ── Border ───────────────────────────────────────── */
+  --border: #DADCD6;
+  --border-strong: #C7CAC3;
+
+  /* ── Radius ───────────────────────────────────────── */
+  --radius-button: 8px;
+  --radius-input: 8px;
+  --radius-card: 10px;
+  --radius-card-large: 12px;
+  --radius-modal: 14px;
+  --radius-media: 16px;
+  --radius-pill: 999px;
+
+  /* ── Motion Durations ─────────────────────────────── */
+  --duration-fast: 150ms;      /* 120–180ms: hover, checkbox, tooltip, filter */
+  --duration-normal: 260ms;    /* 220–300ms: tab, drawer, card transition, diff */
+  --duration-expressive: 500ms;/* 400–650ms: page entrance, echo, halftone, success */
+
+  /* ── Typography ───────────────────────────────────── */
+  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
+  --font-serif: "Instrument Serif", "Georgia", serif;
+
+  /* ── Sidebar ──────────────────────────────────────── */
+  --sidebar-collapsed: 68px;
+  --sidebar-expanded: 224px;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  /* Map CSS vars to Tailwind theme tokens */
+  --color-canvas: var(--canvas);
+  --color-workspace: var(--workspace);
+  --color-surface-subtle: var(--surface-subtle);
+
+  --color-ink-primary: var(--ink-primary);
+  --color-ink-secondary: var(--ink-secondary);
+  --color-ink-muted: var(--ink-muted);
+  --color-ink-faint: var(--ink-faint);
+
+  --color-mint-600: var(--mint-600);
+  --color-mint-500: var(--mint-500);
+  --color-mint-300: var(--mint-300);
+  --color-mint-100: var(--mint-100);
+
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+  --color-neutral-status: var(--neutral-status);
+
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+
+  --font-sans: var(--font-sans);
+  --font-serif: var(--font-serif);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
+/* ── Base ──────────────────────────────────────────── */
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--canvas);
+  color: var(--ink-primary);
+  font-family: var(--font-sans);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ── Selection ─────────────────────────────────────── */
+::selection {
+  background: var(--mint-300);
+  color: var(--ink-primary);
 }
