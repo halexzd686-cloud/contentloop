@@ -54,8 +54,8 @@
 
 - `content_version_history` table (M1+)
 - `metric_import_jobs` table (M2)
-- Migration execution against live Supabase (requires `DATABASE_URL` in `.env`)
-- Seed execution against live Supabase (requires `DATABASE_URL` in `.env`)
+- Migration executed on Supabase ✅
+- Seed executed on Supabase ✅
 
 ## Frozen Constraints
 
