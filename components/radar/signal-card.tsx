@@ -39,6 +39,7 @@ interface Signal {
   publishedAt: string | null;
   status: "new" | "reviewing" | "selected" | "skipped";
   topicScore: number | null;
+  analyzedAt: string | null;
   skipReason: string | null;
   selectedAngle: string | null;
   primaryPlatform: string | null;
@@ -200,7 +201,8 @@ export function SignalCard({
       <CardContent className="pt-0">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            {signal.topicScore !== null && (
+            {/* Data truth: only formally analyzed signals may show a score */}
+            {signal.analyzedAt !== null && signal.topicScore !== null && (
               <span className="text-xs text-ink-muted">
                 Score: {signal.topicScore}
               </span>

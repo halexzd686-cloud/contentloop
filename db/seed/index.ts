@@ -172,10 +172,6 @@ async function seed() {
         title: "Claude releases new Agent capabilities",
         summary: "Anthropic announces enhanced agent features for Claude",
         status: "selected",
-        topicScore: 85,
-        audienceFitScore: 90,
-        timingScore: 80,
-        contentPotentialScore: 85,
         whyItMatters: "Major platform update directly relevant to our audience",
         audienceMatch: "High — our audience actively uses Claude",
         possibleAngles: [
@@ -194,10 +190,6 @@ async function seed() {
         title: "AI content workflow optimization",
         summary: "How we streamlined our content production with AI tools",
         status: "new",
-        topicScore: 72,
-        audienceFitScore: 75,
-        timingScore: 70,
-        contentPotentialScore: 70,
       },
       {
         brandId: brand.id,
@@ -207,10 +199,6 @@ async function seed() {
         title: "New AI video editing tool gaining traction",
         summary: "Community discussion about an emerging AI video editor",
         status: "reviewing",
-        topicScore: 68,
-        audienceFitScore: 65,
-        timingScore: 75,
-        contentPotentialScore: 65,
       },
       {
         brandId: brand.id,
@@ -220,10 +208,6 @@ async function seed() {
         title: "GPT-5 announcement expected next month",
         summary: "Industry speculation about upcoming GPT-5 release",
         status: "new",
-        topicScore: 78,
-        audienceFitScore: 85,
-        timingScore: 60,
-        contentPotentialScore: 90,
       },
       {
         brandId: brand.id,
@@ -233,7 +217,6 @@ async function seed() {
         summary: "Show the real workflow from idea to published content",
         status: "skipped",
         skipReason: "low_audience_fit",
-        topicScore: 45,
       },
     ])
     .returning();
