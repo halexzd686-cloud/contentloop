@@ -6,6 +6,8 @@ import {
   contents,
   contentBriefs,
   contentMasters,
+  platformPlaybooks,
+  platformVersions,
   signals,
   teamMembers,
 } from "@/lib/db/schema";
@@ -87,11 +89,24 @@ export async function GET(
       .from(contentMasters)
       .where(eq(contentMasters.contentId, id));
 
+    const versions = await db
+      .select()
+      .from(platformVersions)
+      .where(eq(platformVersions.contentId, id));
+
+    const playbooks = await db
+      .select({ platform: platformPlaybooks.platform })
+      .from(platformPlaybooks)
+      .where(eq(platformPlaybooks.brandId, brand.id));
+
     return NextResponse.json({
       content: { ...content, owner, reviewer },
       signal: signal ?? null,
       brief: brief ?? null,
       master: master ?? null,
+      platformVersions: versions,
+      enabledPlatforms: brand.enabledPlatforms,
+      playbookPlatforms: playbooks.map((p) => p.platform),
     });
   } catch (error) {
     console.error("GET /api/contents/[id] error:", error);

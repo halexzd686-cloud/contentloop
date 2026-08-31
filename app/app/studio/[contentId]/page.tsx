@@ -15,6 +15,10 @@ import {
 import { SourcesPanel } from "@/components/studio/sources-panel";
 import { MasterEditor } from "@/components/studio/master-editor";
 import {
+  usePlatformsPanel,
+  type VersionRow,
+} from "@/components/studio/platforms-panel";
+import {
   BriefFields,
   type BriefFieldValues,
 } from "@/components/studio/brief-fields";
@@ -130,7 +134,7 @@ export default function StudioContentPage({
   const [editConfirmOpen, setEditConfirmOpen] = useState(false);
 
   // ─── Master state (M1.4) ──────────────────────────────
-  const [activeTab, setActiveTab] = useState<"Brief" | "Master">("Brief");
+  const [activeTab, setActiveTab] = useState<"Brief" | "Master" | "Platforms">("Brief");
   const [master, setMaster] = useState<MasterData | null>(null);
   const [modules, setModules] = useState<MasterModule[]>([]);
   const [masterSaveState, setMasterSaveState] = useState<SaveQueueState>("idle");
@@ -139,6 +143,11 @@ export default function StudioContentPage({
   const masterQueueRef = useRef<ReturnType<typeof createSaveQueue<MasterModule[]>> | null>(null);
   const masterDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
   const modulesRef = useRef<MasterModule[]>([]);
+
+  // ─── Platform Versions state (M1.5) ───────────────────
+  const [platformVersions, setPlatformVersions] = useState<VersionRow[]>([]);
+  const [enabledPlatforms, setEnabledPlatforms] = useState<string[]>([]);
+  const [playbookPlatforms, setPlaybookPlatforms] = useState<string[]>([]);
 
   useEffect(() => {
     modulesRef.current = modules;
@@ -180,6 +189,9 @@ export default function StudioContentPage({
       }
       setMasterSaveState("idle");
       setMasterError(null);
+      setPlatformVersions(data.platformVersions ?? []);
+      setEnabledPlatforms(data.enabledPlatforms ?? []);
+      setPlaybookPlatforms(data.playbookPlatforms ?? []);
     } catch (err) {
       setLoadError(err instanceof Error ? err.message : "Failed to load");
     } finally {
@@ -376,6 +388,17 @@ export default function StudioContentPage({
     }
   }
 
+  // ─── Platform Versions panel (M1.5) ──────────────────
+  const platformsPanel = usePlatformsPanel({
+    contentId: contentId ?? "",
+    approved,
+    hasMaster: master !== null,
+    primaryPlatform: signal?.primaryPlatform ?? null,
+    initialVersions: platformVersions,
+    enabledPlatforms,
+    playbookPlatforms,
+  });
+
   if (loading) {
     return (
       <div className="flex h-full items-center justify-center">
@@ -448,10 +471,10 @@ export default function StudioContentPage({
           </div>
         </div>
 
-        {/* Tabs — Brief + Master active; Platforms/Review disabled (M1.4) */}
+        {/* Tabs — Brief / Master / Platforms active; Review disabled (M1.5) */}
         <div className="mt-3 flex gap-1">
           {TABS.map((tab) => {
-            const enabled = tab === "Brief" || tab === "Master";
+            const enabled = tab !== "Review";
             const active = activeTab === tab;
             return enabled ? (
               <button
@@ -488,7 +511,7 @@ export default function StudioContentPage({
         {/* Workspace 53% */}
         <div className="w-[53%] overflow-y-auto bg-workspace p-6">
           {activeTab === "Brief" ? (
-            <>
+          <>
           <div className="mb-4 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <h2 className="text-sm font-semibold text-ink-primary">Brief</h2>
@@ -564,8 +587,8 @@ export default function StudioContentPage({
               an AI draft from the Loop AI panel.
             </p>
           )}
-            </>
-          ) : (
+          </>
+          ) : activeTab === "Master" ? (
             <MasterWorkspace
               approved={approved}
               master={master}
@@ -578,6 +601,8 @@ export default function StudioContentPage({
               onStructuralChange={handleStructuralChange}
               onRetrySave={() => getMasterQueue()?.retry()}
             />
+          ) : (
+            platformsPanel.workspace
           )}
         </div>
 
@@ -586,6 +611,9 @@ export default function StudioContentPage({
           <p className="text-xs font-semibold uppercase tracking-wide text-ink-muted">
             Loop AI
           </p>
+          {activeTab === "Platforms" ? (
+            <div className="mt-3">{platformsPanel.aiPanel}</div>
+          ) : (
           <div className="mt-3 space-y-3">
             <Button
               variant="secondary"
@@ -614,6 +642,7 @@ export default function StudioContentPage({
               playbook. Nothing is saved until you Apply and edit.
             </p>
           </div>
+          )}
         </div>
       </div>
 
