@@ -405,6 +405,11 @@ type Signal = {
 
   possibleAngles?: string[]
 
+  // AI analysis metadata
+  analysisConfidence?: AnalysisConfidence
+  analysisEvidence?: AnalysisEvidenceItem[]
+  analyzedAt?: datetime
+
   skipReason?: SkipReason
 
   selectedAngle?: string
@@ -466,6 +471,44 @@ null
 ```
 
 若证据不足，不能强制产生数字。
+
+## 6.7 AI Analysis Metadata
+
+```ts
+type AnalysisConfidence =
+  | "high"
+  | "medium"
+  | "low"
+  | "insufficient_evidence"
+
+type AnalysisEvidenceItem = {
+  claim: string
+  source: EvidenceSource
+}
+
+// V1 无 crawler / source verification，证据只允许以下来源：
+type EvidenceSource =
+  | "signal_input"     // 直接来自用户提供的 Signal title/summary/metadata
+  | "brand_context"    // 来自 Brand / Content Pillar 配置
+  | "model_inference"  // 模型推理或既有知识，未验证
+```
+
+约束：
+
+- `analysisEvidence` 最多 3 条；`possibleAngles` 最多 3 条
+- `confidence = insufficient_evidence` 时，三个维度 Score 必须全部为 `null`
+- `topicScore`（overall）由服务端按三维算术平均值四舍五入计算；任一维为 `null` 则 overall 为 `null`。AI 不输出 overall
+- AI Analyze 只写入 analysis 字段，永远不得修改 `status` / `skipReason` / `selectedAngle` / `primaryPlatform` / `ownerId`
+
+派生分析状态（不落库）：
+
+```text
+analyzedAt = null                              → not analyzed
+analyzedAt != null && confidence = insufficient_evidence → insufficient evidence
+其他 analyzedAt != null                        → analyzed
+```
+
+Analyzing / Error 属于 UI transient state，不入库。
 
 ---
 

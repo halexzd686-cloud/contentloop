@@ -24,6 +24,19 @@ interface Signal {
   publishedAt: string | null;
   status: "new" | "reviewing" | "selected" | "skipped";
   topicScore: number | null;
+  audienceFitScore: number | null;
+  timingScore: number | null;
+  contentPotentialScore: number | null;
+  whyItMatters: string | null;
+  audienceMatch: string | null;
+  contentRisk: string | null;
+  possibleAngles: string[] | null;
+  analysisConfidence: string | null;
+  analysisEvidence: {
+    claim: string;
+    source: "signal_input" | "brand_context" | "model_inference";
+  }[] | null;
+  analyzedAt: string | null;
   skipReason: string | null;
   selectedAngle: string | null;
   primaryPlatform: string | null;
@@ -165,6 +178,20 @@ export default function RadarPage() {
     return result.content?.id || null;
   }
 
+  async function handleAnalyze(id: string) {
+    const res = await fetch(`/api/signals/${id}/analyze`, {
+      method: "POST",
+    });
+
+    if (!res.ok) {
+      const errData = await res.json();
+      throw new Error(errData.error || "Failed to analyze signal");
+    }
+
+    // Refetch to get persisted analysis
+    await fetchRef.current();
+  }
+
   const selectedSignal = signals.find((s) => s.id === selectedSignalId) || null;
 
   // Compute counts for filter tabs
@@ -253,6 +280,7 @@ export default function RadarPage() {
             signal={selectedSignal}
             onSkip={handleSkip}
             onCreateContent={handleCreateContent}
+            onAnalyze={handleAnalyze}
             onClose={() => setSelectedSignalId(null)}
           />
         </div>

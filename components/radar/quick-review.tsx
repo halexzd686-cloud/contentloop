@@ -14,15 +14,23 @@ import {
   HelpCircle,
   ExternalLink,
   ArrowRight,
+  Sparkles,
+  RefreshCw,
 } from "lucide-react";
 
 /**
  * Quick Review Panel — design.md §33.3
- * Shows signal detail + decision actions (Skip / Create Content).
+ * Shows signal detail + AI analysis + decision actions (Skip / Create Content).
  * Analysis fields show empty state when null — never mock data.
+ * M1.2B: Analyze Signal (new/reviewing only); AI suggests, human decides.
  */
 
 // ─── Types ─────────────────────────────────────────────
+
+interface AnalysisEvidenceItem {
+  claim: string;
+  source: "signal_input" | "brand_context" | "model_inference";
+}
 
 interface Signal {
   id: string;
@@ -34,6 +42,16 @@ interface Signal {
   publishedAt: string | null;
   status: "new" | "reviewing" | "selected" | "skipped";
   topicScore: number | null;
+  audienceFitScore: number | null;
+  timingScore: number | null;
+  contentPotentialScore: number | null;
+  whyItMatters: string | null;
+  audienceMatch: string | null;
+  contentRisk: string | null;
+  possibleAngles: string[] | null;
+  analysisConfidence: string | null;
+  analysisEvidence: AnalysisEvidenceItem[] | null;
+  analyzedAt: string | null;
   skipReason: string | null;
   selectedAngle: string | null;
   primaryPlatform: string | null;
@@ -78,7 +96,26 @@ const PLATFORM_LABELS: Record<string, string> = {
   douyin: "Douyin",
 };
 
-// ─── Empty Analysis Field ──────────────────────────────
+const CONFIDENCE_CONFIG: Record<
+  string,
+  { label: string; variant: "mint" | "default" | "warning" | "danger" }
+> = {
+  high: { label: "HIGH CONFIDENCE", variant: "mint" },
+  medium: { label: "MEDIUM CONFIDENCE", variant: "default" },
+  low: { label: "LOW CONFIDENCE", variant: "warning" },
+  insufficient_evidence: {
+    label: "EVIDENCE INSUFFICIENT",
+    variant: "default",
+  },
+};
+
+const EVIDENCE_SOURCE_LABELS: Record<string, string> = {
+  signal_input: "Signal input",
+  brand_context: "Brand context",
+  model_inference: "Inference",
+};
+
+// ─── Small pieces ──────────────────────────────────────
 
 function EmptyField({ label }: { label: string }) {
   return (
@@ -91,6 +128,14 @@ function EmptyField({ label }: { label: string }) {
   );
 }
 
+function ScoreValue({ value }: { value: number | null }) {
+  return (
+    <span className="text-sm text-ink-primary">
+      {value === null ? "N/A" : value}
+    </span>
+  );
+}
+
 // ─── Quick Review ──────────────────────────────────────
 
 interface QuickReviewProps {
@@ -100,6 +145,7 @@ interface QuickReviewProps {
     id: string,
     data: { primaryPlatform: string; selectedAngle: string; ownerId: string }
   ) => Promise<string | null>;
+  onAnalyze: (id: string) => Promise<void>;
   onClose: () => void;
 }
 
@@ -107,6 +153,7 @@ export function QuickReview({
   signal,
   onSkip,
   onCreateContent,
+  onAnalyze,
   onClose,
 }: QuickReviewProps) {
   const [skipOpen, setSkipOpen] = useState(false);
@@ -114,6 +161,8 @@ export function QuickReview({
   const [actionLoading, setActionLoading] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
   const [createdContentId, setCreatedContentId] = useState<string | null>(null);
+  const [analyzing, setAnalyzing] = useState(false);
+  const [analyzeError, setAnalyzeError] = useState<string | null>(null);
 
   if (!signal) {
     return (
@@ -136,6 +185,10 @@ export function QuickReview({
   const canAct = signal.status === "new" || signal.status === "reviewing";
   const isSelected = signal.status === "selected";
   const isSkipped = signal.status === "skipped";
+
+  const analyzed = signal.analyzedAt !== null;
+  const insufficient =
+    analyzed && signal.analysisConfidence === "insufficient_evidence";
 
   async function handleSkip(reason: string) {
     setActionLoading(true);
@@ -166,6 +219,21 @@ export function QuickReview({
       );
     } finally {
       setActionLoading(false);
+    }
+  }
+
+  async function handleAnalyze() {
+    setAnalyzing(true);
+    setAnalyzeError(null);
+    try {
+      await onAnalyze(signal!.id);
+    } catch (err) {
+      // Failure never clears an existing valid analysis.
+      setAnalyzeError(
+        err instanceof Error ? err.message : "Analysis failed. Please retry."
+      );
+    } finally {
+      setAnalyzing(false);
     }
   }
 
@@ -236,22 +304,150 @@ export function QuickReview({
           </div>
         )}
 
-        {/* Analysis fields — show empty state when null */}
+        {/* ─── AI Analysis ─── */}
         <div className="space-y-4 border-t border-border pt-4">
-          {signal.topicScore !== null ? (
-            <div>
-              <p className="text-xs font-medium text-ink-muted">Topic Score</p>
-              <p className="mt-1 text-sm text-ink-primary">
-                {signal.topicScore}
-              </p>
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-semibold uppercase tracking-wide text-ink-muted">
+              Analysis
+            </p>
+            {analyzed && signal.analysisConfidence && (
+              <Badge
+                variant={
+                  CONFIDENCE_CONFIG[signal.analysisConfidence]?.variant ||
+                  "default"
+                }
+              >
+                {CONFIDENCE_CONFIG[signal.analysisConfidence]?.label ||
+                  signal.analysisConfidence}
+              </Badge>
+            )}
+          </div>
+
+          {analyzeError && (
+            <div className="rounded-[8px] border border-danger/20 bg-danger/5 p-3">
+              <p className="text-xs text-danger">{analyzeError}</p>
+              {canAct && (
+                <button
+                  onClick={handleAnalyze}
+                  disabled={analyzing}
+                  className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-mint-600 hover:underline disabled:opacity-50"
+                >
+                  <RefreshCw className="h-3 w-3" />
+                  Retry
+                </button>
+              )}
             </div>
-          ) : (
-            <EmptyField label="Topic Score" />
           )}
-          <EmptyField label="Why It Matters" />
-          <EmptyField label="Audience Match" />
-          <EmptyField label="Content Risk" />
-          <EmptyField label="Possible Angles" />
+
+          {!analyzed ? (
+            <>
+              <EmptyField label="Topic Score" />
+              <EmptyField label="Why It Matters" />
+              <EmptyField label="Audience Match" />
+              <EmptyField label="Content Risk" />
+              <EmptyField label="Possible Angles" />
+            </>
+          ) : (
+            <>
+              {/* Topic Score */}
+              <div>
+                <p className="text-xs font-medium text-ink-muted">Topic Score</p>
+                {insufficient ? (
+                  <p className="mt-1 text-sm text-ink-faint">
+                    Evidence insufficient — scores not available.
+                  </p>
+                ) : (
+                  <div className="mt-1.5 space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-ink-muted">Overall</span>
+                      <span className="text-sm font-semibold text-ink-primary">
+                        {signal.topicScore === null ? "N/A" : signal.topicScore}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-ink-muted">Audience Fit</span>
+                      <ScoreValue value={signal.audienceFitScore} />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-ink-muted">Timing</span>
+                      <ScoreValue value={signal.timingScore} />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-ink-muted">
+                        Content Potential
+                      </span>
+                      <ScoreValue value={signal.contentPotentialScore} />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Text fields */}
+              <div>
+                <p className="text-xs font-medium text-ink-muted">
+                  Why It Matters
+                </p>
+                <p className="mt-1 text-sm text-ink-secondary">
+                  {signal.whyItMatters || "N/A"}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs font-medium text-ink-muted">
+                  Audience Match
+                </p>
+                <p className="mt-1 text-sm text-ink-secondary">
+                  {signal.audienceMatch || "N/A"}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs font-medium text-ink-muted">
+                  Content Risk
+                </p>
+                <p className="mt-1 text-sm text-ink-secondary">
+                  {signal.contentRisk || "N/A"}
+                </p>
+              </div>
+
+              {/* Possible Angles */}
+              <div>
+                <p className="text-xs font-medium text-ink-muted">
+                  Possible Angles
+                </p>
+                {signal.possibleAngles && signal.possibleAngles.length > 0 ? (
+                  <ul className="mt-1 list-disc space-y-1 pl-4 text-sm text-ink-secondary">
+                    {signal.possibleAngles.map((angle, i) => (
+                      <li key={i}>{angle}</li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="mt-1 text-sm text-ink-faint">
+                    None suggested.
+                  </p>
+                )}
+              </div>
+
+              {/* Evidence */}
+              {signal.analysisEvidence &&
+                signal.analysisEvidence.length > 0 && (
+                  <div>
+                    <p className="text-xs font-medium text-ink-muted">
+                      Evidence
+                    </p>
+                    <ul className="mt-1 space-y-1.5">
+                      {signal.analysisEvidence.map((item, i) => (
+                        <li key={i} className="text-xs text-ink-secondary">
+                          <span className="mr-1.5 inline-block rounded bg-surface-subtle px-1.5 py-0.5 text-[10px] font-medium text-ink-muted">
+                            {EVIDENCE_SOURCE_LABELS[item.source] ||
+                              item.source}
+                          </span>
+                          {item.claim}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+            </>
+          )}
         </div>
 
         {/* Skipped state */}
@@ -289,25 +485,41 @@ export function QuickReview({
 
       {/* Actions */}
       {canAct && (
-        <div className="flex gap-2 border-t border-border pt-4">
+        <div className="space-y-2 border-t border-border pt-4">
           <Button
-            variant="ghost"
+            variant="secondary"
             size="sm"
-            onClick={() => setSkipOpen(true)}
-            disabled={actionLoading}
+            className="w-full"
+            onClick={handleAnalyze}
+            disabled={analyzing || actionLoading}
           >
-            Skip
+            <Sparkles className="mr-1 h-3 w-3" />
+            {analyzing
+              ? "Analyzing signal…"
+              : analyzed
+                ? "Re-analyze Signal"
+                : "Analyze Signal"}
           </Button>
-          <Button
-            variant="primary"
-            size="sm"
-            className="flex-1"
-            onClick={() => setCreateOpen(true)}
-            disabled={actionLoading}
-          >
-            Create Content
-            <ArrowRight className="ml-1 h-3 w-3" />
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setSkipOpen(true)}
+              disabled={actionLoading || analyzing}
+            >
+              Skip
+            </Button>
+            <Button
+              variant="primary"
+              size="sm"
+              className="flex-1"
+              onClick={() => setCreateOpen(true)}
+              disabled={actionLoading || analyzing}
+            >
+              Create Content
+              <ArrowRight className="ml-1 h-3 w-3" />
+            </Button>
+          </div>
         </div>
       )}
 

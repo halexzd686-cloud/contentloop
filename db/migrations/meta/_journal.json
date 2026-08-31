@@ -15,6 +15,13 @@
       "when": 1788099492098,
       "tag": "0001_cute_clea",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1788106039614,
+      "tag": "0002_concerned_vision",
+      "breakpoints": true
     }
   ]
 }

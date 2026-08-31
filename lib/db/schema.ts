@@ -24,6 +24,7 @@ import {
   unique,
   index,
 } from "drizzle-orm/pg-core";
+import type { AnalysisEvidenceItem } from "@/lib/ai/schemas";
 
 // ─── Enums ──────────────────────────────────────────────────────────────────
 
@@ -277,6 +278,11 @@ export const signals = pgTable(
     ownerId: uuid("owner_id").references(() => teamMembers.id),
     competitorGap: text("competitor_gap"),
     suggestedAngle: text("suggested_angle"),
+    // AI analysis metadata (M1.2B). Status is derived:
+    // analyzed_at null → not analyzed; confidence insufficient_evidence → insufficient evidence.
+    analysisConfidence: confidenceEnum("analysis_confidence"),
+    analysisEvidence: jsonb("analysis_evidence").$type<AnalysisEvidenceItem[]>(),
+    analyzedAt: timestamp("analyzed_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
