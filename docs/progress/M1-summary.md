@@ -1,8 +1,23 @@
 # M1 Summary — Core Content Workflow（进行中）
 
-> Status: M1.1 / M1.2A / M1.2B / M1.3 / M1.4 **Frozen**。下一步 M1.5 — Platform Versions。
+> Status: M1.1 / M1.2A / M1.2B / M1.3 / M1.4 / M1.5 **Frozen**。下一步 M1.6 — Review & Pipeline。
 
 ## Completed
+
+### M1.5 — Platform Versions（Frozen，人工浏览器验收通过）
+
+- 无 migration：`UNIQUE(content_id, platform)` 与 JSONB `data` M0 已就绪；`visual_brief` 未使用
+- Canonical platform data：XHS `{title, coverCopy, opening, body, cta, tags[]}` / Bilibili `{title, coverCopy, openingHook, script, chapters[], description}` / Douyin `{hook, script, rhythmNotes, cta}`；持久化永远全 key，缺省 `""`/`[]`，非 markdown 整串
+- 双入口显式创建：Create Empty Draft（零 AI）+ Adapt with AI；打开 tab / auto-save 绝不建行（PUT 不存在 → 404）
+- Save schema 严格 `.strict()`：unknown key（如 covercopy typo）→ 400 拒绝，无静默 strip
+- AI Adapt：复用 DeepSeek provider + max 2 请求；Master 为主源 + Brief + Signal + Brand + Playbook；proposal 不落库 → Human Apply（POST）/ Discard；Re-adapt → field-level OLD/NEW → Accept（PUT 仅目标平台）/ Reject；pending 暂停 auto-save 且 OLD 保留
+- Status：M1.5 只开放 draft；review/approved/published 无入口，非 draft PUT/adapt → 409
+- Gate：Master 不存在 → locked；Brief 回 draft → 所有已有版本保留可读但 locked（create/PUT/adapt 409），Re-approve 恢复
+- Playbook = strategy context（有则注入，无则 prompt 明示不伪造）；永不是 Evidence
+- Multi-platform isolation：(contentId, platform) 寻址，三平台互不影响、不改 Master
+- Auto-save 复用 save-queue：文本 1.5s debounce、tags/chapters 结构变更立即 enqueue、切平台 flush、失败保留 + Retry
+- PlatformVersion ≠ Publication：全程 0 Publication
+- 真实 DeepSeek + Supabase smoke test 全通过；人工浏览器验收 A–E 全通过
 
 ### M1.4 — Content Master Core（Frozen，人工浏览器验收通过）
 
@@ -70,6 +85,8 @@
 - M1.2A 决策后暂不新建 Studio detail 路由；Studio routing 在 M1.3 正式决定
 - ContentMaster storage = JSONB modules（data-model §11.4），非固定列；V1 无富文本编辑器，plain text + structured modules
 - Master auto-save 复用 save-queue 模式：完整 modules array 快照写入，无协作/revision protocol（单用户场景）
+- PlatformVersion storage = canonical JSONB（data-model §13），全 key 持久化；save schema `.strict()` 拒绝 typo key；proposal schema 非 strict（strip 未知 key 避免浪费 retry），normalize 二次兜底
+- API 语义分离：POST = 显式创建（Empty Draft 或 Apply proposal），PUT = 仅更新已存在 draft（404 不 upsert）——auto-save 永不能建行
 
 ## Schema Changes
 
@@ -87,13 +104,15 @@
 - `app/api/signals/[id]/analyze/route.ts` — Analyze API
 - `app/api/signals/[id]/route.ts` — PATCH（new↔reviewing + skip）
 - `app/api/signals/[id]/create-content/route.ts` — Create Content 事务
-- `app/api/contents/` — list / detail / brief（upsert）/ brief/draft / brief/approve / brief/edit / master（POST 创建骨架 + PUT 保存）
-- `app/app/studio/page.tsx` + `app/app/studio/[contentId]/page.tsx` — Studio（Brief / Master tabs 启用）
+- `app/api/contents/` — list / detail / brief（upsert）/ brief/draft / brief/approve / brief/edit / master（POST 创建骨架 + PUT 保存）/ versions/[platform]（POST 创建 + PUT 更新）/ versions/[platform]/adapt（AI proposal）
+- `app/app/studio/page.tsx` + `app/app/studio/[contentId]/page.tsx` — Studio（Brief / Master / Platforms tabs 启用，Review disabled）
 - `components/radar/` — quick-review / signal-card / skip-dialog / create-content-dialog / add-signal-dialog / signal-filters
-- `components/studio/` — brief-fields / sources-panel / master-editor
+- `components/studio/` — brief-fields / sources-panel / master-editor / platforms-panel
 - `lib/validation/master.ts` — 模块规则 / 骨架 / order 规范化
+- `lib/validation/platform-version.ts` — 三平台 canonical schema / empty data / normalize
+- `lib/ai/adapt-platform.ts` — AI 平台适配 proposal
 - `lib/save-queue.ts` — serialized writes + revision guard
-- `tests/signal.test.ts`（36）+ `tests/signal-analysis.test.ts`（27）+ `tests/brief.test.ts`（16）+ `tests/master.test.ts`（19）= 98 tests
+- `tests/signal.test.ts`（36）+ `tests/signal-analysis.test.ts`（27）+ `tests/brief.test.ts`（16）+ `tests/master.test.ts`（19）+ `tests/platform-version.test.ts`（23）= 121 tests
 
 ## Known Issues / Backlog（不阻塞，记录待处理）
 
@@ -120,11 +139,13 @@
 - selected Signal 必须存在 linked Content；skipped Signal 必须有 skipReason
 - Content 1 → 0..1 ContentBrief（DB unique + 服务端 upsert 双重保证）
 - Content 1 → 0..1 ContentMaster（DB unique + 服务端 409 双重保证）
-- Brief approved 是 Master editing gate；Brief 回 draft 时 Master 数据保留但 read-only
+- Content + Platform → 0..1 PlatformVersion（DB unique + 服务端 409 双重保证）
+- PlatformVersion M1.5 只开放 draft；PlatformVersion ≠ Publication
+- Brief approved 是 Master / PlatformVersions editing gate；Brief 回 draft 时下游数据保留但 read-only
 - Score null 不归一为 0；AI 只 Suggest，Human Confirm（AI proposal 不落库）
 - Approved Brief 只能经显式 Edit Brief 回到 draft；auto-save 不得静默解除 approval
-- V1 单 Brand、单 AI provider、PostgreSQL-first（Drizzle）、Supabase 仅作托管 PG
+- V1 单 Brand、单 AI provider、PostgreSQL-first（Drizzle）、Supabase 仅作托管 PG；V1 平台固定 Xiaohongshu / Bilibili / Douyin
 
 ## Next
 
-- M1.5 — Platform Versions：Content Master → 小红书/B站/抖音结构化平台版本 → AI Adapt Proposal → Human Apply → Auto Save → Refresh Persistence
+- M1.6 — Review & Pipeline：Review checklist → Approve for Publishing → Content review→scheduled → Pipeline board（不创建 Publication）
