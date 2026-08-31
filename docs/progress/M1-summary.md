@@ -1,8 +1,26 @@
-# M1 Summary — Core Content Workflow（进行中）
+# M1 Summary — Core Content Workflow（Frozen ✅）
 
-> Status: M1.1 / M1.2A / M1.2B / M1.3 / M1.4 / M1.5 **Frozen**。下一步 M1.6 — Review & Pipeline。
+> Status: M1.1 / M1.2A / M1.2B / M1.3 / M1.4 / M1.5 / M1.6 **全部 Frozen**（人工浏览器验收通过）。M1 正式 Freeze。下一步 M2 — Real Publication & Analytics。
+>
+> **M1 最终业务主链**：Signal → AI Analysis → Human Decision → Content → Approved Brief → Content Master → Platform Versions → Human Review → Scheduled。Publication 不属于 M1。
 
 ## Completed
+
+### M1.6 — Review & Pipeline（Frozen，人工浏览器验收通过）
+
+- Migration `0005`：`UNIQUE(content_reviews.platform_version_id)`（PlatformVersion 1→0..1 current ContentReview，无 Review History）
+- ContentReview 挂在 PlatformVersion 上（data-model §15）；active versions = 已创建的版本，不要求 enabledPlatforms 全覆盖
+- Review 五项 checklist human-only：optimistic local + 300ms debounce + SaveQueue 串行持久化；Select All / Clear All 单次 save；Approve 前 flush pending saves，失败阻断 approve
+- Send to Review gate：in_progress + Brief approved + Master + ≥1 active draft version；事务内 versions→review + checklist reset/insert
+- Approve for Publishing：aggregate gate（approved 或 review+全勾）→ versions review→approved + Content→scheduled；唯一 review→scheduled 路径；reviewer = reviewerId ?? ownerId（均须 active）
+- Withdraw：review→in_progress，versions→draft，checklists reset（row 保留）
+- Global upstream invalidation：Edit Brief / Master Return to Editing → Content→in_progress + 全部 versions→draft + 全部 reviews reset；用户内容数据全部保留
+- Local platform invalidation：Return XHS to Draft → 仅 XHS draft+reset；Content scheduled→review；其他 approved 平台不变
+- Server-side transition table：drag 仅 planning→in_progress（需 Brief approved）/ in_progress→review（完整 gate）/ review→in_progress（withdraw）；review→scheduled、scheduled→review、any→published 全部 409
+- Pipeline：5 列 Kanban（@dnd-kit）+ Content Drawer；一 Content 一卡，平台为卡内子状态；Published 列仅真实 aggregate 进入（M1 恒为空）
+- Workflow 状态架构（两轮 blocker 修复后）：page 级单一 authoritative aggregate；mutation 返回权威 WorkflowSnapshot → applyWorkflowSnapshot(rev) 无二次 GET、无需 F5；stale-response revision guard；pending feedback <100ms
+- 性能（instrumentation 驱动）：json_agg 单查询聚合读 + set-based 批量写（消灭 per-platform 串行循环），sendToReview 14.7–22.5s → 5.5s（prod）
+- 全程 0 Publication；人工浏览器验收全部通过（含两轮 blocker 复测）
 
 ### M1.5 — Platform Versions（Frozen，人工浏览器验收通过）
 
@@ -94,58 +112,81 @@
 - Migration `0002_concerned_vision.sql`：signals 新增 `analysis_confidence`（复用 confidence enum）、`analysis_evidence` jsonb、`analyzed_at` timestamptz
 - Migration `0003_glossy_patch.sql`：`UNIQUE(content_briefs.content_id)`（Content 1 → 0..1 Brief）
 - Migration `0004_mature_chronomancer.sql`：`UNIQUE(content_masters.content_id)`（Content 1 → 0..1 Master）
+- Migration `0005_polite_abomination.sql`：`UNIQUE(content_reviews.platform_version_id)`（PlatformVersion 1 → 0..1 current ContentReview）
 - data-model §6.2 / §6.7 已同步更新为正式 V1 schema
 
 ## Important Files
 
-- `lib/ai/provider.ts` / `lib/ai/schemas.ts` / `lib/ai/analyze-signal.ts` / `lib/ai/draft-brief.ts` — AI 层
-- `lib/validation/brief.ts` — Brief 三层 schema（AI draft / save / approve）
+- `lib/ai/provider.ts` / `lib/ai/schemas.ts` / `lib/ai/analyze-signal.ts` / `lib/ai/draft-brief.ts` / `lib/ai/adapt-platform.ts` — AI 层
+- `lib/validation/brief.ts` / `master.ts` / `platform-version.ts` / `review.ts` / `signal.ts` — 校验层
+- `lib/review.ts` — Review & transition 领域服务（聚合读 + set-based 写 + WorkflowSnapshot）
+- `lib/workflow-snapshot.ts` — 权威快照类型 + stale revision guard + applyVersionsSnapshot
+- `lib/checklist-editor.ts` — checklist 交互核心（optimistic + debounce + flush）
 - `lib/brief.ts` — resolveApprover（reviewer ?? owner）
-- `app/api/signals/[id]/analyze/route.ts` — Analyze API
-- `app/api/signals/[id]/route.ts` — PATCH（new↔reviewing + skip）
-- `app/api/signals/[id]/create-content/route.ts` — Create Content 事务
-- `app/api/contents/` — list / detail / brief（upsert）/ brief/draft / brief/approve / brief/edit / master（POST 创建骨架 + PUT 保存）/ versions/[platform]（POST 创建 + PUT 更新）/ versions/[platform]/adapt（AI proposal）
-- `app/app/studio/page.tsx` + `app/app/studio/[contentId]/page.tsx` — Studio（Brief / Master / Platforms tabs 启用，Review disabled）
+- `lib/save-queue.ts` — serialized writes + revision guard + flush
+- `app/api/signals/` — list / PATCH / analyze / create-content
+- `app/api/contents/` — list / detail / brief(+draft/approve/edit) / master / versions(+adapt/review/return-to-draft/submit-review) / review(+withdraw/approve) / return-to-editing / status（drag 薄入口）
+- `app/api/pipeline/route.ts` — 看板聚合（无 N+1）
+- `app/app/studio/[contentId]/page.tsx` — Studio 四 tab 全启用 + 单一 applyWorkflowSnapshot
+- `app/app/pipeline/page.tsx` — 5 列 Kanban + Content Drawer
 - `components/radar/` — quick-review / signal-card / skip-dialog / create-content-dialog / add-signal-dialog / signal-filters
-- `components/studio/` — brief-fields / sources-panel / master-editor / platforms-panel
-- `lib/validation/master.ts` — 模块规则 / 骨架 / order 规范化
-- `lib/validation/platform-version.ts` — 三平台 canonical schema / empty data / normalize
-- `lib/ai/adapt-platform.ts` — AI 平台适配 proposal
-- `lib/save-queue.ts` — serialized writes + revision guard
-- `tests/signal.test.ts`（36）+ `tests/signal-analysis.test.ts`（27）+ `tests/brief.test.ts`（16）+ `tests/master.test.ts`（19）+ `tests/platform-version.test.ts`（23）= 121 tests
+- `components/studio/` — brief-fields / sources-panel / master-editor / platforms-panel / review-panel
+- `tests/` 8 files = 146 tests
 
 ## Known Issues / Backlog（不阻塞，记录待处理）
 
-- ~~Legacy seed Topic Score~~ 已修复（`0b30836`）：seed 不再预填 score，DB 已清理 `analyzed_at IS NULL` 行的 score，SignalCard 改为 `analyzedAt` 门控
-- **S-01**: Legacy DEMO Content 可能存在 `status = in_progress` 但无 approved Brief 的不一致（如 seed 的 "Claude Agent 实测"）。仅记录，不为 M1.4 改 seed/workflow
-- **S-02**: AI Draft Brief 可能生成非预期语言内容。后续需统一 output language strategy（优先跟随 Brand/Content/Signal 主要语言）。本轮不改 prompt
-- Timing 中文文案后续统一为「时效性」
-- Radar Quick Review 信息密度后续 polish
-- 全局中英文 UI 文案后续统一
-- M1.2A 浏览器人工验收：已通过（用户确认）
-- 真实 AI 分析延迟约 7–13s，仅局部 loading
+- ~~Legacy seed Topic Score~~ 已修复（`0b30836`）
+- ~~Checklist interaction blocker~~ 已修复（interaction-first 架构）
+- ~~Workflow state sync / F5 blocker~~ 已修复（WorkflowSnapshot 架构）
+- **P2 — DB/deployment topology latency**：Supabase 单 RTT 约 ~1s；低频 workflow action 约 5–7s（click 即 pending feedback、UI 不假死、最终状态自动同步）。M1 已做 set-based ops / 聚合读 / 消除二次 GET；不做 RPC/stored procedure 重构。后续真实部署再评估 user↔app↔Supabase region
+- **S-01**: Legacy DEMO Content 可能存在 `status = in_progress` 但无 approved Brief 的不一致。仅记录
+- **S-02**: AI Draft Brief 可能生成非预期语言内容。后续统一 output language strategy
+- Timing 中文文案后续统一为「时效性」；Radar Quick Review 信息密度；全局中英文 UI 统一
+- 真实 AI 分析/适配延迟约 7–60s（DeepSeek 偶发 >30s），仅局部 loading + 手动 Retry
 
 ## Deferred
 
 - AI Analyze 不接 crawler；sourceUrl 永远只是元数据
-- selected/skipped Signal 的重新 Analyze
-- Skip Restore 流程
+- selected/skipped Signal 的重新 Analyze；Skip Restore 流程
 - Competitor Breakdown / Content Gap（PRD §7.7）
-- HalftoneReveal 等 React Bits 正式效果
+- Master AI（Rewrite/Shorten/Expand/Ask Loop）→ Studio Advanced
+- Content QA / Visual Brief / Learning 提示
+- HalftoneReveal 等 React Bits 正式效果；Calendar；Review history
 
-## Frozen Constraints
+## Frozen Constraints（M1 Final）
 
-- Signal 1 → 0..1 Content（DB unique + 服务端双重保证）
-- selected Signal 必须存在 linked Content；skipped Signal 必须有 skipReason
-- Content 1 → 0..1 ContentBrief（DB unique + 服务端 upsert 双重保证）
-- Content 1 → 0..1 ContentMaster（DB unique + 服务端 409 双重保证）
-- Content + Platform → 0..1 PlatformVersion（DB unique + 服务端 409 双重保证）
-- PlatformVersion M1.5 只开放 draft；PlatformVersion ≠ Publication
-- Brief approved 是 Master / PlatformVersions editing gate；Brief 回 draft 时下游数据保留但 read-only
-- Score null 不归一为 0；AI 只 Suggest，Human Confirm（AI proposal 不落库）
-- Approved Brief 只能经显式 Edit Brief 回到 draft；auto-save 不得静默解除 approval
-- V1 单 Brand、单 AI provider、PostgreSQL-first（Drizzle）、Supabase 仅作托管 PG；V1 平台固定 Xiaohongshu / Bilibili / Douyin
+### 实体边界
+- Signal ≠ Content；ContentBrief ≠ ContentMaster；ContentMaster ≠ PlatformVersion；PlatformVersion ≠ Publication；MetricSnapshot ≠ Publication；ContentReview ≠ Content（属于 PlatformVersion review state）
+
+### Invariants（全部 DB 级 + 服务端双重保证）
+- Signal 1 → 0..1 Content：`UNIQUE(contents.source_signal_id)`
+- Content 1 → 0..1 ContentBrief：`UNIQUE(content_briefs.content_id)`
+- Content 1 → 0..1 ContentMaster：`UNIQUE(content_masters.content_id)`
+- Content 1 → 0..N PlatformVersion，同平台唯一：`UNIQUE(platform_versions.content_id, platform)`
+- PlatformVersion 1 → 0..1 current ContentReview：`UNIQUE(content_reviews.platform_version_id)`；V1 无 Review History
+
+### AI 原则
+- AI Suggest → Human Confirm；AI 永不直接改变 authoritative workflow state
+- Radar=结构化分析；Brief=proposal→Apply/Discard；Master=M1 不接 AI；PlatformVersion=Adapt/Re-adapt proposal→Apply/Accept；Review=human-only
+- AI 永不：自动 approve / 自动 publish / 自动勾 checklist / 把 inference 升级为 verified evidence
+
+### 数据 / 证据原则
+- Missing data ≠ 0（null / N/A）；sourceUrl exists ≠ webpage read ≠ fact verified；model inference ≠ verified fact
+- PlatformPlaybook = strategy context ≠ Evidence；不伪造 performance metrics
+
+### Workflow invalidation
+- Global（Edit Brief / Edit Master）：Content review/scheduled→in_progress + 全部 versions→draft + 全部 reviews reset；用户内容数据全部保留
+- Local（Return platform to Draft）：仅该平台 draft+reset；Content scheduled→review；其他 approved 平台保持
+
+### Workflow UI 架构
+- page 级单一 authoritative aggregate；mutation → WorkflowSnapshot response → applyWorkflowSnapshot；低频 transition 不再 mutation+refetch；checklist 高频 = optimistic + 300ms debounce + SaveQueue；无 F5
+
+### 其他
+- Brief approved 是 Master / PlatformVersions editing gate；Approved Brief 只能显式 Edit Brief 回 draft
+- Content transition 只走 server-side transition table；review→scheduled 仅 Approve for Publishing；published 无写入路径（M1）
+- V1 单 Brand、单 AI provider（DeepSeek）、PostgreSQL-first（Drizzle）、Supabase 仅作托管 PG；平台固定 Xiaohongshu / Bilibili / Douyin
+- Pipeline 固定 5 列；一 Content 一卡；无 Jira 状态
 
 ## Next
 
-- M1.6 — Review & Pipeline：Review checklist → Approve for Publishing → Content review→scheduled → Pipeline board（不创建 Publication）
+- M2 — Real Publication & Analytics：M2.1 Publication Record 优先（Publication 先于 Metrics，Metrics 先于 Diagnosis）
