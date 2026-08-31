@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Sparkles, RefreshCw, Lock, Plus, X, FileText } from "lucide-react";
@@ -44,7 +44,10 @@ interface PlatformsPanelInput {
   approved: boolean;
   hasMaster: boolean;
   primaryPlatform: string | null;
-  initialVersions: VersionRow[];
+  /** Single source of truth: page-level platform versions. */
+  versions: VersionRow[];
+  /** Report a created/updated version up to the page state. */
+  onVersionChange: (v: VersionRow) => void;
   enabledPlatforms: string[];
   playbookPlatforms: string[];
 }
@@ -107,7 +110,8 @@ export function usePlatformsPanel({
   approved,
   hasMaster,
   primaryPlatform,
-  initialVersions,
+  versions: versionRows,
+  onVersionChange,
   enabledPlatforms,
   playbookPlatforms,
 }: PlatformsPanelInput) {
@@ -125,9 +129,11 @@ export function usePlatformsPanel({
     return list;
   })();
 
-  const [versions, setVersions] = useState<
-    Partial<Record<Platform, VersionRow>>
-  >({});
+  const versions = useMemo(() => {
+    const map: Partial<Record<Platform, VersionRow>> = {};
+    for (const v of versionRows) map[v.platform] = v;
+    return map;
+  }, [versionRows]);
   const [drafts, setDrafts] = useState<Partial<Record<Platform, PlatformData>>>(
     {}
   );
@@ -152,20 +158,22 @@ export function usePlatformsPanel({
     draftsRef.current = drafts;
   }, [drafts]);
 
-  // Hydrate from the page load.
+  // Hydrate local editing drafts from page state (merge-only: never
+  // overwrite a platform the user is already editing).
   useEffect(() => {
     const t = setTimeout(() => {
-      const v: Partial<Record<Platform, VersionRow>> = {};
-      const d: Partial<Record<Platform, PlatformData>> = {};
-      for (const row of initialVersions) {
-        v[row.platform] = row;
-        d[row.platform] = normalizePlatformData(row.platform, row.data);
-      }
-      setVersions(v);
-      setDrafts(d);
+      setDrafts((prev) => {
+        const next = { ...prev };
+        for (const row of versionRows) {
+          if (!next[row.platform]) {
+            next[row.platform] = normalizePlatformData(row.platform, row.data);
+          }
+        }
+        return next;
+      });
     }, 0);
     return () => clearTimeout(t);
-  }, [initialVersions]);
+  }, [versionRows]);
 
   // Align selection with the ordered platform list once brand data loads.
   useEffect(() => {
@@ -288,7 +296,7 @@ export function usePlatformsPanel({
       );
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to create draft");
-      setVersions((prev) => ({ ...prev, [selected]: data.version }));
+      onVersionChange(data.version);
       setDrafts((prev) => ({
         ...prev,
         [selected]: normalizePlatformData(selected, data.version.data),
@@ -341,7 +349,7 @@ export function usePlatformsPanel({
       );
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to apply proposal");
-      setVersions((prev) => ({ ...prev, [selected]: data.version }));
+      onVersionChange(data.version);
       setDrafts((prev) => ({
         ...prev,
         [selected]: normalizePlatformData(selected, data.version.data),

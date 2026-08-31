@@ -1,10 +1,9 @@
-import { eq, and, inArray, isNull } from "drizzle-orm";
+import { eq, and, inArray, isNull, sql } from "drizzle-orm";
 
 import { db } from "@/lib/db";
 import {
   contents,
   contentBriefs,
-  contentMasters,
   contentReviews,
   platformVersions,
   teamMembers,
@@ -18,6 +17,11 @@ import {
   dragBlockReason,
   type ReviewChecklist,
 } from "@/lib/validation/review";
+import type {
+  WorkflowReviewState,
+  WorkflowSnapshot,
+  WorkflowVersionState,
+} from "@/lib/workflow-snapshot";
 
 /**
  * Review & status transition domain service — M1.6.
@@ -29,8 +33,14 @@ import {
  * - Content workflow: planning / in_progress / review / scheduled / published
  * - PlatformVersion: draft / review / approved / published
  *
- * Multi-entity transitions run in one transaction; any failure rolls
- * back everything. `published` has NO write path in M1.6.
+ * Performance architecture (post-instrumentation):
+ * - ONE aggregate read per action (single round trip via json_agg)
+ * - Set-based batched writes (no per-platform sequential RTTs)
+ * - Every mutation returns an authoritative WorkflowSnapshot built
+ *   from the aggregate + RETURNING rows — the client never needs a
+ *   second full-detail GET.
+ *
+ * `published` has NO write path in M1.6.
  */
 
 export class ReviewError extends Error {
@@ -51,65 +61,145 @@ const REVIEW_RESET = {
   updatedAt: new Date(),
 };
 
-async function loadContext(tx: Tx, contentId: string, brandId: string) {
-  const [content] = await tx
-    .select()
-    .from(contents)
-    .where(
-      and(
-        eq(contents.id, contentId),
-        eq(contents.brandId, brandId),
-        isNull(contents.deletedAt)
-      )
-    );
-  if (!content) throw new ReviewError("Content not found", 404);
+// ─── Aggregate read (ONE round trip) ───────────────────
 
-  const [brief] = await tx
-    .select()
-    .from(contentBriefs)
-    .where(eq(contentBriefs.contentId, contentId));
+interface Aggregate {
+  content: {
+    id: string;
+    status: string;
+    reviewerId: string | null;
+    ownerId: string | null;
+  };
+  brief: {
+    status: string;
+    approvedAt: string | null;
+    approvedBy: string | null;
+  } | null;
+  hasMaster: boolean;
+  versions: WorkflowVersionState[];
+  reviews: WorkflowReviewState[];
+}
 
-  const [master] = await tx
-    .select()
-    .from(contentMasters)
-    .where(eq(contentMasters.contentId, contentId));
+export async function loadAggregate(
+  tx: Tx,
+  contentId: string,
+  brandId: string
+): Promise<Aggregate> {
+  const result = await tx.execute(sql`
+    select
+      (select json_build_object('id', id, 'status', status,
+                                'reviewerId', reviewer_id, 'ownerId', owner_id)
+         from contents
+        where id = ${contentId}::uuid and brand_id = ${brandId}::uuid
+          and deleted_at is null) as content,
+      (select json_build_object('status', status,
+                                'approvedAt', to_char(approved_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"'),
+                                'approvedBy', approved_by)
+         from content_briefs where content_id = ${contentId}::uuid) as brief,
+      (select json_build_object('id', id)
+         from content_masters where content_id = ${contentId}::uuid) as master,
+      (select coalesce(json_agg(json_build_object('id', id, 'platform', platform, 'status', status)), '[]'::json)
+         from platform_versions where content_id = ${contentId}::uuid) as versions,
+      (select coalesce(json_agg(json_build_object(
+                'platformVersionId', r.platform_version_id,
+                'factsConfirmed', r.facts_confirmed,
+                'titleCoverMatch', r.title_cover_match,
+                'platformFitConfirmed', r.platform_fit_confirmed,
+                'riskChecked', r.risk_checked,
+                'humanReviewed', r.human_reviewed,
+                'reviewerId', r.reviewer_id,
+                'approvedAt', to_char(r.approved_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"'))), '[]'::json)
+         from content_reviews r
+         join platform_versions v on v.id = r.platform_version_id
+        where v.content_id = ${contentId}::uuid) as reviews
+  `);
 
-  const versions = await tx
-    .select()
-    .from(platformVersions)
-    .where(eq(platformVersions.contentId, contentId));
-
-  const reviews = versions.length
-    ? await tx
-        .select()
-        .from(contentReviews)
-        .where(
-          inArray(
-            contentReviews.platformVersionId,
-            versions.map((v) => v.id)
-          )
-        )
-    : [];
+  const rows = result as unknown as {
+    content: Aggregate["content"] | null;
+    brief: Aggregate["brief"];
+    master: { id: string } | null;
+    versions: WorkflowVersionState[] | null;
+    reviews: WorkflowReviewState[] | null;
+  }[];
+  const row = rows[0];
+  if (!row?.content) throw new ReviewError("Content not found", 404);
 
   return {
-    content,
-    brief: brief ?? null,
-    master: master ?? null,
-    versions,
-    reviews,
+    content: row.content,
+    brief: row.brief ?? null,
+    hasMaster: !!row.master,
+    versions: row.versions ?? [],
+    reviews: row.reviews ?? [],
   };
 }
 
-/** Upsert an emptied checklist row for a version (reuses the unique current row). */
-async function upsertEmptyReview(tx: Tx, versionId: string, existing?: { id: string }) {
-  if (existing) {
-    await tx
-      .update(contentReviews)
-      .set(REVIEW_RESET)
-      .where(eq(contentReviews.id, existing.id));
-  } else {
-    await tx.insert(contentReviews).values({ platformVersionId: versionId });
+export type { Aggregate };
+
+export function toSnapshot(agg: Aggregate): WorkflowSnapshot {
+  return {
+    content: { id: agg.content.id, status: agg.content.status },
+    brief: agg.brief,
+    hasMaster: agg.hasMaster,
+    versions: agg.versions,
+    reviews: agg.reviews,
+  };
+}
+
+/** Apply a versions/status override set onto the aggregate's version list. */
+function mergeVersions(
+  versions: WorkflowVersionState[],
+  updated: WorkflowVersionState[]
+): WorkflowVersionState[] {
+  const byId = new Map(updated.map((v) => [v.id, v]));
+  return versions.map((v) => byId.get(v.id) ?? v);
+}
+
+/** Apply a review-row override set onto the aggregate's review list. */
+function mergeReviews(
+  reviews: WorkflowReviewState[],
+  updated: WorkflowReviewState[]
+): WorkflowReviewState[] {
+  const byVid = new Map(updated.map((r) => [r.platformVersionId, r]));
+  const merged = reviews.map((r) => byVid.get(r.platformVersionId) ?? r);
+  for (const r of updated) {
+    if (!reviews.some((x) => x.platformVersionId === r.platformVersionId)) {
+      merged.push(r);
+    }
   }
+  return merged;
+}
+
+type ReviewRowDb = Omit<WorkflowReviewState, "approvedAt"> & {
+  approvedAt: Date | null;
+};
+
+/** Normalize DB rows (Date approvedAt) into snapshot shape (ISO string). */
+function toReviewState(r: {
+  platformVersionId: string;
+  factsConfirmed: boolean;
+  titleCoverMatch: boolean;
+  platformFitConfirmed: boolean;
+  riskChecked: boolean;
+  humanReviewed: boolean;
+  reviewerId: string | null;
+  approvedAt: Date | string | null;
+}): WorkflowReviewState {
+  return {
+    ...r,
+    approvedAt:
+      r.approvedAt instanceof Date
+        ? r.approvedAt.toISOString()
+        : (r.approvedAt ?? null),
+  };
+}
+
+function resetReviewState(platformVersionId: string): WorkflowReviewState {
+  return {
+    platformVersionId,
+    ...EMPTY_CHECKLIST,
+    reviewerId: null,
+    approvedAt: null,
+  };
 }
 
 // ─── Send to Review ────────────────────────────────────
@@ -117,36 +207,37 @@ async function upsertEmptyReview(tx: Tx, versionId: string, existing?: { id: str
 /**
  * in_progress → review. Gate: Brief approved + Master exists +
  * ≥1 active PlatformVersion, all currently draft.
- * Transaction: versions draft→review, empty/reset checklists,
- * Content → review.
+ * Transaction (4 batched writes): versions draft→review (1 UPDATE),
+ * existing checklists reset (1 UPDATE), missing checklists inserted
+ * (1 bulk INSERT), Content → review (1 UPDATE ... RETURNING).
  */
 export async function sendToReview(contentId: string) {
   const brand = await requireSingleBrand();
   return db.transaction(async (tx) => {
-    const ctx = await loadContext(tx, contentId, brand.id);
+    const agg = await loadAggregate(tx, contentId, brand.id);
 
-    if (ctx.content.status !== "in_progress") {
+    if (agg.content.status !== "in_progress") {
       throw new ReviewError(
-        `Only in-progress content can be sent to review (current: ${ctx.content.status}).`,
+        `Only in-progress content can be sent to review (current: ${agg.content.status}).`,
         409
       );
     }
-    if (ctx.brief?.status !== "approved") {
+    if (agg.brief?.status !== "approved") {
       throw new ReviewError("Approve Brief before sending to review.", 409);
     }
-    if (!ctx.master) {
+    if (!agg.hasMaster) {
       throw new ReviewError(
         "Create the Content Master before sending to review.",
         409
       );
     }
-    if (ctx.versions.length === 0) {
+    if (agg.versions.length === 0) {
       throw new ReviewError(
         "Create at least one platform version before sending to review.",
         409
       );
     }
-    const notDraft = ctx.versions.filter((v) => v.status !== "draft");
+    const notDraft = agg.versions.filter((v) => v.status !== "draft");
     if (notDraft.length > 0) {
       throw new ReviewError(
         `All platform versions must be draft to enter review (not draft: ${notDraft
@@ -156,25 +247,74 @@ export async function sendToReview(contentId: string) {
       );
     }
 
-    for (const v of ctx.versions) {
-      await tx
-        .update(platformVersions)
-        .set({ status: "review", updatedAt: new Date() })
-        .where(eq(platformVersions.id, v.id));
-      await upsertEmptyReview(
-        tx,
-        v.id,
-        ctx.reviews.find((r) => r.platformVersionId === v.id)
-      );
+    const now = new Date();
+    const versionIds = agg.versions.map((v) => v.id);
+
+    const updatedVersions = await tx
+      .update(platformVersions)
+      .set({ status: "review", updatedAt: now })
+      .where(inArray(platformVersions.id, versionIds))
+      .returning({
+        id: platformVersions.id,
+        platform: platformVersions.platform,
+        status: platformVersions.status,
+      });
+
+    const existingReviewVids = agg.reviews.map((r) => r.platformVersionId);
+    let updatedReviews: ReviewRowDb[] = [];
+    if (existingReviewVids.length > 0) {
+      updatedReviews = await tx
+        .update(contentReviews)
+        .set(REVIEW_RESET)
+        .where(inArray(contentReviews.platformVersionId, existingReviewVids))
+        .returning({
+          platformVersionId: contentReviews.platformVersionId,
+          factsConfirmed: contentReviews.factsConfirmed,
+          titleCoverMatch: contentReviews.titleCoverMatch,
+          platformFitConfirmed: contentReviews.platformFitConfirmed,
+          riskChecked: contentReviews.riskChecked,
+          humanReviewed: contentReviews.humanReviewed,
+          reviewerId: contentReviews.reviewerId,
+          approvedAt: contentReviews.approvedAt,
+        });
+    }
+    const missingVids = versionIds.filter(
+      (id) => !existingReviewVids.includes(id)
+    );
+    let insertedReviews: ReviewRowDb[] = [];
+    if (missingVids.length > 0) {
+      insertedReviews = await tx
+        .insert(contentReviews)
+        .values(missingVids.map((vid) => ({ platformVersionId: vid })))
+        .returning({
+          platformVersionId: contentReviews.platformVersionId,
+          factsConfirmed: contentReviews.factsConfirmed,
+          titleCoverMatch: contentReviews.titleCoverMatch,
+          platformFitConfirmed: contentReviews.platformFitConfirmed,
+          riskChecked: contentReviews.riskChecked,
+          humanReviewed: contentReviews.humanReviewed,
+          reviewerId: contentReviews.reviewerId,
+          approvedAt: contentReviews.approvedAt,
+        });
     }
 
     const [content] = await tx
       .update(contents)
-      .set({ status: "review", updatedAt: new Date() })
+      .set({ status: "review", updatedAt: now })
       .where(eq(contents.id, contentId))
-      .returning();
+      .returning({ id: contents.id, status: contents.status });
 
-    return { content };
+    const workflow: WorkflowSnapshot = {
+      content,
+      brief: agg.brief,
+      hasMaster: agg.hasMaster,
+      versions: mergeVersions(agg.versions, updatedVersions),
+      reviews: mergeReviews(agg.reviews, [
+        ...updatedReviews.map(toReviewState),
+        ...insertedReviews.map(toReviewState),
+      ]),
+    };
+    return { workflow };
   });
 }
 
@@ -188,37 +328,57 @@ export async function sendToReview(contentId: string) {
 export async function withdrawFromReview(contentId: string) {
   const brand = await requireSingleBrand();
   return db.transaction(async (tx) => {
-    const ctx = await loadContext(tx, contentId, brand.id);
+    const agg = await loadAggregate(tx, contentId, brand.id);
 
-    if (ctx.content.status !== "review") {
+    if (agg.content.status !== "review") {
       throw new ReviewError(
-        `Only content in review can be withdrawn (current: ${ctx.content.status}).`,
+        `Only content in review can be withdrawn (current: ${agg.content.status}).`,
         409
       );
     }
 
-    for (const v of ctx.versions) {
-      if (v.status === "review" || v.status === "approved") {
-        await tx
-          .update(platformVersions)
-          .set({ status: "draft", updatedAt: new Date() })
-          .where(eq(platformVersions.id, v.id));
-      }
+    const now = new Date();
+    const versionIds = agg.versions.map((v) => v.id);
+    const resetVids = agg.reviews.map((r) => r.platformVersionId);
+
+    let updatedVersions: WorkflowVersionState[] = [];
+    if (versionIds.length > 0) {
+      updatedVersions = await tx
+        .update(platformVersions)
+        .set({ status: "draft", updatedAt: now })
+        .where(
+          and(
+            inArray(platformVersions.id, versionIds),
+            inArray(platformVersions.status, ["review", "approved"])
+          )
+        )
+        .returning({
+          id: platformVersions.id,
+          platform: platformVersions.platform,
+          status: platformVersions.status,
+        });
     }
-    for (const r of ctx.reviews) {
+    if (resetVids.length > 0) {
       await tx
         .update(contentReviews)
         .set(REVIEW_RESET)
-        .where(eq(contentReviews.id, r.id));
+        .where(inArray(contentReviews.platformVersionId, resetVids));
     }
 
     const [content] = await tx
       .update(contents)
-      .set({ status: "in_progress", updatedAt: new Date() })
+      .set({ status: "in_progress", updatedAt: now })
       .where(eq(contents.id, contentId))
-      .returning();
+      .returning({ id: contents.id, status: contents.status });
 
-    return { content };
+    const workflow: WorkflowSnapshot = {
+      content,
+      brief: agg.brief,
+      hasMaster: agg.hasMaster,
+      versions: mergeVersions(agg.versions, updatedVersions),
+      reviews: agg.reviews.map((r) => resetReviewState(r.platformVersionId)),
+    };
+    return { workflow };
   });
 }
 
@@ -232,33 +392,50 @@ export async function saveChecklist(
 ) {
   const brand = await requireSingleBrand();
   return db.transaction(async (tx) => {
-    const ctx = await loadContext(tx, contentId, brand.id);
-    const version = ctx.versions.find((v) => v.platform === platform);
-    if (!version) {
+    // ONE round trip: content scope + version + existing review id.
+    const result = await tx.execute(sql`
+      select
+        (select json_build_object('id', id) from contents
+          where id = ${contentId}::uuid and brand_id = ${brand.id}::uuid
+            and deleted_at is null) as content,
+        (select json_build_object('id', id, 'status', status) from platform_versions
+          where content_id = ${contentId}::uuid and platform = ${platform}) as version,
+        (select json_build_object('id', r.id) from content_reviews r
+          join platform_versions v on v.id = r.platform_version_id
+          where v.content_id = ${contentId}::uuid and v.platform = ${platform}) as review
+    `);
+    const rows = result as unknown as {
+      content: { id: string } | null;
+      version: { id: string; status: string } | null;
+      review: { id: string } | null;
+    }[];
+    const row = rows[0];
+
+    if (!row?.content) throw new ReviewError("Content not found", 404);
+    if (!row.version) {
       throw new ReviewError("No version exists for this platform.", 404);
     }
-    if (version.status !== "review") {
+    if (row.version.status !== "review") {
       throw new ReviewError(
-        `Checklist can only be edited while the version is in review (current: ${version.status}).`,
+        `Checklist can only be edited while the version is in review (current: ${row.version.status}).`,
         409
       );
     }
 
-    const existing = ctx.reviews.find((r) => r.platformVersionId === version.id);
-    let row;
-    if (existing) {
-      [row] = await tx
+    let saved;
+    if (row.review) {
+      [saved] = await tx
         .update(contentReviews)
         .set({ ...checklist, updatedAt: new Date() })
-        .where(eq(contentReviews.id, existing.id))
+        .where(eq(contentReviews.id, row.review.id))
         .returning();
     } else {
-      [row] = await tx
+      [saved] = await tx
         .insert(contentReviews)
-        .values({ platformVersionId: version.id, ...checklist })
+        .values({ platformVersionId: row.version.id, ...checklist })
         .returning();
     }
-    return { review: row };
+    return { review: saved };
   });
 }
 
@@ -274,34 +451,25 @@ export async function saveChecklist(
 export async function approveForPublishing(contentId: string) {
   const brand = await requireSingleBrand();
   return db.transaction(async (tx) => {
-    const ctx = await loadContext(tx, contentId, brand.id);
+    const agg = await loadAggregate(tx, contentId, brand.id);
 
-    if (ctx.content.status !== "review") {
+    if (agg.content.status !== "review") {
       throw new ReviewError(
-        `Only content in review can be approved for publishing (current: ${ctx.content.status}).`,
+        `Only content in review can be approved for publishing (current: ${agg.content.status}).`,
         409
       );
     }
-    if (ctx.versions.length === 0) {
+    if (agg.versions.length === 0) {
       throw new ReviewError("No platform versions to approve.", 409);
     }
 
     const toApprove: string[] = [];
     const blockers: string[] = [];
-    for (const v of ctx.versions) {
+    for (const v of agg.versions) {
       if (v.status === "approved") continue;
       if (v.status === "review") {
-        const review = ctx.reviews.find((r) => r.platformVersionId === v.id);
-        if (
-          review &&
-          isChecklistComplete({
-            factsConfirmed: review.factsConfirmed,
-            titleCoverMatch: review.titleCoverMatch,
-            platformFitConfirmed: review.platformFitConfirmed,
-            riskChecked: review.riskChecked,
-            humanReviewed: review.humanReviewed,
-          })
-        ) {
+        const review = agg.reviews.find((r) => r.platformVersionId === v.id);
+        if (review && isChecklistComplete(review)) {
           toApprove.push(v.id);
           continue;
         }
@@ -317,18 +485,20 @@ export async function approveForPublishing(contentId: string) {
       );
     }
 
-    const [reviewer] = ctx.content.reviewerId
-      ? await tx
-          .select({ id: teamMembers.id, isActive: teamMembers.isActive })
-          .from(teamMembers)
-          .where(eq(teamMembers.id, ctx.content.reviewerId))
-      : [null];
-    const [owner] = ctx.content.ownerId
-      ? await tx
-          .select({ id: teamMembers.id, isActive: teamMembers.isActive })
-          .from(teamMembers)
-          .where(eq(teamMembers.id, ctx.content.ownerId))
-      : [null];
+    let reviewer: { id: string; isActive: boolean } | null = null;
+    if (agg.content.reviewerId) {
+      [reviewer] = await tx
+        .select({ id: teamMembers.id, isActive: teamMembers.isActive })
+        .from(teamMembers)
+        .where(eq(teamMembers.id, agg.content.reviewerId));
+    }
+    let owner: { id: string; isActive: boolean } | null = null;
+    if (agg.content.ownerId) {
+      [owner] = await tx
+        .select({ id: teamMembers.id, isActive: teamMembers.isActive })
+        .from(teamMembers)
+        .where(eq(teamMembers.id, agg.content.ownerId));
+    }
     const approver = resolveApprover(reviewer ?? null, owner ?? null);
     if (!approver) {
       throw new ReviewError(
@@ -338,24 +508,48 @@ export async function approveForPublishing(contentId: string) {
     }
 
     const now = new Date();
-    for (const versionId of toApprove) {
-      await tx
+    let updatedVersions: WorkflowVersionState[] = [];
+    let updatedReviews: ReviewRowDb[] = [];
+    if (toApprove.length > 0) {
+      updatedVersions = await tx
         .update(platformVersions)
         .set({ status: "approved", updatedAt: now })
-        .where(eq(platformVersions.id, versionId));
-      await tx
+        .where(inArray(platformVersions.id, toApprove))
+        .returning({
+          id: platformVersions.id,
+          platform: platformVersions.platform,
+          status: platformVersions.status,
+        });
+      updatedReviews = await tx
         .update(contentReviews)
         .set({ reviewerId: approver.id, approvedAt: now, updatedAt: now })
-        .where(eq(contentReviews.platformVersionId, versionId));
+        .where(inArray(contentReviews.platformVersionId, toApprove))
+        .returning({
+          platformVersionId: contentReviews.platformVersionId,
+          factsConfirmed: contentReviews.factsConfirmed,
+          titleCoverMatch: contentReviews.titleCoverMatch,
+          platformFitConfirmed: contentReviews.platformFitConfirmed,
+          riskChecked: contentReviews.riskChecked,
+          humanReviewed: contentReviews.humanReviewed,
+          reviewerId: contentReviews.reviewerId,
+          approvedAt: contentReviews.approvedAt,
+        });
     }
 
     const [content] = await tx
       .update(contents)
       .set({ status: "scheduled", updatedAt: now })
       .where(eq(contents.id, contentId))
-      .returning();
+      .returning({ id: contents.id, status: contents.status });
 
-    return { content, approvedVersionIds: toApprove, reviewerId: approver.id };
+    const workflow: WorkflowSnapshot = {
+      content,
+      brief: agg.brief,
+      hasMaster: agg.hasMaster,
+      versions: mergeVersions(agg.versions, updatedVersions),
+      reviews: mergeReviews(agg.reviews, updatedReviews.map(toReviewState)),
+    };
+    return { workflow };
   });
 }
 
@@ -370,15 +564,15 @@ export async function approveForPublishing(contentId: string) {
 export async function returnVersionToDraft(contentId: string, platform: string) {
   const brand = await requireSingleBrand();
   return db.transaction(async (tx) => {
-    const ctx = await loadContext(tx, contentId, brand.id);
+    const agg = await loadAggregate(tx, contentId, brand.id);
 
-    if (ctx.content.status !== "review" && ctx.content.status !== "scheduled") {
+    if (agg.content.status !== "review" && agg.content.status !== "scheduled") {
       throw new ReviewError(
         "Platform versions can only be returned to draft while the content is in review or scheduled.",
         409
       );
     }
-    const version = ctx.versions.find((v) => v.platform === platform);
+    const version = agg.versions.find((v) => v.platform === platform);
     if (!version) {
       throw new ReviewError("No version exists for this platform.", 404);
     }
@@ -389,28 +583,38 @@ export async function returnVersionToDraft(contentId: string, platform: string) 
       );
     }
 
-    await tx
+    const now = new Date();
+    const [updatedVersion] = await tx
       .update(platformVersions)
-      .set({ status: "draft", updatedAt: new Date() })
-      .where(eq(platformVersions.id, version.id));
-    const existing = ctx.reviews.find((r) => r.platformVersionId === version.id);
-    if (existing) {
-      await tx
-        .update(contentReviews)
-        .set(REVIEW_RESET)
-        .where(eq(contentReviews.id, existing.id));
-    }
+      .set({ status: "draft", updatedAt: now })
+      .where(eq(platformVersions.id, version.id))
+      .returning({
+        id: platformVersions.id,
+        platform: platformVersions.platform,
+        status: platformVersions.status,
+      });
+    await tx
+      .update(contentReviews)
+      .set(REVIEW_RESET)
+      .where(eq(contentReviews.platformVersionId, version.id));
 
-    let content = ctx.content;
-    if (ctx.content.status === "scheduled") {
+    let content = { id: agg.content.id, status: agg.content.status };
+    if (agg.content.status === "scheduled") {
       [content] = await tx
         .update(contents)
-        .set({ status: "review", updatedAt: new Date() })
+        .set({ status: "review", updatedAt: now })
         .where(eq(contents.id, contentId))
-        .returning();
+        .returning({ id: contents.id, status: contents.status });
     }
 
-    return { content };
+    const workflow: WorkflowSnapshot = {
+      content,
+      brief: agg.brief,
+      hasMaster: agg.hasMaster,
+      versions: mergeVersions(agg.versions, [updatedVersion]),
+      reviews: mergeReviews(agg.reviews, [resetReviewState(version.id)]),
+    };
+    return { workflow };
   });
 }
 
@@ -421,15 +625,15 @@ export async function returnVersionToDraft(contentId: string, platform: string) 
 export async function submitVersionToReview(contentId: string, platform: string) {
   const brand = await requireSingleBrand();
   return db.transaction(async (tx) => {
-    const ctx = await loadContext(tx, contentId, brand.id);
+    const agg = await loadAggregate(tx, contentId, brand.id);
 
-    if (ctx.content.status !== "review" && ctx.content.status !== "scheduled") {
+    if (agg.content.status !== "review" && agg.content.status !== "scheduled") {
       throw new ReviewError(
         "A version can only be submitted to review while the content is in review or scheduled.",
         409
       );
     }
-    const version = ctx.versions.find((v) => v.platform === platform);
+    const version = agg.versions.find((v) => v.platform === platform);
     if (!version) {
       throw new ReviewError("No version exists for this platform.", 404);
     }
@@ -440,17 +644,50 @@ export async function submitVersionToReview(contentId: string, platform: string)
       );
     }
 
-    await tx
+    const now = new Date();
+    const [updatedVersion] = await tx
       .update(platformVersions)
-      .set({ status: "review", updatedAt: new Date() })
-      .where(eq(platformVersions.id, version.id));
-    await upsertEmptyReview(
-      tx,
-      version.id,
-      ctx.reviews.find((r) => r.platformVersionId === version.id)
-    );
+      .set({ status: "review", updatedAt: now })
+      .where(eq(platformVersions.id, version.id))
+      .returning({
+        id: platformVersions.id,
+        platform: platformVersions.platform,
+        status: platformVersions.status,
+      });
 
-    return { ok: true };
+    const existing = agg.reviews.find((r) => r.platformVersionId === version.id);
+    let reviewRow: WorkflowReviewState;
+    if (existing) {
+      await tx
+        .update(contentReviews)
+        .set(REVIEW_RESET)
+        .where(eq(contentReviews.platformVersionId, version.id));
+      reviewRow = resetReviewState(version.id);
+    } else {
+      const [inserted] = await tx
+        .insert(contentReviews)
+        .values({ platformVersionId: version.id })
+        .returning({
+          platformVersionId: contentReviews.platformVersionId,
+          factsConfirmed: contentReviews.factsConfirmed,
+          titleCoverMatch: contentReviews.titleCoverMatch,
+          platformFitConfirmed: contentReviews.platformFitConfirmed,
+          riskChecked: contentReviews.riskChecked,
+          humanReviewed: contentReviews.humanReviewed,
+          reviewerId: contentReviews.reviewerId,
+          approvedAt: contentReviews.approvedAt,
+        });
+      reviewRow = toReviewState(inserted);
+    }
+
+    const workflow: WorkflowSnapshot = {
+      content: { id: agg.content.id, status: agg.content.status },
+      brief: agg.brief,
+      hasMaster: agg.hasMaster,
+      versions: mergeVersions(agg.versions, [updatedVersion]),
+      reviews: mergeReviews(agg.reviews, [reviewRow]),
+    };
+    return { workflow };
   });
 }
 
@@ -474,34 +711,29 @@ export async function globalUpstreamInvalidation(
     return false;
   }
 
-  const versions = await tx
-    .select()
-    .from(platformVersions)
-    .where(eq(platformVersions.contentId, content.id));
-
-  for (const v of versions) {
-    if (v.status === "review" || v.status === "approved") {
-      await tx
-        .update(platformVersions)
-        .set({ status: "draft", updatedAt: new Date() })
-        .where(eq(platformVersions.id, v.id));
-    }
-  }
-  if (versions.length > 0) {
-    await tx
-      .update(contentReviews)
-      .set(REVIEW_RESET)
-      .where(
-        inArray(
-          contentReviews.platformVersionId,
-          versions.map((v) => v.id)
-        )
-      );
-  }
-
+  const now = new Date();
+  await tx
+    .update(platformVersions)
+    .set({ status: "draft", updatedAt: now })
+    .where(
+      and(
+        eq(platformVersions.contentId, content.id),
+        inArray(platformVersions.status, ["review", "approved"])
+      )
+    );
+  await tx
+    .update(contentReviews)
+    .set(REVIEW_RESET)
+    .where(
+      inArray(
+        contentReviews.platformVersionId,
+        // sub-select keeps this set-based (no extra round trip)
+        sql`(select id from platform_versions where content_id = ${content.id}::uuid)`
+      )
+    );
   await tx
     .update(contents)
-    .set({ status: "in_progress", updatedAt: new Date() })
+    .set({ status: "in_progress", updatedAt: now })
     .where(eq(contents.id, content.id));
 
   return true;
@@ -554,10 +786,12 @@ export async function transitionViaDrag(contentId: string, to: string) {
       409
     );
   }
-  const [updated] = await db
-    .update(contents)
-    .set({ status: "in_progress", updatedAt: new Date() })
-    .where(eq(contents.id, contentId))
-    .returning();
-  return { content: updated };
+  return db.transaction(async (tx) => {
+    await tx
+      .update(contents)
+      .set({ status: "in_progress", updatedAt: new Date() })
+      .where(eq(contents.id, contentId));
+    const agg = await loadAggregate(tx, contentId, brand.id);
+    return { workflow: toSnapshot(agg) };
+  });
 }

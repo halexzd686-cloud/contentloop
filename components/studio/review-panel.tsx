@@ -11,6 +11,7 @@ import {
 } from "@/lib/validation/review";
 import { ChecklistEditor } from "@/lib/checklist-editor";
 import type { SaveQueueState } from "@/lib/save-queue";
+import type { WorkflowSnapshot } from "@/lib/workflow-snapshot";
 
 /**
  * Studio Review tab — M1.6.
@@ -34,16 +35,7 @@ export interface ReviewVersion {
   status: string;
 }
 
-export interface ReviewRow {
-  platformVersionId: string;
-  factsConfirmed: boolean;
-  titleCoverMatch: boolean;
-  platformFitConfirmed: boolean;
-  riskChecked: boolean;
-  humanReviewed: boolean;
-  reviewerId: string | null;
-  approvedAt: string | null;
-}
+export type ReviewRow = WorkflowSnapshot["reviews"][number];
 
 const PLATFORM_LABEL: Record<string, string> = {
   xiaohongshu: "Xiaohongshu",
@@ -83,7 +75,10 @@ interface ReviewPanelProps {
   versions: ReviewVersion[];
   reviews: ReviewRow[];
   approverName: string | null;
-  onChanged: () => void;
+  /** Start a workflow action — returns its revision for stale-guard. */
+  beginAction: () => number;
+  /** Apply the authoritative snapshot returned by a mutation. */
+  onWorkflow: (snap: WorkflowSnapshot, rev: number) => void;
 }
 
 export function ReviewPanel({
@@ -94,7 +89,8 @@ export function ReviewPanel({
   versions,
   reviews,
   approverName,
-  onChanged,
+  beginAction,
+  onWorkflow,
 }: ReviewPanelProps) {
   // busy = explicit structural actions only (send/withdraw/approve/
   // return/submit). Checklist saves NEVER set busy and never block.
@@ -163,11 +159,12 @@ export function ReviewPanel({
   async function run(action: string, fn: () => Promise<Response>) {
     setBusy(action);
     setError(null);
+    const rev = beginAction();
     try {
       const res = await fn();
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Action failed");
-      onChanged();
+      if (data.workflow) onWorkflow(data.workflow, rev);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Action failed");
     } finally {
@@ -188,12 +185,13 @@ export function ReviewPanel({
           "A checklist save failed. Retry the save before approving."
         );
       }
+      const rev = beginAction();
       const res = await fetch(`/api/contents/${contentId}/review/approve`, {
         method: "POST",
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Approve failed");
-      onChanged();
+      if (data.workflow) onWorkflow(data.workflow, rev);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Approve failed");
     } finally {

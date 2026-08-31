@@ -4,7 +4,7 @@ import { eq, and, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { contents, contentBriefs } from "@/lib/db/schema";
 import { requireSingleBrand } from "@/lib/brand";
-import { globalUpstreamInvalidation } from "@/lib/review";
+import { globalUpstreamInvalidation, loadAggregate, toSnapshot } from "@/lib/review";
 
 /**
  * POST /api/contents/[id]/brief/edit
@@ -74,12 +74,10 @@ export async function POST(
       // M1.6: upstream change invalidates any downstream review authority.
       const invalidated = await globalUpstreamInvalidation(tx, content);
 
-      const [freshContent] = await tx
-        .select()
-        .from(contents)
-        .where(eq(contents.id, id));
+      // One aggregate read → authoritative workflow snapshot (no client refetch).
+      const agg = await loadAggregate(tx, id, brand.id);
 
-      return { brief: updated, content: freshContent, invalidated };
+      return { brief: updated, workflow: toSnapshot(agg), invalidated };
     });
 
     if ("error" in result) {

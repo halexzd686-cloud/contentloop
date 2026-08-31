@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -22,6 +22,11 @@ import {
   ReviewPanel,
   type ReviewRow,
 } from "@/components/studio/review-panel";
+import {
+  applyVersionsSnapshot,
+  isLatestWorkflowRevision,
+  type WorkflowSnapshot,
+} from "@/lib/workflow-snapshot";
 import {
   BriefFields,
   type BriefFieldValues,
@@ -156,6 +161,40 @@ export default function StudioContentPage({
   // ─── Review state (M1.6) ──────────────────────────────
   const [contentReviews, setContentReviews] = useState<ReviewRow[]>([]);
 
+  // ─── Workflow snapshot (M1.6 state-sync architecture) ──
+  const workflowRevRef = useRef(0);
+  const beginWorkflowAction = useCallback(() => ++workflowRevRef.current, []);
+  const applyWorkflowSnapshot = useCallback((snap: WorkflowSnapshot, rev: number) => {
+    if (!isLatestWorkflowRevision(rev, workflowRevRef.current)) return;
+    workflowRevRef.current = rev;
+    setContent((prev) => (prev ? { ...prev, status: snap.content.status } : prev));
+    if (snap.brief) {
+      const b = snap.brief;
+      setBrief((prev) =>
+        prev
+          ? {
+              ...prev,
+              status: b.status as BriefData["status"],
+              approvedAt: b.approvedAt,
+              approvedBy: b.approvedBy,
+            }
+          : prev
+      );
+    }
+    setPlatformVersions((prev) => applyVersionsSnapshot(prev, snap.versions));
+    setContentReviews(snap.reviews.map((r) => ({ ...r })));
+  }, []);
+
+  const handleVersionChange = useCallback((v: VersionRow) => {
+    setPlatformVersions((prev) => {
+      const i = prev.findIndex((p) => p.id === v.id);
+      if (i === -1) return [...prev, v];
+      const next = [...prev];
+      next[i] = v;
+      return next;
+    });
+  }, []);
+
   useEffect(() => {
     modulesRef.current = modules;
   }, [modules]);
@@ -216,6 +255,17 @@ export default function StudioContentPage({
   const approved = brief?.status === "approved";
   const proposalPending = proposal !== null;
   const readOnly = approved || proposalPending;
+
+  // Memoized so unrelated page renders never reset ReviewPanel editors.
+  const reviewVersions = useMemo(
+    () =>
+      platformVersions.map((v) => ({
+        id: v.id,
+        platform: v.platform,
+        status: v.status,
+      })),
+    [platformVersions]
+  );
 
   // ─── Auto Save (1.5s debounce) ────────────────────────
   const persistBrief = useCallback(
@@ -307,7 +357,7 @@ export default function StudioContentPage({
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Approve failed");
       setBrief(data.brief);
-      setContent(data.content ? { ...content!, ...data.content } : content);
+      applyWorkflowSnapshot(data.workflow, beginWorkflowAction());
       dirtyRef.current = false;
       setSaveState("idle");
     } catch (err) {
@@ -326,8 +376,8 @@ export default function StudioContentPage({
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to reopen brief");
       setBrief(data.brief);
-      if (data.content) {
-        setContent((prev) => (prev ? { ...prev, status: data.content.status } : prev));
+      if (data.workflow) {
+        applyWorkflowSnapshot(data.workflow, beginWorkflowAction());
       }
       setEditConfirmOpen(false);
     } catch (err) {
@@ -405,10 +455,16 @@ export default function StudioContentPage({
     approved,
     hasMaster: master !== null,
     primaryPlatform: signal?.primaryPlatform ?? null,
-    initialVersions: platformVersions,
+    versions: platformVersions,
+    onVersionChange: handleVersionChange,
     enabledPlatforms,
     playbookPlatforms,
   });
+
+  // ─── Workflow snapshot application (M1.6) ────────────
+  // Single authoritative path: every workflow mutation returns a
+  // WorkflowSnapshot; only the latest action's response is applied.
+  // No second full-detail GET after a mutation.
 
   if (loading) {
     return (
@@ -614,6 +670,7 @@ export default function StudioContentPage({
               onRetrySave={() => getMasterQueue()?.retry()}
               onReturnToEditing={async () => {
                 if (!contentId) return;
+                const rev = beginWorkflowAction();
                 const res = await fetch(`/api/contents/${contentId}/return-to-editing`, {
                   method: "POST",
                 });
@@ -622,7 +679,7 @@ export default function StudioContentPage({
                   setMasterError(data.error || "Failed to return to editing");
                   return;
                 }
-                await load(contentId);
+                applyWorkflowSnapshot(data.workflow, rev);
               }}
             />
           ) : activeTab === "Platforms" ? (
@@ -633,14 +690,11 @@ export default function StudioContentPage({
               contentStatus={content.status}
               briefApproved={approved}
               hasMaster={master !== null}
-              versions={platformVersions.map((v) => ({
-                id: v.id,
-                platform: v.platform,
-                status: v.status,
-              }))}
+              versions={reviewVersions}
               reviews={contentReviews}
               approverName={approverName}
-              onChanged={() => contentId && load(contentId)}
+              beginAction={beginWorkflowAction}
+              onWorkflow={applyWorkflowSnapshot}
             />
           )}
         </div>
@@ -657,6 +711,12 @@ export default function StudioContentPage({
               <p className="text-xs text-ink-faint">
                 Review is human-only in V1. AI never checks items or approves
                 content.
+              </p>
+            </div>
+          ) : activeTab === "Master" ? (
+            <div className="mt-3">
+              <p className="text-xs text-ink-faint">
+                Master AI actions are planned for Studio Advanced.
               </p>
             </div>
           ) : (

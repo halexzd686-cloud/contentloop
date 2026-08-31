@@ -4,7 +4,7 @@ import { eq, and, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { contents } from "@/lib/db/schema";
 import { requireSingleBrand } from "@/lib/brand";
-import { globalUpstreamInvalidation, ReviewError } from "@/lib/review";
+import { globalUpstreamInvalidation, loadAggregate, toSnapshot, ReviewError } from "@/lib/review";
 
 /**
  * POST /api/contents/[id]/return-to-editing — M1.6
@@ -41,11 +41,8 @@ export async function POST(
         );
       }
       await globalUpstreamInvalidation(tx, content);
-      const [updated] = await tx
-        .select()
-        .from(contents)
-        .where(eq(contents.id, id));
-      return { content: updated };
+      const agg = await loadAggregate(tx, id, brand.id);
+      return { workflow: toSnapshot(agg) };
     });
 
     return NextResponse.json(result);

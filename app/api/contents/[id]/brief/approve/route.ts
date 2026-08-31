@@ -6,6 +6,7 @@ import { contents, contentBriefs, teamMembers } from "@/lib/db/schema";
 import { requireSingleBrand } from "@/lib/brand";
 import { briefApproveSchema } from "@/lib/validation/brief";
 import { resolveApprover } from "@/lib/brief";
+import { loadAggregate, toSnapshot } from "@/lib/review";
 
 /**
  * POST /api/contents/[id]/brief/approve
@@ -125,16 +126,17 @@ export async function POST(
         .returning();
 
       // Brief approved → production starts (never regress a later status)
-      let updatedContent = content;
       if (content.status === "planning") {
-        [updatedContent] = await tx
+        await tx
           .update(contents)
           .set({ status: "in_progress", updatedAt: new Date() })
-          .where(eq(contents.id, id))
-          .returning();
+          .where(eq(contents.id, id));
       }
 
-      return { brief: approvedBrief, content: updatedContent };
+      // One aggregate read → authoritative workflow snapshot (no client refetch).
+      const agg = await loadAggregate(tx, id, brand.id);
+
+      return { brief: approvedBrief, workflow: toSnapshot(agg) };
     });
 
     return NextResponse.json(result);
