@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Lock, RefreshCw, Undo2, Check, Send } from "lucide-react";
@@ -9,19 +9,23 @@ import {
   isChecklistComplete,
   type ReviewChecklist,
 } from "@/lib/validation/review";
+import { ChecklistEditor } from "@/lib/checklist-editor";
+import type { SaveQueueState } from "@/lib/save-queue";
 
 /**
  * Studio Review tab — M1.6.
  *
- * Human-only review: five checklist items per ACTIVE PlatformVersion
- * (versions that actually exist). AI has no write path here.
+ * Human-only review: five checklist items per ACTIVE PlatformVersion.
+ * AI has no write path here.
  *
- * Actions by state:
- * - in_progress: Send to Review (gate: approved Brief + Master + ≥1 version)
- * - review: per-version checklist / Withdraw / Approve for Publishing /
- *   per-version Return to draft
- * - scheduled: approved summary; per-version Return to draft reopens
- *   only that platform (Content drops back to review)
+ * Interaction model (fixed after browser-acceptance blocker):
+ * - Checkbox clicks update local state immediately; persistence is
+ *   debounced (~300ms) and serialized per platform (ChecklistEditor +
+ *   SaveQueue). Saving NEVER blocks further clicks.
+ * - Checklist saves do NOT refetch the content; local state is
+ *   authoritative for the editing session. Stale acks can't roll back.
+ * - Approve for Publishing flushes every pending save first; a failed
+ *   flush blocks approve (the server re-verifies regardless).
  */
 
 export interface ReviewVersion {
@@ -55,6 +59,22 @@ const CHECKLIST_ITEMS: { key: keyof ReviewChecklist; label: string }[] = [
   { key: "humanReviewed", label: "Final version human-reviewed" },
 ];
 
+const EMPTY: ReviewChecklist = {
+  factsConfirmed: false,
+  titleCoverMatch: false,
+  platformFitConfirmed: false,
+  riskChecked: false,
+  humanReviewed: false,
+};
+
+const SAVE_LABEL: Record<SaveQueueState, string> = {
+  idle: "",
+  pending: "",
+  saving: "Saving…",
+  saved: "Saved",
+  failed: "Save failed",
+};
+
 interface ReviewPanelProps {
   contentId: string;
   contentStatus: string;
@@ -76,14 +96,69 @@ export function ReviewPanel({
   approverName,
   onChanged,
 }: ReviewPanelProps) {
+  // busy = explicit structural actions only (send/withdraw/approve/
+  // return/submit). Checklist saves NEVER set busy and never block.
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [localReviews, setLocalReviews] = useState<ReviewRow[]>(reviews);
+  const [checklists, setChecklists] = useState<Record<string, ReviewChecklist>>({});
+  const [saveStates, setSaveStates] = useState<Record<string, SaveQueueState>>({});
+  const editorsRef = useRef<Map<string, ChecklistEditor>>(new Map());
 
+  function checklistFromProps(versionId: string): ReviewChecklist {
+    const r = reviews.find((rv) => rv.platformVersionId === versionId);
+    return r
+      ? {
+          factsConfirmed: r.factsConfirmed,
+          titleCoverMatch: r.titleCoverMatch,
+          platformFitConfirmed: r.platformFitConfirmed,
+          riskChecked: r.riskChecked,
+          humanReviewed: r.humanReviewed,
+        }
+      : { ...EMPTY };
+  }
+
+  // Hydrate local editors from DB data. Checklist saves never trigger a
+  // reload, so this only runs after explicit actions / initial load —
+  // moments where busy blocked editing and no local edits are in flight.
   useEffect(() => {
-    const t = setTimeout(() => setLocalReviews(reviews), 0);
+    const t = setTimeout(() => {
+      editorsRef.current = new Map();
+      const next: Record<string, ReviewChecklist> = {};
+      for (const v of versions) {
+        next[v.id] = checklistFromProps(v.id);
+      }
+      setChecklists(next);
+      setSaveStates({});
+    }, 0);
     return () => clearTimeout(t);
-  }, [reviews]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reviews, versions]);
+
+  function getEditor(v: ReviewVersion): ChecklistEditor {
+    let editor = editorsRef.current.get(v.id);
+    if (!editor) {
+      editor = new ChecklistEditor(
+        checklists[v.id] ?? checklistFromProps(v.id),
+        async (snapshot) => {
+          const res = await fetch(
+            `/api/contents/${contentId}/versions/${v.platform}/review`,
+            {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ checklist: snapshot }),
+            }
+          );
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || "Save failed");
+          // Response is an acknowledgement only — never applied to local state.
+        },
+        (state) => setChecklists((prev) => ({ ...prev, [v.id]: state })),
+        (s) => setSaveStates((prev) => ({ ...prev, [v.id]: s }))
+      );
+      editorsRef.current.set(v.id, editor);
+    }
+    return editor;
+  }
 
   async function run(action: string, fn: () => Promise<Response>) {
     setBusy(action);
@@ -100,49 +175,30 @@ export function ReviewPanel({
     }
   }
 
-  function reviewFor(v: ReviewVersion) {
-    return localReviews.find((r) => r.platformVersionId === v.id);
-  }
-
-  function checklistOf(v: ReviewVersion): ReviewChecklist {
-    const r = reviewFor(v);
-    return {
-      factsConfirmed: r?.factsConfirmed ?? false,
-      titleCoverMatch: r?.titleCoverMatch ?? false,
-      platformFitConfirmed: r?.platformFitConfirmed ?? false,
-      riskChecked: r?.riskChecked ?? false,
-      humanReviewed: r?.humanReviewed ?? false,
-    };
-  }
-
-  function toggle(v: ReviewVersion, key: keyof ReviewChecklist) {
-    const current = checklistOf(v);
-    const next = { ...current, [key]: !current[key] };
-    // optimistic update
-    setLocalReviews((prev) => {
-      const existing = prev.find((r) => r.platformVersionId === v.id);
-      if (existing) {
-        return prev.map((r) =>
-          r.platformVersionId === v.id ? { ...r, ...next } : r
+  async function handleApprove() {
+    setBusy("approve");
+    setError(null);
+    try {
+      // Flush every pending checklist save BEFORE approving.
+      const results = await Promise.all(
+        versions.map((v) => getEditor(v).flush())
+      );
+      if (results.some((ok) => !ok)) {
+        throw new Error(
+          "A checklist save failed. Retry the save before approving."
         );
       }
-      return [
-        ...prev,
-        {
-          platformVersionId: v.id,
-          ...next,
-          reviewerId: null,
-          approvedAt: null,
-        },
-      ];
-    });
-    run(`check-${v.platform}`, () =>
-      fetch(`/api/contents/${contentId}/versions/${v.platform}/review`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ checklist: next }),
-      })
-    );
+      const res = await fetch(`/api/contents/${contentId}/review/approve`, {
+        method: "POST",
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Approve failed");
+      onChanged();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Approve failed");
+    } finally {
+      setBusy(null);
+    }
   }
 
   const gateHints: string[] = [];
@@ -150,11 +206,14 @@ export function ReviewPanel({
   if (!hasMaster) gateHints.push("Content Master must exist");
   if (versions.length === 0) gateHints.push("Create at least one platform version");
 
+  const anySaveFailed = versions.some((v) => saveStates[v.id] === "failed");
   const aggregateReady =
     versions.length > 0 &&
     versions.every((v) => {
       if (v.status === "approved") return true;
-      if (v.status === "review") return isChecklistComplete(checklistOf(v));
+      if (v.status === "review") {
+        return isChecklistComplete(checklists[v.id] ?? EMPTY);
+      }
       return false;
     });
 
@@ -194,9 +253,10 @@ export function ReviewPanel({
       {versions.length > 0 && (
         <div className="space-y-4">
           {versions.map((v) => {
-            const checklist = checklistOf(v);
-            const review = reviewFor(v);
-            const editable = v.status === "review";
+            const checklist = checklists[v.id] ?? EMPTY;
+            const saveState = saveStates[v.id] ?? "idle";
+            const review = reviews.find((r) => r.platformVersionId === v.id);
+            const editable = v.status === "review" && busy === null;
             return (
               <div
                 key={v.platform}
@@ -210,6 +270,27 @@ export function ReviewPanel({
                     <Badge variant={v.status === "approved" ? "mint" : "default"}>
                       {v.status}
                     </Badge>
+                    {v.status === "review" && (
+                      <span
+                        className={`text-xs ${
+                          saveState === "failed"
+                            ? "text-danger"
+                            : saveState === "saved"
+                              ? "text-mint-600"
+                              : "text-ink-muted"
+                        }`}
+                      >
+                        {SAVE_LABEL[saveState]}
+                        {saveState === "failed" && (
+                          <button
+                            className="ml-1 underline"
+                            onClick={() => getEditor(v).retry()}
+                          >
+                            Retry
+                          </button>
+                        )}
+                      </span>
+                    )}
                   </div>
                   {(v.status === "review" || v.status === "approved") && (
                     <button
@@ -261,28 +342,48 @@ export function ReviewPanel({
                   </p>
                 )}
 
-                {(editable || v.status === "approved") && (
-                  <div className="mt-3 space-y-1.5">
-                    {CHECKLIST_ITEMS.map((item) => (
-                      <label
-                        key={item.key}
-                        className={`flex items-center gap-2 text-sm ${
-                          editable
-                            ? "cursor-pointer text-ink-primary"
-                            : "text-ink-muted"
-                        }`}
-                      >
-                        <input
-                          type="checkbox"
-                          className="h-3.5 w-3.5 accent-mint-600"
-                          checked={checklist[item.key]}
-                          disabled={!editable || busy !== null}
-                          onChange={() => toggle(v, item.key)}
-                        />
-                        {item.label}
-                      </label>
-                    ))}
-                  </div>
+                {(v.status === "review" || v.status === "approved") && (
+                  <>
+                    {v.status === "review" && (
+                      <div className="mt-2 flex gap-3">
+                        <button
+                          className="text-xs text-mint-600 hover:underline disabled:opacity-50"
+                          disabled={!editable}
+                          onClick={() => getEditor(v).setAll(true)}
+                        >
+                          Select All
+                        </button>
+                        <button
+                          className="text-xs text-ink-muted hover:underline disabled:opacity-50"
+                          disabled={!editable}
+                          onClick={() => getEditor(v).setAll(false)}
+                        >
+                          Clear All
+                        </button>
+                      </div>
+                    )}
+                    <div className="mt-2 space-y-1.5">
+                      {CHECKLIST_ITEMS.map((item) => (
+                        <label
+                          key={item.key}
+                          className={`flex items-center gap-2 text-sm ${
+                            v.status === "review"
+                              ? "cursor-pointer text-ink-primary"
+                              : "text-ink-muted"
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            className="h-3.5 w-3.5 accent-mint-600"
+                            checked={checklist[item.key]}
+                            disabled={!editable}
+                            onChange={() => getEditor(v).toggle(item.key)}
+                          />
+                          {item.label}
+                        </label>
+                      ))}
+                    </div>
+                  </>
                 )}
               </div>
             );
@@ -318,42 +419,43 @@ export function ReviewPanel({
         )}
 
         {contentStatus === "review" && (
-          <div className="flex gap-2">
-            <Button
-              variant="primary"
-              size="sm"
-              disabled={busy !== null || !aggregateReady}
-              title={
-                aggregateReady
-                  ? "Approve all reviewed platform versions"
-                  : "Complete every platform checklist first"
-              }
-              onClick={() =>
-                run("approve", () =>
-                  fetch(`/api/contents/${contentId}/review/approve`, {
-                    method: "POST",
-                  })
-                )
-              }
-            >
-              <Check className="mr-1 h-3 w-3" />
-              {busy === "approve" ? "Approving…" : "Approve for Publishing"}
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              disabled={busy !== null}
-              onClick={() =>
-                run("withdraw", () =>
-                  fetch(`/api/contents/${contentId}/review/withdraw`, {
-                    method: "POST",
-                  })
-                )
-              }
-            >
-              <RefreshCw className="mr-1 h-3 w-3" />
-              Withdraw
-            </Button>
+          <div>
+            {anySaveFailed && (
+              <p className="mb-2 text-xs text-danger">
+                A checklist save failed — retry it before approving.
+              </p>
+            )}
+            <div className="flex gap-2">
+              <Button
+                variant="primary"
+                size="sm"
+                disabled={busy !== null || !aggregateReady || anySaveFailed}
+                title={
+                  aggregateReady
+                    ? "Approve all reviewed platform versions"
+                    : "Complete every platform checklist first"
+                }
+                onClick={handleApprove}
+              >
+                <Check className="mr-1 h-3 w-3" />
+                {busy === "approve" ? "Saving & Approving…" : "Approve for Publishing"}
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                disabled={busy !== null}
+                onClick={() =>
+                  run("withdraw", () =>
+                    fetch(`/api/contents/${contentId}/review/withdraw`, {
+                      method: "POST",
+                    })
+                  )
+                }
+              >
+                <RefreshCw className="mr-1 h-3 w-3" />
+                Withdraw
+              </Button>
+            </div>
           </div>
         )}
 

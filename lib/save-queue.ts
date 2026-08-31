@@ -18,6 +18,12 @@ export interface SaveQueue<T> {
   retry(): void;
   /** Current monotonically increasing local revision. */
   revision(): number;
+  /**
+   * Wait until all queued work has been persisted.
+   * Resolves true when everything is saved; false if a save failed
+   * (the failed snapshot stays queued for retry).
+   */
+  flush(): Promise<boolean>;
 }
 
 export function createSaveQueue<T>(
@@ -28,6 +34,7 @@ export function createSaveQueue<T>(
   let rev = 0;
   let inFlight = false;
   let failed = false;
+  let active: Promise<void> | null = null;
 
   async function drain(): Promise<void> {
     if (inFlight || latest === null) return;
@@ -58,19 +65,31 @@ export function createSaveQueue<T>(
     inFlight = false;
   }
 
+  function kick() {
+    if (!active) {
+      active = drain().finally(() => {
+        active = null;
+      });
+    }
+  }
+
   return {
     enqueue(snapshot: T) {
       latest = snapshot;
       rev++;
       failed = false;
       onState?.("pending");
-      void drain();
+      kick();
     },
     retry() {
-      if (failed && latest !== null) void drain();
+      if (failed && latest !== null) kick();
     },
     revision() {
       return rev;
+    },
+    async flush() {
+      while (active) await active;
+      return !failed && latest === null;
     },
   };
 }
