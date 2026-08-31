@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq, and, isNull } from "drizzle-orm";
+import { eq, and, isNull, inArray } from "drizzle-orm";
 
 import { db } from "@/lib/db";
 import {
   contents,
   contentBriefs,
   contentMasters,
+  contentReviews,
   platformPlaybooks,
   platformVersions,
   signals,
@@ -94,6 +95,18 @@ export async function GET(
       .from(platformVersions)
       .where(eq(platformVersions.contentId, id));
 
+    const reviews = versions.length
+      ? await db
+          .select()
+          .from(contentReviews)
+          .where(
+            inArray(
+              contentReviews.platformVersionId,
+              versions.map((v) => v.id)
+            )
+          )
+      : [];
+
     const playbooks = await db
       .select({ platform: platformPlaybooks.platform })
       .from(platformPlaybooks)
@@ -105,6 +118,7 @@ export async function GET(
       brief: brief ?? null,
       master: master ?? null,
       platformVersions: versions,
+      contentReviews: reviews,
       enabledPlatforms: brand.enabledPlatforms,
       playbookPlatforms: playbooks.map((p) => p.platform),
     });

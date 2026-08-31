@@ -1,0 +1,1 @@
+ALTER TABLE "content_reviews" ADD CONSTRAINT "content_reviews_platform_version_id_unique" UNIQUE("platform_version_id");

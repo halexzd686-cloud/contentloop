@@ -4,13 +4,18 @@ import { eq, and, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { contents, contentBriefs } from "@/lib/db/schema";
 import { requireSingleBrand } from "@/lib/brand";
+import { globalUpstreamInvalidation } from "@/lib/review";
 
 /**
  * POST /api/contents/[id]/brief/edit
  *
  * Explicit "Edit Brief" action on an approved brief:
  * - Brief: approved → draft, approval metadata cleared
- * - Content: stays in_progress (no implicit status regression)
+ * - Content in_progress: stays in_progress (M1.3 behavior)
+ * - Content review/scheduled: Global Upstream Invalidation (M1.6) —
+ *   Content → in_progress, all active versions → draft, all
+ *   checklists reset. Review authority never survives an upstream
+ *   change. One transaction.
  *
  * This is the ONLY way an approved brief becomes editable;
  * ordinary auto-save cannot silently revert approval.
@@ -23,49 +28,64 @@ export async function POST(
     const { id } = await params;
     const brand = await requireSingleBrand();
 
-    const [content] = await db
-      .select({ id: contents.id })
-      .from(contents)
-      .where(
-        and(
-          eq(contents.id, id),
-          eq(contents.brandId, brand.id),
-          isNull(contents.deletedAt)
-        )
-      );
+    const result = await db.transaction(async (tx) => {
+      const [content] = await tx
+        .select()
+        .from(contents)
+        .where(
+          and(
+            eq(contents.id, id),
+            eq(contents.brandId, brand.id),
+            isNull(contents.deletedAt)
+          )
+        );
 
-    if (!content) {
-      return NextResponse.json({ error: "Content not found" }, { status: 404 });
+      if (!content) {
+        return { error: "Content not found", status: 404 as const };
+      }
+
+      const [brief] = await tx
+        .select()
+        .from(contentBriefs)
+        .where(eq(contentBriefs.contentId, id));
+
+      if (!brief) {
+        return { error: "No brief exists yet.", status: 400 as const };
+      }
+
+      if (brief.status !== "approved") {
+        return {
+          error: "Only an approved brief needs Edit Brief.",
+          status: 400 as const,
+        };
+      }
+
+      const [updated] = await tx
+        .update(contentBriefs)
+        .set({
+          status: "draft",
+          approvedAt: null,
+          approvedBy: null,
+          updatedAt: new Date(),
+        })
+        .where(eq(contentBriefs.id, brief.id))
+        .returning();
+
+      // M1.6: upstream change invalidates any downstream review authority.
+      const invalidated = await globalUpstreamInvalidation(tx, content);
+
+      const [freshContent] = await tx
+        .select()
+        .from(contents)
+        .where(eq(contents.id, id));
+
+      return { brief: updated, content: freshContent, invalidated };
+    });
+
+    if ("error" in result) {
+      return NextResponse.json({ error: result.error }, { status: result.status });
     }
-
-    const [brief] = await db
-      .select()
-      .from(contentBriefs)
-      .where(eq(contentBriefs.contentId, id));
-
-    if (!brief) {
-      return NextResponse.json({ error: "No brief exists yet." }, { status: 400 });
-    }
-
-    if (brief.status !== "approved") {
-      return NextResponse.json(
-        { error: "Only an approved brief needs Edit Brief." },
-        { status: 400 }
-      );
-    }
-
-    const [updated] = await db
-      .update(contentBriefs)
-      .set({
-        status: "draft",
-        approvedAt: null,
-        approvedBy: null,
-        updatedAt: new Date(),
-      })
-      .where(eq(contentBriefs.id, brief.id))
-      .returning();
-
-    return NextResponse.json({ brief: updated });
+    return NextResponse.json(result);
   } catch (error) {
     console.error("POST /api/contents/[id]/brief/edit error:", error);
     return NextResponse.json(
@@ -74,3 +94,4 @@ export async function POST(
     );
   }
 }
+

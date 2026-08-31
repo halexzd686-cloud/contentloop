@@ -476,7 +476,10 @@ export const contentReviews = pgTable("content_reviews", {
   updatedAt: timestamp("updated_at", { withTimezone: true })
     .defaultNow()
     .notNull(),
-});
+}, (table) => [
+  // PlatformVersion 1 → 0..1 current ContentReview (data-model §15; no review history in V1)
+  unique("content_reviews_platform_version_id_unique").on(table.platformVersionId),
+]);
 
 // ─── Publication & Metrics ──────────────────────────────────────────────────
 

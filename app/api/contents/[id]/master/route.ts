@@ -63,6 +63,15 @@ export async function POST(
     if (!content) {
       return NextResponse.json({ error: "Content not found" }, { status: 404 });
     }
+    if (content.status === "review" || content.status === "scheduled") {
+      return NextResponse.json(
+        {
+          error:
+            "Content is in review. Use Return to Editing to change the Content Master.",
+        },
+        { status: 409 }
+      );
+    }
     if (brief?.status !== "approved") {
       return NextResponse.json(
         { error: "Approve Brief before creating the Content Master." },
@@ -131,6 +140,15 @@ export async function PUT(
       return NextResponse.json(
         { error: "No Content Master exists. Create it first." },
         { status: 400 }
+      );
+    }
+    if (content.status === "review" || content.status === "scheduled") {
+      return NextResponse.json(
+        {
+          error:
+            "Content is in review. Use Return to Editing to change the Content Master.",
+        },
+        { status: 409 }
       );
     }
     if (brief?.status !== "approved") {

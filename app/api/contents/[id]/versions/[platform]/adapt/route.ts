@@ -52,6 +52,16 @@ export async function POST(
       return NextResponse.json({ error: "Content not found" }, { status: 404 });
     }
 
+    if (content.status !== "in_progress") {
+      return NextResponse.json(
+        {
+          error:
+            "AI adaptation is only available while the content is in production.",
+        },
+        { status: 409 }
+      );
+    }
+
     const [brief] = await db
       .select()
       .from(contentBriefs)

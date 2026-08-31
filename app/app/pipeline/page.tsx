@@ -1,10 +1,400 @@
-export default function PipelinePage() {
+"use client";
+
+import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
+import {
+  DndContext,
+  DragOverlay,
+  PointerSensor,
+  useDraggable,
+  useDroppable,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+  type DragStartEvent,
+} from "@dnd-kit/core";
+import { Button } from "@/components/ui/button";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerDescription,
+  DrawerHeader,
+  DrawerTitle,
+} from "@/components/ui/drawer";
+import { RefreshCw, ExternalLink } from "lucide-react";
+
+/**
+ * Pipeline — /app/pipeline (M1.6)
+ *
+ * Five fixed columns only (AGENTS §15). One Content = one card;
+ * platform states live inside the card. Drag is a thin trigger of the
+ * server-side transition table — protected transitions
+ * (review→scheduled, scheduled→*, any→published) are rejected by the
+ * server and reverted here. No UI path leads to published.
+ */
+
+interface PlatformState {
+  platform: string;
+  status: string;
+  checklistDone: number;
+  checklistTotal: number;
+}
+
+interface PipelineItem {
+  id: string;
+  title: string;
+  status: string;
+  ownerName: string | null;
+  reviewerName: string | null;
+  deadlineAt: string | null;
+  scheduledAt: string | null;
+  briefStatus: string | null;
+  hasMaster: boolean;
+  platforms: PlatformState[];
+}
+
+const COLUMNS = [
+  { key: "planning", label: "Planning" },
+  { key: "in_progress", label: "In Progress" },
+  { key: "review", label: "Review" },
+  { key: "scheduled", label: "Scheduled" },
+  { key: "published", label: "Published" },
+] as const;
+
+const STATUS_LABEL: Record<string, string> = {
+  planning: "Planning",
+  in_progress: "In Progress",
+  review: "Review",
+  scheduled: "Scheduled",
+  published: "Published",
+};
+
+const PLATFORM_SHORT: Record<string, string> = {
+  xiaohongshu: "XHS",
+  bilibili: "Bili",
+  douyin: "Douyin",
+};
+
+function PlatformChips({ platforms }: { platforms: PlatformState[] }) {
+  if (platforms.length === 0) {
+    return <span className="text-[11px] text-ink-faint">No versions</span>;
+  }
   return (
-    <div className="p-8">
-      <h1 className="text-2xl font-semibold text-ink-primary">Pipeline</h1>
-      <p className="mt-2 text-sm text-ink-muted">
-        Content kanban and calendar will appear here.
-      </p>
+    <div className="flex flex-wrap gap-1">
+      {platforms.map((p) => (
+        <span
+          key={p.platform}
+          className={`rounded px-1.5 py-0.5 text-[11px] ${
+            p.status === "approved"
+              ? "bg-mint-100 text-mint-600"
+              : p.status === "review"
+                ? "bg-warning/10 text-ink-secondary"
+                : "bg-surface-subtle text-ink-muted"
+          }`}
+        >
+          {PLATFORM_SHORT[p.platform] ?? p.platform} {p.status}
+          {p.status === "review" && ` ${p.checklistDone}/${p.checklistTotal}`}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+function CardContent({ item }: { item: PipelineItem }) {
+  return (
+    <>
+      <p className="text-sm font-medium text-ink-primary">{item.title}</p>
+      <div className="mt-1.5">
+        <PlatformChips platforms={item.platforms} />
+      </div>
+      <div className="mt-1.5 flex items-center justify-between text-[11px] text-ink-muted">
+        <span>{item.ownerName ?? "Unassigned"}</span>
+        {item.deadlineAt && (
+          <span>Due {new Date(item.deadlineAt).toLocaleDateString()}</span>
+        )}
+      </div>
+    </>
+  );
+}
+
+function DraggableCard({
+  item,
+  onOpen,
+}: {
+  item: PipelineItem;
+  onOpen: (item: PipelineItem) => void;
+}) {
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+    id: item.id,
+  });
+  return (
+    <div
+      ref={setNodeRef}
+      {...attributes}
+      {...listeners}
+      onClick={() => onOpen(item)}
+      className={`cursor-grab rounded-[8px] border border-border bg-workspace p-3 shadow-sm transition-colors hover:border-mint-600/50 ${
+        isDragging ? "opacity-40" : ""
+      }`}
+    >
+      <CardContent item={item} />
+    </div>
+  );
+}
+
+function Column({
+  colKey,
+  label,
+  items,
+  onOpen,
+}: {
+  colKey: string;
+  label: string;
+  items: PipelineItem[];
+  onOpen: (item: PipelineItem) => void;
+}) {
+  const { setNodeRef, isOver } = useDroppable({ id: colKey });
+  return (
+    <div
+      ref={setNodeRef}
+      className={`flex w-[220px] shrink-0 flex-col rounded-[8px] border p-2 ${
+        isOver ? "border-mint-600 bg-mint-100/40" : "border-border bg-canvas"
+      }`}
+    >
+      <div className="mb-2 flex items-center justify-between px-1">
+        <span className="text-xs font-semibold uppercase tracking-wide text-ink-muted">
+          {label}
+        </span>
+        <span className="text-xs text-ink-faint">{items.length}</span>
+      </div>
+      <div className="flex-1 space-y-2 overflow-y-auto">
+        {items.map((item) => (
+          <DraggableCard key={item.id} item={item} onOpen={onOpen} />
+        ))}
+        {items.length === 0 && (
+          <p className="px-1 py-4 text-center text-[11px] text-ink-faint">
+            {colKey === "published"
+              ? "Published content appears here after real Publications."
+              : "No content"}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export default function PipelinePage() {
+  const [items, setItems] = useState<PipelineItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [dragError, setDragError] = useState<string | null>(null);
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const [selected, setSelected] = useState<PipelineItem | null>(null);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 4 } })
+  );
+
+  const load = useCallback(async () => {
+    try {
+      const res = await fetch("/api/pipeline");
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to load pipeline");
+      setItems(data.items);
+      setLoadError(null);
+    } catch (err) {
+      setLoadError(err instanceof Error ? err.message : "Failed to load");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    const t = setTimeout(() => load(), 0);
+    return () => clearTimeout(t);
+  }, [load]);
+
+  function handleDragStart(event: DragStartEvent) {
+    setActiveId(String(event.active.id));
+    setDragError(null);
+  }
+
+  async function handleDragEnd(event: DragEndEvent) {
+    setActiveId(null);
+    const { active, over } = event;
+    if (!over) return;
+    const id = String(active.id);
+    const to = String(over.id);
+    const item = items.find((i) => i.id === id);
+    if (!item || item.status === to) return;
+
+    // Optimistic move; revert on server rejection.
+    const prev = items;
+    setItems(items.map((i) => (i.id === id ? { ...i, status: to } : i)));
+    try {
+      const res = await fetch(`/api/contents/${id}/status`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ to }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Transition rejected");
+      await load();
+    } catch (err) {
+      setItems(prev);
+      setDragError(err instanceof Error ? err.message : "Transition rejected");
+    }
+  }
+
+  const activeItem = activeId ? items.find((i) => i.id === activeId) : null;
+
+  if (loading) {
+    return (
+      <div className="flex h-full items-center justify-center">
+        <p className="text-sm text-ink-muted">Loading pipeline…</p>
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="flex h-full flex-col items-center justify-center gap-3">
+        <p className="text-sm text-danger">{loadError}</p>
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={() => {
+            setLoading(true);
+            load();
+          }}
+        >
+          <RefreshCw className="mr-1 h-3 w-3" />
+          Retry
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex h-full flex-col p-6">
+      <div className="mb-4 flex items-center gap-3">
+        <h1 className="text-lg font-semibold text-ink-primary">Pipeline</h1>
+        <div className="flex gap-1 rounded-[8px] border border-border p-0.5">
+          <span className="rounded-md bg-mint-100 px-3 py-1 text-xs font-medium text-ink-primary">
+            Pipeline
+          </span>
+          <span
+            className="cursor-not-allowed rounded-md px-3 py-1 text-xs text-ink-faint"
+            title="Coming later"
+          >
+            Calendar
+          </span>
+        </div>
+        {dragError && (
+          <div className="ml-auto flex items-center gap-2 rounded-[8px] border border-danger/20 bg-danger/5 px-3 py-1.5">
+            <p className="text-xs text-danger">{dragError}</p>
+            <button
+              className="text-xs text-ink-muted underline"
+              onClick={() => setDragError(null)}
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
+      </div>
+
+      <DndContext
+        sensors={sensors}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
+      >
+        <div className="flex flex-1 gap-3 overflow-x-auto">
+          {COLUMNS.map((col) => (
+            <Column
+              key={col.key}
+              colKey={col.key}
+              label={col.label}
+              items={items.filter((i) => i.status === col.key)}
+              onOpen={setSelected}
+            />
+          ))}
+        </div>
+        <DragOverlay>
+          {activeItem && (
+            <div className="w-[204px] rounded-[8px] border border-mint-600 bg-workspace p-3 shadow-lg">
+              <CardContent item={activeItem} />
+            </div>
+          )}
+        </DragOverlay>
+      </DndContext>
+
+      {/* Content Drawer */}
+      <Drawer open={selected !== null} onOpenChange={(o) => !o && setSelected(null)}>
+        <DrawerContent>
+          {selected && (
+            <>
+              <DrawerHeader>
+                <DrawerTitle>{selected.title}</DrawerTitle>
+                <DrawerDescription>
+                  {STATUS_LABEL[selected.status] ?? selected.status}
+                </DrawerDescription>
+              </DrawerHeader>
+
+              <div className="space-y-4 text-sm">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-ink-muted">
+                    People
+                  </p>
+                  <p className="mt-1 text-ink-secondary">
+                    Owner: {selected.ownerName ?? "Unassigned"}
+                  </p>
+                  <p className="text-ink-secondary">
+                    Reviewer: {selected.reviewerName ?? "None"}
+                  </p>
+                </div>
+
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-ink-muted">
+                    Production
+                  </p>
+                  <p className="mt-1 text-ink-secondary">
+                    Brief: {selected.briefStatus ?? "none"} · Master:{" "}
+                    {selected.hasMaster ? "created" : "none"}
+                  </p>
+                  <div className="mt-1.5">
+                    <PlatformChips platforms={selected.platforms} />
+                  </div>
+                </div>
+
+                {(selected.deadlineAt || selected.scheduledAt) && (
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-ink-muted">
+                      Dates
+                    </p>
+                    {selected.deadlineAt && (
+                      <p className="mt-1 text-ink-secondary">
+                        Deadline: {new Date(selected.deadlineAt).toLocaleString()}
+                      </p>
+                    )}
+                    {selected.scheduledAt && (
+                      <p className="text-ink-secondary">
+                        Scheduled: {new Date(selected.scheduledAt).toLocaleString()}
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                <Link href={`/app/studio/${selected.id}`}>
+                  <Button variant="primary" size="sm" className="w-full">
+                    <ExternalLink className="mr-1 h-3 w-3" />
+                    Open in Studio
+                  </Button>
+                </Link>
+              </div>
+            </>
+          )}
+        </DrawerContent>
+      </Drawer>
     </div>
   );
 }

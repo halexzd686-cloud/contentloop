@@ -19,6 +19,10 @@ import {
   type VersionRow,
 } from "@/components/studio/platforms-panel";
 import {
+  ReviewPanel,
+  type ReviewRow,
+} from "@/components/studio/review-panel";
+import {
   BriefFields,
   type BriefFieldValues,
 } from "@/components/studio/brief-fields";
@@ -134,7 +138,7 @@ export default function StudioContentPage({
   const [editConfirmOpen, setEditConfirmOpen] = useState(false);
 
   // ─── Master state (M1.4) ──────────────────────────────
-  const [activeTab, setActiveTab] = useState<"Brief" | "Master" | "Platforms">("Brief");
+  const [activeTab, setActiveTab] = useState<"Brief" | "Master" | "Platforms" | "Review">("Brief");
   const [master, setMaster] = useState<MasterData | null>(null);
   const [modules, setModules] = useState<MasterModule[]>([]);
   const [masterSaveState, setMasterSaveState] = useState<SaveQueueState>("idle");
@@ -148,6 +152,9 @@ export default function StudioContentPage({
   const [platformVersions, setPlatformVersions] = useState<VersionRow[]>([]);
   const [enabledPlatforms, setEnabledPlatforms] = useState<string[]>([]);
   const [playbookPlatforms, setPlaybookPlatforms] = useState<string[]>([]);
+
+  // ─── Review state (M1.6) ──────────────────────────────
+  const [contentReviews, setContentReviews] = useState<ReviewRow[]>([]);
 
   useEffect(() => {
     modulesRef.current = modules;
@@ -192,6 +199,7 @@ export default function StudioContentPage({
       setPlatformVersions(data.platformVersions ?? []);
       setEnabledPlatforms(data.enabledPlatforms ?? []);
       setPlaybookPlatforms(data.playbookPlatforms ?? []);
+      setContentReviews(data.contentReviews ?? []);
     } catch (err) {
       setLoadError(err instanceof Error ? err.message : "Failed to load");
     } finally {
@@ -318,6 +326,9 @@ export default function StudioContentPage({
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to reopen brief");
       setBrief(data.brief);
+      if (data.content) {
+        setContent((prev) => (prev ? { ...prev, status: data.content.status } : prev));
+      }
       setEditConfirmOpen(false);
     } catch (err) {
       setApproveError(
@@ -471,10 +482,10 @@ export default function StudioContentPage({
           </div>
         </div>
 
-        {/* Tabs — Brief / Master / Platforms active; Review disabled (M1.5) */}
+        {/* Tabs — all four active (M1.6) */}
         <div className="mt-3 flex gap-1">
           {TABS.map((tab) => {
-            const enabled = tab !== "Review";
+            const enabled = true;
             const active = activeTab === tab;
             return enabled ? (
               <button
@@ -591,6 +602,7 @@ export default function StudioContentPage({
           ) : activeTab === "Master" ? (
             <MasterWorkspace
               approved={approved}
+              contentStatus={content.status}
               master={master}
               modules={modules}
               saveState={masterSaveState}
@@ -600,9 +612,36 @@ export default function StudioContentPage({
               onTextChange={handleModuleTextChange}
               onStructuralChange={handleStructuralChange}
               onRetrySave={() => getMasterQueue()?.retry()}
+              onReturnToEditing={async () => {
+                if (!contentId) return;
+                const res = await fetch(`/api/contents/${contentId}/return-to-editing`, {
+                  method: "POST",
+                });
+                const data = await res.json();
+                if (!res.ok) {
+                  setMasterError(data.error || "Failed to return to editing");
+                  return;
+                }
+                await load(contentId);
+              }}
             />
-          ) : (
+          ) : activeTab === "Platforms" ? (
             platformsPanel.workspace
+          ) : (
+            <ReviewPanel
+              contentId={content.id}
+              contentStatus={content.status}
+              briefApproved={approved}
+              hasMaster={master !== null}
+              versions={platformVersions.map((v) => ({
+                id: v.id,
+                platform: v.platform,
+                status: v.status,
+              }))}
+              reviews={contentReviews}
+              approverName={approverName}
+              onChanged={() => contentId && load(contentId)}
+            />
           )}
         </div>
 
@@ -613,6 +652,13 @@ export default function StudioContentPage({
           </p>
           {activeTab === "Platforms" ? (
             <div className="mt-3">{platformsPanel.aiPanel}</div>
+          ) : activeTab === "Review" ? (
+            <div className="mt-3">
+              <p className="text-xs text-ink-faint">
+                Review is human-only in V1. AI never checks items or approves
+                content.
+              </p>
+            </div>
           ) : (
           <div className="mt-3 space-y-3">
             <Button
@@ -674,6 +720,7 @@ export default function StudioContentPage({
 
 interface MasterWorkspaceProps {
   approved: boolean;
+  contentStatus: string;
   master: MasterData | null;
   modules: MasterModule[];
   saveState: SaveQueueState;
@@ -683,10 +730,12 @@ interface MasterWorkspaceProps {
   onTextChange: (id: string, content: string) => void;
   onStructuralChange: (modules: MasterModule[]) => void;
   onRetrySave: () => void;
+  onReturnToEditing: () => void;
 }
 
 function MasterWorkspace({
   approved,
+  contentStatus,
   master,
   modules,
   saveState,
@@ -696,7 +745,10 @@ function MasterWorkspace({
   onTextChange,
   onStructuralChange,
   onRetrySave,
+  onReturnToEditing,
 }: MasterWorkspaceProps) {
+  const inReview = contentStatus === "review" || contentStatus === "scheduled";
+
   // Gate 1: no approved Brief and no Master yet → locked
   if (!approved && !master) {
     return (
@@ -705,6 +757,39 @@ function MasterWorkspace({
         <p className="mt-3 text-sm text-ink-secondary">
           Approve Brief before creating the Content Master.
         </p>
+      </div>
+    );
+  }
+
+  // Gate 2: Content in review / scheduled → Master read-only until the
+  // human explicitly Returns to Editing (Global Upstream Invalidation).
+  if (inReview && master) {
+    return (
+      <div>
+        <div className="mb-4 rounded-[8px] border border-warning/30 bg-warning/5 p-3">
+          <p className="text-xs text-ink-secondary">
+            Content is {contentStatus === "scheduled" ? "approved for publishing" : "in review"}.
+            The Master is read-only. Returning to editing will invalidate the
+            current review and move the content back to production.
+          </p>
+          <Button
+            variant="secondary"
+            size="sm"
+            className="mt-2"
+            onClick={onReturnToEditing}
+          >
+            Return to Editing
+          </Button>
+          {error && <p className="mt-2 text-xs text-danger">{error}</p>}
+        </div>
+        <MasterEditor
+          modules={modules}
+          readOnly
+          saveState="idle"
+          onTextChange={() => {}}
+          onStructuralChange={() => {}}
+          onRetrySave={() => {}}
+        />
       </div>
     );
   }

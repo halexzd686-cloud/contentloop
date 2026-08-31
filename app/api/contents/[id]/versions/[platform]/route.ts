@@ -104,6 +104,15 @@ export async function POST(
     if (!content) {
       return NextResponse.json({ error: "Content not found" }, { status: 404 });
     }
+    if (content.status !== "in_progress") {
+      return NextResponse.json(
+        {
+          error:
+            "Platform versions can only be created while the content is in production.",
+        },
+        { status: 409 }
+      );
+    }
     if (!master || brief?.status !== "approved") {
       return NextResponse.json(
         {
