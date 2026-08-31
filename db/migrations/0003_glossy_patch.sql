@@ -1,0 +1,1 @@
+ALTER TABLE "content_briefs" ADD CONSTRAINT "content_briefs_content_id_unique" UNIQUE("content_id");

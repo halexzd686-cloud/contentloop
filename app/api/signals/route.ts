@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { eq, and, isNull, or, ilike, desc } from "drizzle-orm";
 
 import { db } from "@/lib/db";
-import { signals } from "@/lib/db/schema";
+import { signals, contents } from "@/lib/db/schema";
 import { requireSingleBrand } from "@/lib/brand";
 import {
   createSignalSchema,
@@ -37,13 +37,26 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // contentId enables "Open Content" for selected signals (M1.3)
     const result = await db
-      .select()
+      .select({
+        signal: signals,
+        contentId: contents.id,
+      })
       .from(signals)
+      .leftJoin(
+        contents,
+        and(
+          eq(contents.sourceSignalId, signals.id),
+          isNull(contents.deletedAt)
+        )
+      )
       .where(and(...conditions))
       .orderBy(desc(signals.createdAt));
 
-    return NextResponse.json({ signals: result });
+    return NextResponse.json({
+      signals: result.map((r) => ({ ...r.signal, contentId: r.contentId })),
+    });
   } catch (error) {
     if (error instanceof Error && error.name === "ZodError") {
       return NextResponse.json(

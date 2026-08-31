@@ -41,6 +41,7 @@ interface Signal {
   selectedAngle: string | null;
   primaryPlatform: string | null;
   ownerId: string | null;
+  contentId: string | null;
   createdAt: string;
 }
 

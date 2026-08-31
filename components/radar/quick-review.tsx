@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { SkipDialog } from "@/components/radar/skip-dialog";
@@ -56,6 +57,7 @@ interface Signal {
   selectedAngle: string | null;
   primaryPlatform: string | null;
   ownerId: string | null;
+  contentId: string | null;
   createdAt: string;
 }
 
@@ -478,6 +480,15 @@ export function QuickReview({
               <p className="mt-2 text-sm font-medium text-mint-600">
                 Content created successfully.
               </p>
+            )}
+            {(signal.contentId || createdContentId) && (
+              <Link
+                href={`/app/studio/${signal.contentId || createdContentId}`}
+                className="mt-1 inline-flex items-center gap-1 text-sm font-medium text-mint-600 hover:underline"
+              >
+                Open Content
+                <ArrowRight className="h-3 w-3" />
+              </Link>
             )}
           </div>
         )}

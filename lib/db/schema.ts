@@ -362,29 +362,34 @@ export const sources = pgTable("sources", {
     .notNull(),
 });
 
-export const contentBriefs = pgTable("content_briefs", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  contentId: uuid("content_id")
-    .references(() => contents.id)
-    .notNull(),
-  targetAudience: text("target_audience").notNull(),
-  userProblem: text("user_problem").notNull(),
-  coreQuestion: text("core_question").notNull(),
-  mainAngle: text("main_angle").notNull(),
-  contentPromise: text("content_promise").notNull(),
-  keyEvidence: text("key_evidence").notNull(),
-  differentiation: text("differentiation").notNull(),
-  cta: text("cta").notNull(),
-  status: briefStatusEnum("status").default("draft").notNull(),
-  approvedAt: timestamp("approved_at", { withTimezone: true }),
-  approvedBy: uuid("approved_by").references(() => teamMembers.id),
-  createdAt: timestamp("created_at", { withTimezone: true })
-    .defaultNow()
-    .notNull(),
-  updatedAt: timestamp("updated_at", { withTimezone: true })
-    .defaultNow()
-    .notNull(),
-});
+export const contentBriefs = pgTable(
+  "content_briefs",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    contentId: uuid("content_id")
+      .references(() => contents.id)
+      .notNull(),
+    targetAudience: text("target_audience").notNull(),
+    userProblem: text("user_problem").notNull(),
+    coreQuestion: text("core_question").notNull(),
+    mainAngle: text("main_angle").notNull(),
+    contentPromise: text("content_promise").notNull(),
+    keyEvidence: text("key_evidence").notNull(),
+    differentiation: text("differentiation").notNull(),
+    cta: text("cta").notNull(),
+    status: briefStatusEnum("status").default("draft").notNull(),
+    approvedAt: timestamp("approved_at", { withTimezone: true }),
+    approvedBy: uuid("approved_by").references(() => teamMembers.id),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  // Content 1 → 0..1 ContentBrief (data-model §10.1)
+  (table) => [unique("content_briefs_content_id_unique").on(table.contentId)]
+);
 
 export const contentMasters = pgTable("content_masters", {
   id: uuid("id").defaultRandom().primaryKey(),

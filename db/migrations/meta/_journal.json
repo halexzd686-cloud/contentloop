@@ -22,6 +22,13 @@
       "when": 1788106039614,
       "tag": "0002_concerned_vision",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1788149338626,
+      "tag": "0003_glossy_patch",
+      "breakpoints": true
     }
   ]
 }
