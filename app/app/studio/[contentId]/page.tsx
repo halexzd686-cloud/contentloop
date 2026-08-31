@@ -13,11 +13,17 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { SourcesPanel } from "@/components/studio/sources-panel";
+import { MasterEditor } from "@/components/studio/master-editor";
 import {
   BriefFields,
   type BriefFieldValues,
 } from "@/components/studio/brief-fields";
-import { ArrowLeft, Sparkles, RefreshCw, Check } from "lucide-react";
+import {
+  normalizeModuleOrder,
+  type MasterModule,
+} from "@/lib/validation/master";
+import { createSaveQueue, type SaveQueueState } from "@/lib/save-queue";
+import { ArrowLeft, Sparkles, RefreshCw, Check, Lock } from "lucide-react";
 
 /**
  * Studio Workspace — /app/studio/[contentId]
@@ -48,6 +54,11 @@ interface BriefData extends BriefFieldValues {
   status: "draft" | "approved";
   approvedAt: string | null;
   approvedBy: string | null;
+}
+
+interface MasterData {
+  id: string;
+  modules: MasterModule[];
 }
 
 interface ContentData {
@@ -118,6 +129,21 @@ export default function StudioContentPage({
   const [approveError, setApproveError] = useState<string | null>(null);
   const [editConfirmOpen, setEditConfirmOpen] = useState(false);
 
+  // ─── Master state (M1.4) ──────────────────────────────
+  const [activeTab, setActiveTab] = useState<"Brief" | "Master">("Brief");
+  const [master, setMaster] = useState<MasterData | null>(null);
+  const [modules, setModules] = useState<MasterModule[]>([]);
+  const [masterSaveState, setMasterSaveState] = useState<SaveQueueState>("idle");
+  const [creatingMaster, setCreatingMaster] = useState(false);
+  const [masterError, setMasterError] = useState<string | null>(null);
+  const masterQueueRef = useRef<ReturnType<typeof createSaveQueue<MasterModule[]>> | null>(null);
+  const masterDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const modulesRef = useRef<MasterModule[]>([]);
+
+  useEffect(() => {
+    modulesRef.current = modules;
+  }, [modules]);
+
   useEffect(() => {
     params.then((p) => setContentId(p.contentId));
   }, [params]);
@@ -145,6 +171,15 @@ export default function StudioContentPage({
       }
       dirtyRef.current = false;
       setSaveState("idle");
+      if (data.master) {
+        setMaster(data.master);
+        setModules(normalizeModuleOrder(data.master.modules));
+      } else {
+        setMaster(null);
+        setModules([]);
+      }
+      setMasterSaveState("idle");
+      setMasterError(null);
     } catch (err) {
       setLoadError(err instanceof Error ? err.message : "Failed to load");
     } finally {
@@ -280,6 +315,67 @@ export default function StudioContentPage({
     }
   }
 
+  // ─── Master handlers (M1.4) ──────────────────────────
+
+  function getMasterQueue() {
+    if (!masterQueueRef.current && contentId) {
+      masterQueueRef.current = createSaveQueue<MasterModule[]>(
+        async (snapshot) => {
+          const res = await fetch(`/api/contents/${contentId}/master`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ modules: snapshot }),
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || "Save failed");
+        },
+        setMasterSaveState
+      );
+    }
+    return masterQueueRef.current;
+  }
+
+  /** Text edits: debounced ~1.5s, then enqueue latest full state. */
+  function handleModuleTextChange(id: string, contentValue: string) {
+    const next = modulesRef.current.map((m) =>
+      m.id === id ? { ...m, content: contentValue } : m
+    );
+    setModules(next);
+    if (masterDebounce.current) clearTimeout(masterDebounce.current);
+    masterDebounce.current = setTimeout(() => {
+      getMasterQueue()?.enqueue(next);
+    }, 1500);
+  }
+
+  /** Structural mutations (add/delete/reorder): enqueue immediately. */
+  function handleStructuralChange(next: MasterModule[]) {
+    setModules(next);
+    if (masterDebounce.current) clearTimeout(masterDebounce.current);
+    getMasterQueue()?.enqueue(next);
+  }
+
+  async function handleCreateMaster() {
+    if (!contentId) return;
+    setCreatingMaster(true);
+    setMasterError(null);
+    try {
+      const res = await fetch(`/api/contents/${contentId}/master`, {
+        method: "POST",
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to create master");
+      setMaster(data.master);
+      setModules(data.master.modules);
+      setMasterSaveState("idle");
+    } catch (err) {
+      setMasterError(
+        err instanceof Error ? err.message : "Failed to create master"
+      );
+    } finally {
+      setCreatingMaster(false);
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex h-full items-center justify-center">
@@ -352,21 +448,33 @@ export default function StudioContentPage({
           </div>
         </div>
 
-        {/* Tabs — Brief active; others disabled in M1.3 */}
+        {/* Tabs — Brief + Master active; Platforms/Review disabled (M1.4) */}
         <div className="mt-3 flex gap-1">
-          {TABS.map((tab) => (
-            <span
-              key={tab}
-              className={`rounded-md px-3 py-1.5 text-sm ${
-                tab === "Brief"
-                  ? "bg-mint-100 font-medium text-ink-primary"
-                  : "cursor-not-allowed text-ink-faint"
-              }`}
-              title={tab === "Brief" ? undefined : "Coming later"}
-            >
-              {tab}
-            </span>
-          ))}
+          {TABS.map((tab) => {
+            const enabled = tab === "Brief" || tab === "Master";
+            const active = activeTab === tab;
+            return enabled ? (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`rounded-md px-3 py-1.5 text-sm ${
+                  active
+                    ? "bg-mint-100 font-medium text-ink-primary"
+                    : "text-ink-muted hover:text-ink-primary"
+                }`}
+              >
+                {tab}
+              </button>
+            ) : (
+              <span
+                key={tab}
+                className="cursor-not-allowed rounded-md px-3 py-1.5 text-sm text-ink-faint"
+                title="Coming later"
+              >
+                {tab}
+              </span>
+            );
+          })}
         </div>
       </div>
 
@@ -379,6 +487,8 @@ export default function StudioContentPage({
 
         {/* Workspace 53% */}
         <div className="w-[53%] overflow-y-auto bg-workspace p-6">
+          {activeTab === "Brief" ? (
+            <>
           <div className="mb-4 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <h2 className="text-sm font-semibold text-ink-primary">Brief</h2>
@@ -454,6 +564,21 @@ export default function StudioContentPage({
               an AI draft from the Loop AI panel.
             </p>
           )}
+            </>
+          ) : (
+            <MasterWorkspace
+              approved={approved}
+              master={master}
+              modules={modules}
+              saveState={masterSaveState}
+              creating={creatingMaster}
+              error={masterError}
+              onCreate={handleCreateMaster}
+              onTextChange={handleModuleTextChange}
+              onStructuralChange={handleStructuralChange}
+              onRetrySave={() => getMasterQueue()?.retry()}
+            />
+          )}
         </div>
 
         {/* Loop AI 25% */}
@@ -512,5 +637,101 @@ export default function StudioContentPage({
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+
+// ─── Master Workspace (tab content) ────────────────────
+
+interface MasterWorkspaceProps {
+  approved: boolean;
+  master: MasterData | null;
+  modules: MasterModule[];
+  saveState: SaveQueueState;
+  creating: boolean;
+  error: string | null;
+  onCreate: () => void;
+  onTextChange: (id: string, content: string) => void;
+  onStructuralChange: (modules: MasterModule[]) => void;
+  onRetrySave: () => void;
+}
+
+function MasterWorkspace({
+  approved,
+  master,
+  modules,
+  saveState,
+  creating,
+  error,
+  onCreate,
+  onTextChange,
+  onStructuralChange,
+  onRetrySave,
+}: MasterWorkspaceProps) {
+  // Gate 1: no approved Brief and no Master yet → locked
+  if (!approved && !master) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16 text-center">
+        <Lock className="h-5 w-5 text-ink-faint" />
+        <p className="mt-3 text-sm text-ink-secondary">
+          Approve Brief before creating the Content Master.
+        </p>
+      </div>
+    );
+  }
+
+  // Gate 2: Brief re-opened for edits → existing Master read-only (data kept)
+  if (!approved && master) {
+    return (
+      <div>
+        <div className="mb-4 rounded-[8px] border border-warning/30 bg-warning/5 p-3">
+          <p className="text-xs text-ink-secondary">
+            Brief has changed. Re-approve it to continue editing the Content
+            Master.
+          </p>
+        </div>
+        <MasterEditor
+          modules={modules}
+          readOnly
+          saveState="idle"
+          onTextChange={() => {}}
+          onStructuralChange={() => {}}
+          onRetrySave={() => {}}
+        />
+      </div>
+    );
+  }
+
+  // Gate 3: approved but no Master → explicit human creation
+  if (!master) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16 text-center">
+        <p className="text-sm text-ink-secondary">
+          No Content Master yet. Create one to start structured production.
+        </p>
+        <Button
+          variant="primary"
+          size="sm"
+          className="mt-4"
+          onClick={onCreate}
+          disabled={creating}
+        >
+          {creating ? "Creating…" : "Create Content Master"}
+        </Button>
+        {error && <p className="mt-3 text-xs text-danger">{error}</p>}
+      </div>
+    );
+  }
+
+  // Editable
+  return (
+    <MasterEditor
+      modules={modules}
+      readOnly={false}
+      saveState={saveState}
+      onTextChange={onTextChange}
+      onStructuralChange={onStructuralChange}
+      onRetrySave={onRetrySave}
+    />
   );
 }

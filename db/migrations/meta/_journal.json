@@ -29,6 +29,13 @@
       "when": 1788149338626,
       "tag": "0003_glossy_patch",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1788165453719,
+      "tag": "0004_mature_chronomancer",
+      "breakpoints": true
     }
   ]
 }

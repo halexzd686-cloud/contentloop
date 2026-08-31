@@ -2,7 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { eq, and, isNull } from "drizzle-orm";
 
 import { db } from "@/lib/db";
-import { contents, contentBriefs, signals, teamMembers } from "@/lib/db/schema";
+import {
+  contents,
+  contentBriefs,
+  contentMasters,
+  signals,
+  teamMembers,
+} from "@/lib/db/schema";
 import { requireSingleBrand } from "@/lib/brand";
 
 /**
@@ -76,10 +82,16 @@ export async function GET(
       .from(contentBriefs)
       .where(eq(contentBriefs.contentId, id));
 
+    const [master] = await db
+      .select()
+      .from(contentMasters)
+      .where(eq(contentMasters.contentId, id));
+
     return NextResponse.json({
       content: { ...content, owner, reviewer },
       signal: signal ?? null,
       brief: brief ?? null,
+      master: master ?? null,
     });
   } catch (error) {
     console.error("GET /api/contents/[id] error:", error);

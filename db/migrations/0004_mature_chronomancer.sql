@@ -1,0 +1,1 @@
+ALTER TABLE "content_masters" ADD CONSTRAINT "content_masters_content_id_unique" UNIQUE("content_id");

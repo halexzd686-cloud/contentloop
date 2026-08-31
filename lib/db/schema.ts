@@ -391,37 +391,42 @@ export const contentBriefs = pgTable(
   (table) => [unique("content_briefs_content_id_unique").on(table.contentId)]
 );
 
-export const contentMasters = pgTable("content_masters", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  contentId: uuid("content_id")
-    .references(() => contents.id)
-    .notNull(),
-  modules: jsonb("modules")
-    .$type<
-      {
-        id: string;
-        type:
-          | "hook"
-          | "core_message"
-          | "section"
-          | "demo"
-          | "evidence"
-          | "conclusion"
-          | "cta";
-        title?: string;
-        content: string;
-        sourceIds?: string[];
-        order: number;
-      }[]
-    >()
-    .notNull(),
-  createdAt: timestamp("created_at", { withTimezone: true })
-    .defaultNow()
-    .notNull(),
-  updatedAt: timestamp("updated_at", { withTimezone: true })
-    .defaultNow()
-    .notNull(),
-});
+export const contentMasters = pgTable(
+  "content_masters",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    contentId: uuid("content_id")
+      .references(() => contents.id)
+      .notNull(),
+    modules: jsonb("modules")
+      .$type<
+        {
+          id: string;
+          type:
+            | "hook"
+            | "core_message"
+            | "section"
+            | "demo"
+            | "evidence"
+            | "conclusion"
+            | "cta";
+          title?: string;
+          content: string;
+          sourceIds?: string[];
+          order: number;
+        }[]
+      >()
+      .notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  // Content 1 → 0..1 ContentMaster (data-model §11)
+  (table) => [unique("content_masters_content_id_unique").on(table.contentId)]
+);
 
 export const platformVersions = pgTable(
   "platform_versions",
