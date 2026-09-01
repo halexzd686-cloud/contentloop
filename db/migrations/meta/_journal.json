@@ -43,6 +43,13 @@
       "when": 1788186962832,
       "tag": "0005_polite_abomination",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1788247291068,
+      "tag": "0006_perfect_solo",
+      "breakpoints": true
     }
   ]
 }

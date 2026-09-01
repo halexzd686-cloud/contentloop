@@ -111,6 +111,11 @@ export const metricSourceEnum = pgEnum("metric_source", [
 ]);
 
 export const metricTypeEnum = pgEnum("metric_type", ["raw", "derived"]);
+export const metricFormatEnum = pgEnum("metric_format", [
+  "count",
+  "percentage",
+  "ratio",
+]);
 
 export const confidenceEnum = pgEnum("confidence", [
   "high",
@@ -224,29 +229,35 @@ export const platformPlaybooks = pgTable(
   (table) => [unique().on(table.brandId, table.platform)]
 );
 
-export const metricDefinitions = pgTable("metric_definitions", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  brandId: uuid("brand_id")
-    .references(() => brands.id)
-    .notNull(),
-  platform: platformEnum("platform").notNull(),
-  key: varchar("key", { length: 100 }).notNull(),
-  displayName: varchar("display_name", { length: 255 }).notNull(),
-  alias: varchar("alias", { length: 255 }),
-  type: metricTypeEnum("type").notNull(),
-  numeratorKey: varchar("numerator_key", { length: 100 }),
-  denominatorKey: varchar("denominator_key", { length: 100 }),
-  formula: text("formula"),
-  meaning: text("meaning"),
-  caution: text("caution"),
-  isActive: boolean("is_active").default(true).notNull(),
-  createdAt: timestamp("created_at", { withTimezone: true })
-    .defaultNow()
-    .notNull(),
-  updatedAt: timestamp("updated_at", { withTimezone: true })
-    .defaultNow()
-    .notNull(),
-});
+export const metricDefinitions = pgTable(
+  "metric_definitions",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    brandId: uuid("brand_id")
+      .references(() => brands.id)
+      .notNull(),
+    platform: platformEnum("platform").notNull(),
+    key: varchar("key", { length: 100 }).notNull(),
+    displayName: varchar("display_name", { length: 255 }).notNull(),
+    alias: varchar("alias", { length: 255 }),
+    type: metricTypeEnum("type").notNull(),
+    numeratorKey: varchar("numerator_key", { length: 100 }),
+    denominatorKey: varchar("denominator_key", { length: 100 }),
+    formula: text("formula"),
+    format: metricFormatEnum("format").default("count").notNull(),
+    meaning: text("meaning"),
+    caution: text("caution"),
+    isActive: boolean("is_active").default(true).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  // One (brand, platform, key) pair = one definition (M2.2 invariant)
+  (table) => [unique().on(table.brandId, table.platform, table.key)]
+);
 
 // ─── Radar ──────────────────────────────────────────────────────────────────
 

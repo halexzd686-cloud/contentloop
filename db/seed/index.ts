@@ -159,6 +159,69 @@ async function seed() {
   playbooks.forEach((p) => console.log(`  ✓ ${p.platform}`));
   console.log();
 
+  // ── Metric Definitions (M2.2) ──────────────────────────
+  // Idempotent: upsert on UNIQUE(brand_id, platform, key).
+  // Core raw active; optional raw inactive (availability varies by
+  // platform backend). Derived = unambiguous formulas only.
+  console.log("Creating metric definitions...");
+  const CORE_RAW = [
+    { key: "views", displayName: "Views", alias: "播放/阅读", meaning: "Times the content was viewed or read." },
+    { key: "likes", displayName: "Likes", alias: "点赞", meaning: "Number of likes." },
+    { key: "saves", displayName: "Saves", alias: "收藏", meaning: "Number of saves / favorites." },
+    { key: "comments", displayName: "Comments", alias: "评论", meaning: "Number of comments." },
+  ];
+  const OPTIONAL_RAW = [
+    { key: "impressions", displayName: "Impressions", alias: "曝光", meaning: "Times the content was shown in feeds." },
+    { key: "followers_gained", displayName: "Followers Gained", alias: "新增关注", meaning: "New followers attributed to the content." },
+  ];
+  const DERIVED = [
+    { key: "like_rate", displayName: "Like Rate", alias: "点赞率", numeratorKey: "likes", denominatorKey: "views" },
+    { key: "save_rate", displayName: "Save Rate", alias: "收藏率", numeratorKey: "saves", denominatorKey: "views" },
+    { key: "comment_rate", displayName: "Comment Rate", alias: "评论率", numeratorKey: "comments", denominatorKey: "views" },
+  ];
+  const OPTIONAL_CAUTION =
+    "Only enable when this metric is available from the platform analytics source.";
+
+  const metricRows = [];
+  for (const platform of ["xiaohongshu", "bilibili", "douyin"] as const) {
+    for (const m of CORE_RAW) {
+      metricRows.push({
+        brandId: brand.id, platform, key: m.key, displayName: m.displayName,
+        alias: m.alias, type: "raw" as const, format: "count" as const,
+        meaning: m.meaning, isActive: true,
+      });
+    }
+    for (const m of OPTIONAL_RAW) {
+      metricRows.push({
+        brandId: brand.id, platform, key: m.key, displayName: m.displayName,
+        alias: m.alias, type: "raw" as const, format: "count" as const,
+        meaning: m.meaning, caution: OPTIONAL_CAUTION, isActive: false,
+      });
+    }
+    for (const m of DERIVED) {
+      metricRows.push({
+        brandId: brand.id, platform, key: m.key, displayName: m.displayName,
+        alias: m.alias, type: "derived" as const,
+        numeratorKey: m.numeratorKey, denominatorKey: m.denominatorKey,
+        formula: `${m.numeratorKey} / ${m.denominatorKey} * 100`,
+        format: "percentage" as const, isActive: true,
+      });
+    }
+  }
+  const metricDefs = await db
+    .insert(schema.metricDefinitions)
+    .values(metricRows)
+    .onConflictDoNothing({
+      target: [
+        schema.metricDefinitions.brandId,
+        schema.metricDefinitions.platform,
+        schema.metricDefinitions.key,
+      ],
+    })
+    .returning();
+  console.log(`  ✓ ${metricDefs.length} metric definitions (3 platforms x ${metricRows.length / 3})
+`);
+
   // ── Signals ────────────────────────────────────────────
   console.log("Creating signals...");
   const signals = await db
@@ -265,6 +328,7 @@ async function seed() {
   console.log(`  3 Team Members`);
   console.log(`  3 Content Pillars`);
   console.log(`  3 Platform Playbooks`);
+  console.log(`  27 Metric Definitions (idempotent)`);
   console.log(`  5 Signals`);
   console.log(`  3 Contents`);
   console.log(`\nAll data marked as DEMO.`);
