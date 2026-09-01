@@ -3,6 +3,7 @@ import { eq, and, inArray, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
   contents,
+  metricSnapshots,
   platformVersions,
   publications,
 } from "@/lib/db/schema";
@@ -210,6 +211,24 @@ export async function editPublication(
     );
     if (!existing) {
       throw new ReviewError("No Publication exists for this platform.", 404);
+    }
+
+    // M2.4 compatibility guard: publishedAt drives checkpoint targets,
+    // capture semantics and baseline chronology — once metric snapshots
+    // exist it is locked. Other fields stay editable.
+    const nextPublishedAt = new Date(input.publishedAt);
+    if (nextPublishedAt.getTime() !== existing.publishedAt.getTime()) {
+      const [snap] = await tx
+        .select({ id: metricSnapshots.id })
+        .from(metricSnapshots)
+        .where(eq(metricSnapshots.publicationId, existing.id))
+        .limit(1);
+      if (snap) {
+        throw new ReviewError(
+          "Publication publishedAt cannot be changed after metric snapshots exist.",
+          409
+        );
+      }
     }
 
     const [updated] = await tx

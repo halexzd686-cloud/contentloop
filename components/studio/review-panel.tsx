@@ -656,6 +656,15 @@ export function ReviewPanel({
                 ) ?? null)
               : null
           }
+          snapshotsExist={metricSnapshots.some(
+            (sn) =>
+              sn.publicationId ===
+              publications.find(
+                (pb) =>
+                  pb.platformVersionId ===
+                  versions.find((v) => v.platform === pubModal.platform)?.id
+              )?.id
+          )}
           onDone={(result) => onPublication(result, beginAction())}
         />
       )}

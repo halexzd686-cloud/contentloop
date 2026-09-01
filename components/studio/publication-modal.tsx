@@ -42,6 +42,8 @@ interface PublicationModalProps {
   contentTitle: string;
   /** Edit mode when provided. */
   existing?: PublicationSummary | null;
+  /** M2.4: when metric snapshots exist, publishedAt is locked. */
+  snapshotsExist?: boolean;
   onDone: (result: PublicationResult) => void;
 }
 
@@ -60,6 +62,7 @@ export function PublicationModal({
   versionData,
   contentTitle,
   existing,
+  snapshotsExist = false,
   onDone,
 }: PublicationModalProps) {
   const isEdit = !!existing;
@@ -156,10 +159,16 @@ export function PublicationModal({
             </label>
             <input
               type="datetime-local"
-              className="w-full rounded-[8px] border border-border bg-workspace px-3 py-2 text-sm text-ink-primary outline-none focus:border-mint-600"
+              className="w-full rounded-[8px] border border-border bg-workspace px-3 py-2 text-sm text-ink-primary outline-none focus:border-mint-600 disabled:bg-surface-subtle disabled:text-ink-muted"
               value={publishedAt}
               onChange={(e) => setPublishedAt(e.target.value)}
+              disabled={snapshotsExist}
             />
+            {snapshotsExist && (
+              <p className="mt-1 text-[11px] text-ink-faint">
+                Published time is locked because metric snapshots already exist.
+              </p>
+            )}
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium text-ink-secondary">
