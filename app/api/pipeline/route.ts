@@ -94,6 +94,7 @@ export async function GET() {
               ]
             : null;
           return {
+            versionId: v.id,
             platform: v.platform,
             status: v.status,
             checklistDone: checklist ? checklist.filter(Boolean).length : 0,

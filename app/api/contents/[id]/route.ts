@@ -9,6 +9,7 @@ import {
   contentReviews,
   platformPlaybooks,
   platformVersions,
+  publications,
   signals,
   teamMembers,
 } from "@/lib/db/schema";
@@ -107,6 +108,13 @@ export async function GET(
           )
       : [];
 
+    const pubs = await db
+      .select()
+      .from(publications)
+      .where(
+        and(eq(publications.contentId, id), isNull(publications.deletedAt))
+      );
+
     const playbooks = await db
       .select({ platform: platformPlaybooks.platform })
       .from(platformPlaybooks)
@@ -119,6 +127,7 @@ export async function GET(
       master: master ?? null,
       platformVersions: versions,
       contentReviews: reviews,
+      publications: pubs,
       enabledPlatforms: brand.enabledPlatforms,
       playbookPlatforms: playbooks.map((p) => p.platform),
     });

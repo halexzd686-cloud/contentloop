@@ -22,6 +22,8 @@ import {
   ReviewPanel,
   type ReviewRow,
 } from "@/components/studio/review-panel";
+import type { PublicationSummary } from "@/lib/publication";
+import type { PublicationResult } from "@/components/studio/publication-modal";
 import {
   applyVersionsSnapshot,
   isLatestWorkflowRevision,
@@ -161,6 +163,10 @@ export default function StudioContentPage({
   // ─── Review state (M1.6) ──────────────────────────────
   const [contentReviews, setContentReviews] = useState<ReviewRow[]>([]);
 
+  // ─── Publications (M2.1) ──────────────────────────────
+  const [publications, setPublications] = useState<PublicationSummary[]>([]);
+  const hasPublications = publications.length > 0;
+
   // ─── Workflow snapshot (M1.6 state-sync architecture) ──
   const workflowRevRef = useRef(0);
   const beginWorkflowAction = useCallback(() => ++workflowRevRef.current, []);
@@ -194,6 +200,28 @@ export default function StudioContentPage({
       return next;
     });
   }, []);
+
+  /** Publication mutation result: snapshot + record upsert (no refetch). */
+  const handlePublication = useCallback(
+    (result: PublicationResult, rev: number) => {
+      if (result.workflow) applyWorkflowSnapshot(result.workflow, rev);
+      setPublications((prev) => {
+        const i = prev.findIndex((p) => p.id === result.publication.id);
+        if (i === -1) return [...prev, result.publication];
+        const next = [...prev];
+        next[i] = result.publication;
+        return next;
+      });
+    },
+    [applyWorkflowSnapshot]
+  );
+
+  // Platform → version data map (for finalTitle prefill).
+  const versionDataMap = useMemo(() => {
+    const map: Record<string, Record<string, unknown>> = {};
+    for (const v of platformVersions) map[v.platform] = v.data;
+    return map;
+  }, [platformVersions]);
 
   useEffect(() => {
     modulesRef.current = modules;
@@ -239,6 +267,7 @@ export default function StudioContentPage({
       setEnabledPlatforms(data.enabledPlatforms ?? []);
       setPlaybookPlatforms(data.playbookPlatforms ?? []);
       setContentReviews(data.contentReviews ?? []);
+      setPublications(data.publications ?? []);
     } catch (err) {
       setLoadError(err instanceof Error ? err.message : "Failed to load");
     } finally {
@@ -589,13 +618,22 @@ export default function StudioContentPage({
               )}
             </div>
             {approved ? (
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => setEditConfirmOpen(true)}
-              >
-                Edit Brief
-              </Button>
+              hasPublications ? (
+                <span
+                  className="text-xs text-ink-faint"
+                  title="This content already has a published platform version. Brief and Master can no longer be globally edited."
+                >
+                  Published — Brief locked
+                </span>
+              ) : (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setEditConfirmOpen(true)}
+                >
+                  Edit Brief
+                </Button>
+              )
             ) : (
               <Button
                 variant="primary"
@@ -659,6 +697,7 @@ export default function StudioContentPage({
             <MasterWorkspace
               approved={approved}
               contentStatus={content.status}
+              hasPublications={hasPublications}
               master={master}
               modules={modules}
               saveState={masterSaveState}
@@ -695,6 +734,10 @@ export default function StudioContentPage({
               approverName={approverName}
               beginAction={beginWorkflowAction}
               onWorkflow={applyWorkflowSnapshot}
+              publications={publications}
+              versionData={versionDataMap}
+              contentTitle={content.title}
+              onPublication={handlePublication}
             />
           )}
         </div>
@@ -781,6 +824,7 @@ export default function StudioContentPage({
 interface MasterWorkspaceProps {
   approved: boolean;
   contentStatus: string;
+  hasPublications: boolean;
   master: MasterData | null;
   modules: MasterModule[];
   saveState: SaveQueueState;
@@ -796,6 +840,7 @@ interface MasterWorkspaceProps {
 function MasterWorkspace({
   approved,
   contentStatus,
+  hasPublications,
   master,
   modules,
   saveState,
@@ -823,23 +868,26 @@ function MasterWorkspace({
 
   // Gate 2: Content in review / scheduled → Master read-only until the
   // human explicitly Returns to Editing (Global Upstream Invalidation).
+  // Once a real Publication exists, global editing is permanently locked.
   if (inReview && master) {
     return (
       <div>
         <div className="mb-4 rounded-[8px] border border-warning/30 bg-warning/5 p-3">
           <p className="text-xs text-ink-secondary">
-            Content is {contentStatus === "scheduled" ? "approved for publishing" : "in review"}.
-            The Master is read-only. Returning to editing will invalidate the
-            current review and move the content back to production.
+            {hasPublications
+              ? "This content already has a published platform version. Brief and Master can no longer be globally edited."
+              : `Content is ${contentStatus === "scheduled" ? "approved for publishing" : "in review"}. The Master is read-only. Returning to editing will invalidate the current review and move the content back to production.`}
           </p>
-          <Button
-            variant="secondary"
-            size="sm"
-            className="mt-2"
-            onClick={onReturnToEditing}
-          >
-            Return to Editing
-          </Button>
+          {!hasPublications && (
+            <Button
+              variant="secondary"
+              size="sm"
+              className="mt-2"
+              onClick={onReturnToEditing}
+            >
+              Return to Editing
+            </Button>
+          )}
           {error && <p className="mt-2 text-xs text-danger">{error}</p>}
         </div>
         <MasterEditor

@@ -4,7 +4,7 @@ import { eq, and, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { contents, contentBriefs } from "@/lib/db/schema";
 import { requireSingleBrand } from "@/lib/brand";
-import { globalUpstreamInvalidation, loadAggregate, toSnapshot } from "@/lib/review";
+import { globalUpstreamInvalidation, loadAggregate, toSnapshot, ReviewError } from "@/lib/review";
 
 /**
  * POST /api/contents/[id]/brief/edit
@@ -85,6 +85,9 @@ export async function POST(
     }
     return NextResponse.json(result);
   } catch (error) {
+    if (error instanceof ReviewError) {
+      return NextResponse.json({ error: error.message }, { status: error.status });
+    }
     console.error("POST /api/contents/[id]/brief/edit error:", error);
     return NextResponse.json(
       { error: "Failed to reopen brief" },

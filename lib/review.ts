@@ -6,6 +6,7 @@ import {
   contentBriefs,
   contentReviews,
   platformVersions,
+  publications,
   teamMembers,
 } from "@/lib/db/schema";
 import { requireSingleBrand } from "@/lib/brand";
@@ -70,6 +71,7 @@ interface Aggregate {
     reviewerId: string | null;
     ownerId: string | null;
   };
+  publications: { id: string; platformVersionId: string }[];
   brief: {
     status: string;
     approvedAt: string | null;
@@ -111,7 +113,11 @@ export async function loadAggregate(
                 'approvedAt', to_char(r.approved_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"'))), '[]'::json)
          from content_reviews r
          join platform_versions v on v.id = r.platform_version_id
-        where v.content_id = ${contentId}::uuid) as reviews
+        where v.content_id = ${contentId}::uuid) as reviews,
+      (select coalesce(json_agg(json_build_object('id', p.id, 'platformVersionId', p.platform_version_id)), '[]'::json)
+         from publications p
+         join platform_versions v on v.id = p.platform_version_id
+        where v.content_id = ${contentId}::uuid and p.deleted_at is null) as publications
   `);
 
   const rows = result as unknown as {
@@ -120,6 +126,7 @@ export async function loadAggregate(
     master: { id: string } | null;
     versions: WorkflowVersionState[] | null;
     reviews: WorkflowReviewState[] | null;
+    publications: { id: string; platformVersionId: string }[] | null;
   }[];
   const row = rows[0];
   if (!row?.content) throw new ReviewError("Content not found", 404);
@@ -130,6 +137,7 @@ export async function loadAggregate(
     hasMaster: !!row.master,
     versions: row.versions ?? [],
     reviews: row.reviews ?? [],
+    publications: row.publications ?? [],
   };
 }
 
@@ -453,7 +461,9 @@ export async function approveForPublishing(contentId: string) {
   return db.transaction(async (tx) => {
     const agg = await loadAggregate(tx, contentId, brand.id);
 
-    if (agg.content.status !== "review") {
+    const partiallyPublished =
+      agg.content.status === "scheduled" && agg.publications.length > 0;
+    if (agg.content.status !== "review" && !partiallyPublished) {
       throw new ReviewError(
         `Only content in review can be approved for publishing (current: ${agg.content.status}).`,
         409
@@ -466,7 +476,7 @@ export async function approveForPublishing(contentId: string) {
     const toApprove: string[] = [];
     const blockers: string[] = [];
     for (const v of agg.versions) {
-      if (v.status === "approved") continue;
+      if (v.status === "approved" || v.status === "published") continue;
       if (v.status === "review") {
         const review = agg.reviews.find((r) => r.platformVersionId === v.id);
         if (review && isChecklistComplete(review)) {
@@ -536,11 +546,14 @@ export async function approveForPublishing(contentId: string) {
         });
     }
 
-    const [content] = await tx
-      .update(contents)
-      .set({ status: "scheduled", updatedAt: now })
-      .where(eq(contents.id, contentId))
-      .returning({ id: contents.id, status: contents.status });
+    let content = { id: agg.content.id, status: agg.content.status };
+    if (agg.content.status === "review") {
+      [content] = await tx
+        .update(contents)
+        .set({ status: "scheduled", updatedAt: now })
+        .where(eq(contents.id, contentId))
+        .returning({ id: contents.id, status: contents.status });
+    }
 
     const workflow: WorkflowSnapshot = {
       content,
@@ -598,8 +611,11 @@ export async function returnVersionToDraft(contentId: string, platform: string) 
       .set(REVIEW_RESET)
       .where(eq(contentReviews.platformVersionId, version.id));
 
+    // Partially-published scheduled: content STAYS scheduled — a real
+    // Publication already exists and must not regress. Pre-publication
+    // scheduled drops back to review (M1.6 rule).
     let content = { id: agg.content.id, status: agg.content.status };
-    if (agg.content.status === "scheduled") {
+    if (agg.content.status === "scheduled" && agg.publications.length === 0) {
       [content] = await tx
         .update(contents)
         .set({ status: "review", updatedAt: now })
@@ -709,6 +725,21 @@ export async function globalUpstreamInvalidation(
 ): Promise<boolean> {
   if (content.status !== "review" && content.status !== "scheduled") {
     return false;
+  }
+
+  // M2.1: a real Publication is an irreversible business fact. Global
+  // upstream editing (and its review invalidation) is forbidden once
+  // any platform of this content is actually published.
+  const existingPubs = await tx
+    .select({ id: publications.id })
+    .from(publications)
+    .where(and(eq(publications.contentId, content.id), isNull(publications.deletedAt)))
+    .limit(1);
+  if (existingPubs.length > 0) {
+    throw new ReviewError(
+      "This content already has a published platform version. Brief and Master can no longer be globally edited.",
+      409
+    );
   }
 
   const now = new Date();

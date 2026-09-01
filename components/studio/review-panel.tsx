@@ -12,6 +12,12 @@ import {
 import { ChecklistEditor } from "@/lib/checklist-editor";
 import type { SaveQueueState } from "@/lib/save-queue";
 import type { WorkflowSnapshot } from "@/lib/workflow-snapshot";
+import {
+  PublicationModal,
+  type PublicationResult,
+} from "@/components/studio/publication-modal";
+import type { PublicationSummary } from "@/lib/publication";
+import { deriveCheckpoints } from "@/lib/validation/publication";
 
 /**
  * Studio Review tab — M1.6.
@@ -79,6 +85,13 @@ interface ReviewPanelProps {
   beginAction: () => number;
   /** Apply the authoritative snapshot returned by a mutation. */
   onWorkflow: (snap: WorkflowSnapshot, rev: number) => void;
+  /** Publication records (M2.1), keyed by platformVersionId. */
+  publications: PublicationSummary[];
+  /** Full version data for finalTitle prefill (from page state). */
+  versionData: Record<string, Record<string, unknown>>;
+  contentTitle: string;
+  /** Apply a publication mutation result (snapshot + record upsert). */
+  onPublication: (result: PublicationResult, rev: number) => void;
 }
 
 export function ReviewPanel({
@@ -91,6 +104,10 @@ export function ReviewPanel({
   approverName,
   beginAction,
   onWorkflow,
+  publications,
+  versionData,
+  contentTitle,
+  onPublication,
 }: ReviewPanelProps) {
   // busy = explicit structural actions only (send/withdraw/approve/
   // return/submit). Checklist saves NEVER set busy and never block.
@@ -99,6 +116,7 @@ export function ReviewPanel({
   const [checklists, setChecklists] = useState<Record<string, ReviewChecklist>>({});
   const [saveStates, setSaveStates] = useState<Record<string, SaveQueueState>>({});
   const editorsRef = useRef<Map<string, ChecklistEditor>>(new Map());
+  const [pubModal, setPubModal] = useState<{ platform: Platform; edit: boolean } | null>(null);
 
   function checklistFromProps(versionId: string): ReviewChecklist {
     const r = reviews.find((rv) => rv.platformVersionId === versionId);
@@ -334,6 +352,75 @@ export function ReviewPanel({
                   </p>
                 )}
 
+                {/* M2.1: Mark as Published (approved + scheduled content) */}
+                {v.status === "approved" && contentStatus === "scheduled" && (
+                  <div className="mt-3">
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      disabled={busy !== null}
+                      onClick={() => setPubModal({ platform: v.platform, edit: false })}
+                    >
+                      Mark as Published
+                    </Button>
+                  </div>
+                )}
+
+                {/* M2.1: Publication card (immutable fact, correction allowed) */}
+                {v.status === "published" &&
+                  (() => {
+                    const pub = publications.find(
+                      (pb) => pb.platformVersionId === v.id
+                    );
+                    if (!pub) {
+                      return (
+                        <p className="mt-2 text-xs text-ink-faint">
+                          Published — publication record unavailable.
+                        </p>
+                      );
+                    }
+                    const cp = deriveCheckpoints(pub.publishedAt);
+                    return (
+                      <div className="mt-3 rounded-[8px] border border-mint-600/30 bg-mint-100/40 p-3">
+                        <p className="text-sm font-medium text-ink-primary">
+                          {pub.finalTitle}
+                        </p>
+                        <a
+                          href={pub.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="mt-1 block break-all text-xs text-mint-600 hover:underline"
+                        >
+                          {pub.url}
+                        </a>
+                        <p className="mt-1 text-xs text-ink-muted">
+                          Published {new Date(pub.publishedAt).toLocaleString()}
+                        </p>
+                        {pub.coverUrl && (
+                          <p className="mt-1 break-all text-xs text-ink-muted">
+                            Cover: {pub.coverUrl}
+                          </p>
+                        )}
+                        {pub.notes && (
+                          <p className="mt-1 text-xs text-ink-secondary">
+                            Notes: {pub.notes}
+                          </p>
+                        )}
+                        <p className="mt-2 text-xs text-ink-muted">
+                          24h data due: {new Date(cp.checkpoint24h).toLocaleString()}
+                          {" · "}
+                          72h data due: {new Date(cp.checkpoint72h).toLocaleString()}
+                        </p>
+                        <button
+                          className="mt-2 text-xs text-mint-600 hover:underline"
+                          onClick={() => setPubModal({ platform: v.platform, edit: true })}
+                        >
+                          Edit Publication
+                        </button>
+                      </div>
+                    );
+                  })()}
+
                 {v.status === "draft" && (
                   <p className="mt-2 text-xs text-ink-faint">
                     Draft — not part of the current review round.
@@ -459,11 +546,42 @@ export function ReviewPanel({
 
         {contentStatus === "scheduled" && (
           <p className="text-xs text-ink-muted">
-            Approved for publishing. The Publication record is created after
-            real publishing (later milestone).
+            Approved for publishing. Published{" "}
+            {versions.filter((v) => v.status === "published").length} /{" "}
+            {versions.length} — mark each platform as published after its real
+            release.
+          </p>
+        )}
+
+        {contentStatus === "published" && (
+          <p className="text-xs text-mint-600">
+            All target platforms published. This content is complete.
           </p>
         )}
       </div>
+
+      {/* Mark as Published / Edit Publication modal */}
+      {pubModal && (
+        <PublicationModal
+          open
+          onOpenChange={(o) => !o && setPubModal(null)}
+          contentId={contentId}
+          platform={pubModal.platform}
+          platformLabel={PLATFORM_LABEL[pubModal.platform] ?? pubModal.platform}
+          versionData={versionData[pubModal.platform] ?? null}
+          contentTitle={contentTitle}
+          existing={
+            pubModal.edit
+              ? (publications.find(
+                  (pb) =>
+                    pb.platformVersionId ===
+                    versions.find((v) => v.platform === pubModal.platform)?.id
+                ) ?? null)
+              : null
+          }
+          onDone={(result) => onPublication(result, beginAction())}
+        />
+      )}
     </div>
   );
 }

@@ -22,6 +22,7 @@ import {
   DrawerTitle,
 } from "@/components/ui/drawer";
 import { RefreshCw, ExternalLink } from "lucide-react";
+import { PublicationModal } from "@/components/studio/publication-modal";
 
 /**
  * Pipeline — /app/pipeline (M1.6)
@@ -34,6 +35,7 @@ import { RefreshCw, ExternalLink } from "lucide-react";
  */
 
 interface PlatformState {
+  versionId?: string;
   platform: string;
   status: string;
   checklistDone: number;
@@ -190,6 +192,7 @@ export default function PipelinePage() {
   const [dragError, setDragError] = useState<string | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [selected, setSelected] = useState<PipelineItem | null>(null);
+  const [pubTarget, setPubTarget] = useState<{ item: PipelineItem; platform: string } | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } })
@@ -366,6 +369,43 @@ export default function PipelinePage() {
                   </div>
                 </div>
 
+                {selected.platforms.length > 0 &&
+                  (selected.status === "scheduled" || selected.status === "published") && (
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-ink-muted">
+                      Publication
+                    </p>
+                    <p className="mt-1 text-ink-secondary">
+                      {selected.platforms.filter((p) => p.status === "published").length}{" "}
+                      / {selected.platforms.length} published
+                    </p>
+                    <div className="mt-1.5 space-y-1.5">
+                      {selected.platforms.map((p) => (
+                        <div
+                          key={p.platform}
+                          className="flex items-center justify-between text-xs"
+                        >
+                          <span className="text-ink-secondary">
+                            {PLATFORM_SHORT[p.platform] ?? p.platform}{" "}
+                            <span className="text-ink-muted">{p.status}</span>
+                          </span>
+                          {p.status === "approved" &&
+                            selected.status === "scheduled" && (
+                            <button
+                              className="font-medium text-mint-600 hover:underline"
+                              onClick={() =>
+                                setPubTarget({ item: selected, platform: p.platform })
+                              }
+                            >
+                              Mark as Published
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {(selected.deadlineAt || selected.scheduledAt) && (
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-wide text-ink-muted">
@@ -395,6 +435,24 @@ export default function PipelinePage() {
           )}
         </DrawerContent>
       </Drawer>
+
+      {/* Shared Mark as Published modal (same domain action as Studio) */}
+      {pubTarget && (
+        <PublicationModal
+          open
+          onOpenChange={(o) => !o && setPubTarget(null)}
+          contentId={pubTarget.item.id}
+          platform={pubTarget.platform}
+          platformLabel={PLATFORM_SHORT[pubTarget.platform] ?? pubTarget.platform}
+          versionData={null}
+          contentTitle={pubTarget.item.title}
+          onDone={() => {
+            setPubTarget(null);
+            setSelected(null);
+            load();
+          }}
+        />
+      )}
     </div>
   );
 }

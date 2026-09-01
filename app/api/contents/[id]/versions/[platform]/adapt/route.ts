@@ -52,14 +52,35 @@ export async function POST(
       return NextResponse.json({ error: "Content not found" }, { status: 404 });
     }
 
-    if (content.status !== "in_progress") {
-      return NextResponse.json(
-        {
-          error:
-            "AI adaptation is only available while the content is in production.",
-        },
-        { status: 409 }
+    const [version] = await db
+      .select()
+      .from(platformVersions)
+      .where(
+        and(
+          eq(platformVersions.contentId, id),
+          eq(platformVersions.platform, platform)
+        )
       );
+
+    // Adapt gate:
+    // - in_progress: initial adapt and re-adapt both allowed.
+    // - review/scheduled (partial publish): only re-adapt of an existing
+    //   draft version (local re-edit of a not-yet-published platform).
+    //   New-version creation stays in production only.
+    if (content.status !== "in_progress") {
+      const localReEdit =
+        (content.status === "review" || content.status === "scheduled") &&
+        version &&
+        version.status === "draft";
+      if (!localReEdit) {
+        return NextResponse.json(
+          {
+            error:
+              "AI adaptation is only available for draft versions while the content is in production or partial re-edit.",
+          },
+          { status: 409 }
+        );
+      }
     }
 
     const [brief] = await db
@@ -82,16 +103,6 @@ export async function POST(
         { status: 409 }
       );
     }
-
-    const [version] = await db
-      .select()
-      .from(platformVersions)
-      .where(
-        and(
-          eq(platformVersions.contentId, id),
-          eq(platformVersions.platform, platform)
-        )
-      );
 
     // Re-adapt is only meaningful on an editable draft.
     if (version && version.status !== "draft") {
