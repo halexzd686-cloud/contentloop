@@ -11,6 +11,7 @@ import { diagnoseCheckpoint } from "@/lib/ai/diagnose";
 import { createDeepSeekProvider } from "@/lib/ai/provider";
 import type { DiagnosisSaveInput } from "@/lib/validation/diagnosis";
 import type { Checkpoint } from "@/lib/validation/snapshot";
+import { buildWhatHappened } from "@/lib/metrics/what-happened";
 
 /**
  * Diagnosis domain — M2.6.
@@ -52,7 +53,8 @@ export async function generateDiagnosisProposal(
   return {
     ok: true as const,
     proposal: {
-      whatHappened: result.proposal.whatHappened,
+      // Canonical server-built summary — the model never writes numbers.
+      whatHappened: buildWhatHappened(evidence, checkpoint),
       evidenceRefs: result.proposal.evidenceRefs,
       possibleReasons: result.proposal.possibleReasons,
       confidence: result.proposal.confidence,
@@ -100,7 +102,9 @@ async function persistDiagnosis(
   const values = {
     publicationId: ctx.publication.id,
     metricSnapshotId: ctx.snapshot.id,
-    whatHappened: input.whatHappened,
+    // Save-time authority: rebuilt from server-resolved evidence, so
+    // client-supplied or stale prose can never diverge from the numbers.
+    whatHappened: buildWhatHappened(evidence, checkpoint),
     evidence,
     possibleReasons: input.possibleReasons,
     confidence: input.confidence,

@@ -65,8 +65,8 @@ export function LoopAnalysis({
   const [saving, setSaving] = useState(false);
   const [confirmReplace, setConfirmReplace] = useState(false);
 
-  // Editable proposal fields (human-in-the-loop: edit before save)
-  const [editWhat, setEditWhat] = useState("");
+  // Editable proposal fields (human-in-the-loop: edit before save).
+  // What Happened is canonical server-built — read-only by design.
   const [editReasons, setEditReasons] = useState<string[]>([]);
   const [editActions, setEditActions] = useState<string[]>([]);
   const [editConfidence, setEditConfidence] = useState("low");
@@ -88,7 +88,6 @@ export function LoopAnalysis({
         proposalContextFingerprint: data.proposalContextFingerprint,
       };
       setProposal(p);
-      setEditWhat(p.whatHappened);
       setEditReasons(p.possibleReasons);
       setEditActions(p.nextActions);
       setEditConfidence(p.confidence);
@@ -108,7 +107,6 @@ export function LoopAnalysis({
     try {
       const refs = proposal.evidenceRefs.filter((_, i) => keepRefs[i]);
       const body = {
-        whatHappened: editWhat,
         evidenceRefs: refs,
         possibleReasons: editReasons.filter((r) => r.trim() !== ""),
         confidence: editConfidence,
@@ -256,14 +254,16 @@ export function LoopAnalysis({
           </div>
 
           <section>
-            <p className="text-xs font-semibold text-ink-secondary">What happened</p>
-            <textarea
-              className="mt-1 w-full rounded-[8px] border border-border bg-workspace px-3 py-2 text-sm text-ink-primary outline-none focus:border-mint-600"
-              rows={3}
-              maxLength={300}
-              value={editWhat}
-              onChange={(e) => setEditWhat(e.target.value)}
-            />
+            <p className="text-xs font-semibold text-ink-secondary">
+              What happened
+            </p>
+            <p className="mt-1 rounded-[8px] border border-border bg-canvas px-3 py-2 text-sm text-ink-primary">
+              {proposal.whatHappened}
+            </p>
+            <p className="mt-1 text-[11px] text-ink-faint">
+              Canonical summary built from the evidence below — always
+              consistent with the numbers.
+            </p>
           </section>
 
           <section>
@@ -383,7 +383,7 @@ export function LoopAnalysis({
                 variant="primary"
                 size="sm"
                 onClick={save}
-                disabled={saving || editWhat.trim() === ""}
+                disabled={saving}
               >
                 {saving ? "Saving…" : "Save Diagnosis"}
               </Button>

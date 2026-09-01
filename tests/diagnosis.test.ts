@@ -10,6 +10,8 @@ import {
   subjectFingerprint,
 } from "@/lib/metrics/fingerprint";
 import { resolveEvidenceRefs, type DiagnosisContext } from "@/lib/metrics/diagnosis-context";
+import { buildWhatHappened } from "@/lib/metrics/what-happened";
+import type { ResolvedEvidence } from "@/lib/validation/diagnosis";
 
 /**
  * M2.6 Structured Diagnosis — schema + fingerprint + evidence
@@ -17,7 +19,6 @@ import { resolveEvidenceRefs, type DiagnosisContext } from "@/lib/metrics/diagno
  */
 
 const VALID_PROPOSAL = {
-  whatHappened: "24h 点赞率高于账号中位数。",
   evidenceRefs: [{ metricKey: "like_rate", baselineScope: "account" as const }],
   possibleReasons: ["可能与开头的问题式 hook 有关（假设）。"],
   confidence: "medium" as const,
@@ -56,12 +57,25 @@ describe("aiDiagnosisSchema", () => {
     ).toBe(false);
   });
 
-  it("rejects unknown fields and empty whatHappened", () => {
+  it("rejects unknown fields — AI cannot supply whatHappened prose", () => {
     expect(
       aiDiagnosisSchema.safeParse({ ...VALID_PROPOSAL, summary: "x" }).success
     ).toBe(false);
     expect(
-      aiDiagnosisSchema.safeParse({ ...VALID_PROPOSAL, whatHappened: " " }).success
+      aiDiagnosisSchema.safeParse({
+        ...VALID_PROPOSAL,
+        whatHappened: "点赞率 10%，高于基线 8%",
+      }).success
+    ).toBe(false);
+  });
+
+  it("save schema rejects client-supplied whatHappened (server rebuilds it)", () => {
+    expect(
+      diagnosisSaveSchema.safeParse({
+        ...VALID_PROPOSAL,
+        whatHappened: "tampered prose with fake 99%",
+        proposalContextFingerprint: "abc",
+      }).success
     ).toBe(false);
   });
 
@@ -181,5 +195,84 @@ describe("resolveEvidenceRefs — evidence authority", () => {
     expect(() =>
       resolveEvidenceRefs([{ metricKey: "views", baselineScope: "account" }], zeroN)
     ).toThrow();
+  });
+});
+
+describe("buildWhatHappened — canonical summary", () => {
+  const ev = (over: Partial<ResolvedEvidence> & { label: string; format: "count" | "percentage" | "ratio" }): ResolvedEvidence & { label: string; format: "count" | "percentage" | "ratio" } => ({
+    metricKey: over.label,
+    baselineScope: "account",
+    currentValue: null,
+    baselineValue: null,
+    sampleCount: null,
+    absoluteDelta: null,
+    comparisonText: "",
+    ...over,
+  });
+
+  it("percentage: 10% vs 8% → +2.0 pp (never +2%)", () => {
+    const t = buildWhatHappened(
+      [ev({ label: "点赞率", format: "percentage", currentValue: 0.1, baselineValue: 0.08, sampleCount: 12, absoluteDelta: 0.02 })],
+      "24h"
+    );
+    expect(t).toContain("点赞率为 10.0%");
+    expect(t).toContain("高于账号历史中位数 8.0%");
+    expect(t).toContain("+2.0 pp");
+    expect(t).toContain("n=12");
+    expect(t).not.toContain("+2.0%");
+    expect(t).toMatch(/^24h /);
+  });
+
+  it("count: 1250 vs 1000 → +250", () => {
+    const t = buildWhatHappened(
+      [ev({ label: "播放/阅读", format: "count", currentValue: 1250, baselineValue: 1000, sampleCount: 10, absoluteDelta: 250 })],
+      "24h"
+    );
+    expect(t).toContain("1,250");
+    expect(t).toContain("+250");
+  });
+
+  it("ratio: 12.5 vs 10 → +2.5, no percentage", () => {
+    const t = buildWhatHappened(
+      [ev({ label: "播赞比", format: "ratio", currentValue: 12.5, baselineValue: 10, sampleCount: 5, absoluteDelta: 2.5 })],
+      "72h"
+    );
+    expect(t).toContain("12.5 : 1");
+    expect(t).toContain("+2.5");
+    expect(t).not.toContain("%");
+  });
+
+  it("below direction is 低于", () => {
+    const t = buildWhatHappened(
+      [ev({ label: "Views", format: "count", currentValue: 800, baselineValue: 1000, sampleCount: 9, absoluteDelta: -200 })],
+      "24h"
+    );
+    expect(t).toContain("低于");
+    expect(t).toContain("-200");
+  });
+
+  it("account/pillar disagreement preserved in one summary", () => {
+    const t = buildWhatHappened(
+      [
+        ev({ label: "点赞率", format: "percentage", baselineScope: "account", currentValue: 0.1, baselineValue: 0.08, sampleCount: 12, absoluteDelta: 0.02 }),
+        ev({ label: "点赞率", format: "percentage", baselineScope: "pillar", currentValue: 0.1, baselineValue: 0.12, sampleCount: 4, absoluteDelta: -0.02 }),
+      ],
+      "24h"
+    );
+    expect(t).toContain("高于账号历史中位数 8.0%");
+    expect(t).toContain("低于同 Pillar 历史中位数 12.0%");
+    expect(t).not.toMatch(/表现|优秀/);
+  });
+
+  it("no evidence → explicit no-baseline statement, nothing fabricated", () => {
+    const t = buildWhatHappened([], "24h");
+    expect(t).toContain("暂无足够历史可比样本");
+  });
+
+  it("summary and evidence can never disagree: same inputs drive both", () => {
+    const evidence = [ev({ label: "点赞率", format: "percentage", currentValue: 0.1, baselineValue: 0.08, sampleCount: 12, absoluteDelta: 0.02 })];
+    const t = buildWhatHappened(evidence, "24h");
+    expect(t).toContain("10.0%");
+    expect(t).toContain("8.0%");
   });
 });

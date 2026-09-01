@@ -327,6 +327,8 @@ export function resolveEvidenceRefs(
 
     return {
       metricKey: ref.metricKey,
+      label: def.label,
+      format: def.format,
       baselineScope: ref.baselineScope,
       currentValue: current,
       baselineValue: bm.median,

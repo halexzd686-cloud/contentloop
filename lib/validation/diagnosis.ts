@@ -26,10 +26,13 @@ const evidenceRef = z
   })
   .strict();
 
-/** AI structured output contract — references only, no numbers. */
+/**
+ * AI structured output contract — references only, no numbers and NO
+ * whatHappened prose. What Happened is a canonical server-built
+ * summary of the resolved evidence (M2.6 freeze-blocker fix).
+ */
 export const aiDiagnosisSchema = z
   .object({
-    whatHappened: z.string().trim().min(1).max(300),
     evidenceRefs: z.array(evidenceRef).max(3),
     possibleReasons: z.array(z.string().trim().min(1).max(300)).max(2),
     confidence: z.enum(CONFIDENCE_LEVELS),
@@ -40,10 +43,10 @@ export const aiDiagnosisSchema = z
 export type AIDiagnosis = z.infer<typeof aiDiagnosisSchema>;
 export type EvidenceRef = z.infer<typeof evidenceRef>;
 
-/** Human save payload — text fields editable, evidence refs kept. */
+/** Human save payload — hypotheses/confidence/actions editable; What
+ * Happened is rebuilt server-side from resolved evidence. */
 export const diagnosisSaveSchema = z
   .object({
-    whatHappened: z.string().trim().min(1).max(300),
     evidenceRefs: z.array(evidenceRef).max(3),
     possibleReasons: z.array(z.string().trim().min(1).max(300)).max(2),
     confidence: z.enum(CONFIDENCE_LEVELS),
@@ -57,6 +60,8 @@ export type DiagnosisSaveInput = z.infer<typeof diagnosisSaveSchema>;
 /** Server-resolved evidence — stored on the Diagnosis record. */
 export interface ResolvedEvidence {
   metricKey: string;
+  label: string;
+  format: "count" | "percentage" | "ratio";
   baselineScope: "account" | "pillar";
   currentValue: number | null;
   baselineValue: number | null;
