@@ -25,6 +25,23 @@ import {
 } from "@/lib/validation/snapshot";
 
 /**
+ * Partial-failure boundary (M2.5 frozen): a baseline failure NEVER
+ * destroys the fact payload. Returns baselineError instead of throwing.
+ */
+export async function tryBaseline<T>(
+  fn: () => Promise<T>
+): Promise<{ baseline: T | null; baselineError: string | null }> {
+  try {
+    return { baseline: await fn(), baselineError: null };
+  } catch (err) {
+    return {
+      baseline: null,
+      baselineError: err instanceof Error ? err.message : "Failed to compute baseline",
+    };
+  }
+}
+
+/**
  * Analytics read service — M2.5.
  *
  * Fact → Baseline → Deterministic Comparison. Read-only, no AI, no
@@ -223,13 +240,14 @@ export async function getAnalyticsDetail(
   let pillarBaseline = null;
   let baselineError: string | null = null;
   if (target.snapshotId) {
-    try {
-      const b = await getBaselineForSnapshot(publicationId, checkpoint);
-      accountBaseline = b.account;
-      pillarBaseline = b.pillar;
-    } catch (err) {
-      baselineError =
-        err instanceof Error ? err.message : "Failed to compute baseline";
+    const b = await tryBaseline(() =>
+      getBaselineForSnapshot(publicationId, checkpoint)
+    );
+    if (b.baseline) {
+      accountBaseline = b.baseline.account;
+      pillarBaseline = b.baseline.pillar;
+    } else {
+      baselineError = b.baselineError;
     }
   }
 

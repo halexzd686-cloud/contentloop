@@ -5,6 +5,7 @@ import {
   formatDelta,
   selectDefaultTarget,
 } from "@/lib/metrics/comparison";
+import { tryBaseline } from "@/lib/metrics/analytics";
 
 /**
  * M2.5 deterministic comparison engine — pure tests.
@@ -121,5 +122,29 @@ describe("selectDefaultTarget", () => {
       selectDefaultTarget([P("x", "2026-08-30T00:00:00Z", false, false)])
     ).toBeNull();
     expect(selectDefaultTarget([])).toBeNull();
+  });
+});
+
+describe("tryBaseline (partial failure boundary)", () => {
+  it("success → baseline + no error", async () => {
+    const r = await tryBaseline(async () => ({ account: { ok: true }, pillar: null }));
+    expect(r.baseline).toEqual({ account: { ok: true }, pillar: null });
+    expect(r.baselineError).toBeNull();
+  });
+
+  it("failure → null baseline + error message, never throws", async () => {
+    const r = await tryBaseline(async () => {
+      throw new Error("CONNECTION_CLOSED");
+    });
+    expect(r.baseline).toBeNull();
+    expect(r.baselineError).toBe("CONNECTION_CLOSED");
+  });
+
+  it("non-Error throw → fallback message", async () => {
+    const r = await tryBaseline(async () => {
+      throw "weird";
+    });
+    expect(r.baseline).toBeNull();
+    expect(r.baselineError).toBe("Failed to compute baseline");
   });
 });

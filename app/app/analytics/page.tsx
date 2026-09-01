@@ -214,6 +214,38 @@ export default function AnalyticsPage() {
     [loadDetail]
   );
 
+  /** Baseline-only retry: read-only baseline endpoint, fact untouched. */
+  const retryBaseline = useCallback(async () => {
+    if (!selected || !detail) return;
+    try {
+      const res = await fetch(
+        `/api/publications/${selected.publicationId}/metric-snapshots/${selected.checkpoint}/baseline`
+      );
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Baseline failed");
+      setDetail((prev) =>
+        prev
+          ? {
+              ...prev,
+              accountBaseline: data.account,
+              pillarBaseline: data.pillar,
+              baselineError: null,
+            }
+          : prev
+      );
+    } catch (err) {
+      setDetail((prev) =>
+        prev
+          ? {
+              ...prev,
+              baselineError:
+                err instanceof Error ? err.message : "Baseline failed",
+            }
+          : prev
+      );
+    }
+  }, [selected, detail]);
+
   useEffect(() => {
     const t = setTimeout(async () => {
       const pubs = await loadIndex();
@@ -525,7 +557,7 @@ export default function AnalyticsPage() {
                                 Couldn&apos;t load baseline.
                                 <button
                                   className="underline"
-                                  onClick={() => select(selected.publicationId, selected.checkpoint)}
+                                  onClick={retryBaseline}
                                 >
                                   Retry
                                 </button>
