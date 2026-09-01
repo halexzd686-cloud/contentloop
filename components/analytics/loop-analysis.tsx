@@ -301,7 +301,11 @@ export function LoopAnalysis({
               />
             ))}
             {editReasons.length === 0 && (
-              <p className="mt-1 text-xs text-ink-faint">None proposed.</p>
+              <p className="mt-1 text-xs text-ink-faint">
+                {editConfidence === "insufficient_evidence"
+                  ? "Insufficient evidence to infer possible reasons."
+                  : "None proposed."}
+              </p>
             )}
           </section>
 
@@ -421,7 +425,11 @@ function DiagnosisView({
       <section>
         <p className="text-xs font-semibold text-ink-secondary">Possible reasons</p>
         {diagnosis.possibleReasons.length === 0 ? (
-          <p className="mt-1 text-xs text-ink-faint">None — insufficient evidence.</p>
+          <p className="mt-1 text-xs text-ink-faint">
+            {diagnosis.confidence === "insufficient_evidence"
+              ? "Insufficient evidence to infer possible reasons."
+              : "None."}
+          </p>
         ) : (
           <ul className="mt-1 list-disc space-y-1 pl-4 text-sm text-ink-primary">
             {diagnosis.possibleReasons.map((r, i) => (

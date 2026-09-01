@@ -3,6 +3,7 @@ import { describe, it, expect } from "vitest";
 import {
   aiDiagnosisSchema,
   diagnosisSaveSchema,
+  enforceInsufficientEvidenceInvariant,
 } from "@/lib/validation/diagnosis";
 import {
   canonicalJson,
@@ -274,5 +275,57 @@ describe("buildWhatHappened — canonical summary", () => {
     const t = buildWhatHappened(evidence, "24h");
     expect(t).toContain("10.0%");
     expect(t).toContain("8.0%");
+  });
+});
+
+describe("insufficient-evidence invariant", () => {
+  it("zero evidence + insufficient_evidence → reasons forced empty", () => {
+    expect(
+      enforceInsufficientEvidenceInvariant({
+        confidence: "insufficient_evidence",
+        evidenceCount: 0,
+        possibleReasons: ["编造的假设"],
+      })
+    ).toEqual([]);
+  });
+
+  it("save path strips client-injected reasons under the same condition", () => {
+    // enforceInsufficientEvidenceInvariant is applied again at save; a
+    // tampered payload cannot reintroduce hypotheses.
+    const stripped = enforceInsufficientEvidenceInvariant({
+      confidence: "insufficient_evidence",
+      evidenceCount: 0,
+      possibleReasons: ["client smuggled reason"],
+    });
+    expect(stripped).toEqual([]);
+  });
+
+  it("nextActions are not affected by the invariant", () => {
+    // nextActions pass through untouched (only possibleReasons normalized).
+    // Covered by schema; invariant only touches reasons.
+    expect(
+      enforceInsufficientEvidenceInvariant({
+        confidence: "insufficient_evidence",
+        evidenceCount: 0,
+        possibleReasons: [],
+      })
+    ).toEqual([]);
+  });
+
+  it("evidence present → legitimate reasons preserved", () => {
+    expect(
+      enforceInsufficientEvidenceInvariant({
+        confidence: "insufficient_evidence",
+        evidenceCount: 2,
+        possibleReasons: ["可能与样本极少有关"],
+      })
+    ).toEqual(["可能与样本极少有关"]);
+    expect(
+      enforceInsufficientEvidenceInvariant({
+        confidence: "low",
+        evidenceCount: 0,
+        possibleReasons: ["kept"],
+      })
+    ).toEqual(["kept"]);
   });
 });

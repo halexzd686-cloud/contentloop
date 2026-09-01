@@ -57,6 +57,24 @@ export const diagnosisSaveSchema = z
 
 export type DiagnosisSaveInput = z.infer<typeof diagnosisSaveSchema>;
 
+/**
+ * Insufficient-evidence invariant (frozen M2.6 rule):
+ * when confidence = insufficient_evidence AND zero resolved evidence,
+ * possibleReasons MUST be empty — the AI must stop inferring, not
+ * declare insufficiency and hypothesize anyway. Applied server-side at
+ * both generate and save (client cannot smuggle reasons back in).
+ */
+export function enforceInsufficientEvidenceInvariant(args: {
+  confidence: string;
+  evidenceCount: number;
+  possibleReasons: string[];
+}): string[] {
+  if (args.confidence === "insufficient_evidence" && args.evidenceCount === 0) {
+    return [];
+  }
+  return args.possibleReasons;
+}
+
 /** Server-resolved evidence — stored on the Diagnosis record. */
 export interface ResolvedEvidence {
   metricKey: string;

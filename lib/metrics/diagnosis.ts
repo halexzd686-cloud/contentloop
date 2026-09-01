@@ -9,7 +9,10 @@ import {
 } from "@/lib/metrics/diagnosis-context";
 import { diagnoseCheckpoint } from "@/lib/ai/diagnose";
 import { createDeepSeekProvider } from "@/lib/ai/provider";
-import type { DiagnosisSaveInput } from "@/lib/validation/diagnosis";
+import {
+  enforceInsufficientEvidenceInvariant,
+  type DiagnosisSaveInput,
+} from "@/lib/validation/diagnosis";
 import type { Checkpoint } from "@/lib/validation/snapshot";
 import { buildWhatHappened } from "@/lib/metrics/what-happened";
 
@@ -56,7 +59,13 @@ export async function generateDiagnosisProposal(
       // Canonical server-built summary — the model never writes numbers.
       whatHappened: buildWhatHappened(evidence, checkpoint),
       evidenceRefs: result.proposal.evidenceRefs,
-      possibleReasons: result.proposal.possibleReasons,
+      // Insufficient-evidence invariant: zero resolved evidence means
+      // zero hypotheses.
+      possibleReasons: enforceInsufficientEvidenceInvariant({
+        confidence: result.proposal.confidence,
+        evidenceCount: evidence.length,
+        possibleReasons: result.proposal.possibleReasons,
+      }),
       confidence: result.proposal.confidence,
       nextActions: result.proposal.nextActions,
     },
@@ -106,7 +115,11 @@ async function persistDiagnosis(
     // client-supplied or stale prose can never diverge from the numbers.
     whatHappened: buildWhatHappened(evidence, checkpoint),
     evidence,
-    possibleReasons: input.possibleReasons,
+    possibleReasons: enforceInsufficientEvidenceInvariant({
+      confidence: input.confidence,
+      evidenceCount: evidence.length,
+      possibleReasons: input.possibleReasons,
+    }),
     confidence: input.confidence,
     nextActions: input.nextActions,
     subjectFingerprint: ctx.subjectFp,
