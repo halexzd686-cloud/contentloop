@@ -1,6 +1,6 @@
 # M2 Summary — Real Publication & Analytics（进行中）
 
-> Status: M2.1 / M2.2 / M2.3 / M2.4 / M2.5 **Frozen**（人工浏览器验收通过）。下一步 M2.6 — Structured Diagnosis。
+> Status: M2.1 / M2.2 / M2.3 / M2.4 / M2.5 / M2.6 **Frozen**（人工浏览器验收 A–P 通过）。下一步 M2.7 — CSV/XLSX Metric Import。
 >
 > 前置：M1 已 Frozen（见 `M1-summary.md`，tag `v0.2-core-workflow`）。
 
@@ -83,11 +83,25 @@
 - **Create 模式 unresolved input 渲染 blank**，不显示 fake zero；显式 0 与显式 N/A 语义不变
 - 221 tests 通过
 
+### M2.6 — Structured Diagnosis（Frozen，人工浏览器验收 A–P 通过）
+
+- 正式链：Publication+Checkpoint → Fact → Baseline → Comparison → **AI 选 Evidence 引用** → Server resolve 数值 → **Server 构建 canonical What Happened** → AI 写 Possible Reasons/Confidence/Next Actions → Human Review/Edit → Save/Replace
+- **Authority 分层**：server owns raw/derived/baseline/comparison/evidence 数值 + canonical What Happened；AI owns 引用选择 + 假设 + confidence + actions；Human owns Save/Replace
+- Migration `0007`：`metric_snapshot_id` NOT NULL + UNIQUE + `subject_fingerprint`；identity = MetricSnapshot（Publication+Checkpoint），无 snapshot-less diagnosis，无 history
+- **Generate ≠ Save；Regenerate ≠ Replace**（旧记录保留到 Confirm Replace；replace = 事务 delete+insert，无 inbound FK）
+- **Insufficient-evidence invariant**：confidence=insufficient_evidence ∧ resolvedEvidence=0 → possibleReasons=[]（generate+save 双端强制）；nextActions 不受影响
+- **Proposal freshness**：Generate→Save 间任何 authoritative 输入变化（snapshot/baseline/context/playbook…）→ 409 Regenerate；`proposalContextFingerprint` 覆盖全输入
+- **Saved stale 派生**：snapshot metrics / capturedAt / finalTitle / pillarId 变化 → stale；baseline 后续漂移 / alias / playbook 变化 → 不 stale（evidence 冻结诊断时数值）
+- Next Actions 仅文本 proposal；不产生 Test/Learning/Content/Playbook 变更
+- DeepSeek provider timeout 调至 60s（真实调用多次 >30s）；max 2 requests/action（第二次仅 repair）
+- 245 tests 通过；真实 DeepSeek smoke 全通过
+
 ## Schema Changes
 
 - 无。M2.1 完全使用 M0 已建 publications 表。
 - Migration `0006_perfect_solo.sql`：metric_definitions + format 列 + UNIQUE(brand_id, platform, key)
 - M2.3 无 migration（snapshot 表 M0 已完备）
+- Migration `0007_quiet_vance_astro.sql`：diagnoses 收紧（metric_snapshot_id NOT NULL + UNIQUE + subject_fingerprint）
 
 ## Important Files
 
@@ -130,4 +144,4 @@
 
 ## Next
 
-- M2.6 — Structured Diagnosis：Fact+Baseline+Evidence → AI structured proposal → Human Review → Save Diagnosis
+- M2.7 — CSV/XLSX Metric Import：File → Parse → Map → Validate → Preview → Human Confirm → Snapshot（deterministic，无 AI）
