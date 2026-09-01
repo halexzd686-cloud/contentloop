@@ -40,7 +40,8 @@ export interface AIProvider {
   generateStructured(params: GenerateStructuredParams): Promise<string>;
 }
 
-const REQUEST_TIMEOUT_MS = 30_000;
+// DeepSeek structured generations regularly take 30–60s; 30s was too tight.
+const REQUEST_TIMEOUT_MS = 60_000;
 
 export function createDeepSeekProvider(): AIProvider {
   const apiKey = process.env.AI_API_KEY;
