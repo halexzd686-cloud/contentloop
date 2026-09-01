@@ -1,6 +1,6 @@
 # M2 Summary — Real Publication & Analytics（进行中）
 
-> Status: M2.1 / M2.2 / M2.3 **Frozen**（人工浏览器验收通过）。下一步 M2.4 — Account / Pillar Baseline。
+> Status: M2.1 / M2.2 / M2.3 / M2.4 **Frozen**。下一步 M2.5 — Analytics Core。
 >
 > 前置：M1 已 Frozen（见 `M1-summary.md`，tag `v0.2-core-workflow`）。
 
@@ -52,6 +52,23 @@
 - 无 migration；184 tests 通过
 - 验收 fixtures 保留作 M2.4 baseline 样本：b03c0356（published：xhs 24h+72h 已提交、bili 24h+72h 已提交、douyin 无 snapshot）；710f90c0（scheduled 无 publication）
 
+### M2.4 — Account / Pillar Baseline（Frozen，无 UI，API + smoke 验收通过）
+
+- **Account Baseline** = same Brand + same Platform + same Checkpoint + historical Publications + latest ≤20（V1 无 PlatformAccount 实体，未扩 schema）
+- **Pillar Baseline** = 以上 + same current Pillar；**两个窗口独立**（Pillar cohort 不从 Account 窗口派生）
+- Historical cutoff：`candidate.publishedAt < target.publishedAt`（严格小于，同刻排除；target/未来自动排除）；recency = `publishedAt DESC, createdAt DESC, id DESC`；**snapshot.createdAt 不得作为 recency**（late entry 不插队）
+- Raw baseline = metric-wise median over valid raw values；**Derived baseline = 先逐 candidate 计算 derived_i 再 median**，严禁 median(numerator)/median(denominator)（反例测试锁死）
+- null 逐 metric 排除；真实 0 参与；`metric.sampleCount`（每指标独立）≠ `candidateCount`（cohort 窗口数）；sampleCount=0 → median null
+- Median：奇取中、偶取两中值平均；全精度计算，presentation 才 format
+- 主输出仅 active definitions；disabled 历史 key 不回写；custom derived 可对历史 raw 计算（缺依赖 → 该样本 N/A）
+- Target 无 pillar → `{unavailable: "target_has_no_pillar"}`（不伪装计算）
+- Capture provenance：`medianCaptureDeltaMinutes` 保留，无阈值排除
+- **Runtime-only read model**：无 baseline table/cache/persistence；`GET .../baseline` 只读零写
+- **publishedAt post-Snapshot 锁**：有 Snapshot 后 publishedAt 不可改（409），finalTitle/url/coverUrl/notes 仍可纠错；Edit modal 锁定 + 说明
+- V1 limitation 正式接受：**Pillar Baseline 使用 Content 当前 pillarId，非发布时归属**
+- 查询：target 1 RTT + 并行 [account, pillar?, definitions] ≈4 RTT，无 N+1
+- 197 tests 通过；DEMO baseline fixtures（明确 [DEMO] 标记）验证数学正确性
+
 ## Schema Changes
 
 - 无。M2.1 完全使用 M0 已建 publications 表。
@@ -72,7 +89,8 @@
 
 ## Known Issues / Backlog
 
-- **P3**: 服务端错误文案仍含 "in M1.5"（如 `Version status "published" cannot be edited in M1.5.`）——后续统一为 workflow-neutral wording；不单独为此扩大修改范围
+- **P2 — Supabase/Supavisor transient instability**：观察到瞬时连接异常（CONNECTION_CLOSED / 幻影 FK 报错），重试即恢复；非产品代码问题，除非可复现否则不按 bug 处理；建议评估 DATABASE_URL pooler 模式与 region
+- **P3**: 服务端错误文案仍含 "in M1.5"——后续统一为 workflow-neutral wording；不单独为此扩大修改范围
 - 继承 M1：P2 DB/部署拓扑延迟；S-01 legacy DEMO 数据；S-02 AI 输出语言策略
 
 ## Frozen Constraints（M2.1 新增）
@@ -93,4 +111,4 @@
 
 ## Next
 
-- M2.4 — Account / Pillar Baseline：最近 20 条可比 Publication Snapshots 的 metric-wise Median 纯函数服务（无持久化、无 UI dashboard、无 AI）
+- M2.5 — Analytics Core：Fact → Baseline → Deterministic Comparison 的 human-facing 页面（不含 M2.6 Diagnosis/Action）
