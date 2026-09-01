@@ -65,7 +65,13 @@ interface SnapshotModalProps {
     publishedAt: string;
   };
   checkpoint: Checkpoint;
-  /** Edit mode when provided. */
+  /**
+   * Explicit mode — callers decide from checkpoint status, never from
+   * whether snapshot data happened to be loaded:
+   *   due → "create" | submitted → "edit" (existing required).
+   */
+  mode: "create" | "edit";
+  /** Authoritative snapshot for edit mode. */
   existing: SnapshotSummary | null;
   onDone: (snapshot: SnapshotSummary) => void;
 }
@@ -85,10 +91,11 @@ export function MetricSnapshotModal({
   onOpenChange,
   publication,
   checkpoint,
+  mode,
   existing,
   onDone,
 }: SnapshotModalProps) {
-  const isEdit = !!existing;
+  const isEdit = mode === "edit";
   const [defs, setDefs] = useState<MetricDef[] | null>(null);
   const [inputs, setInputs] = useState<Record<string, RawInput>>({});
   const [capturedAt, setCapturedAt] = useState(() =>
@@ -117,9 +124,12 @@ export function MetricSnapshotModal({
   }, []);
 
   // Active raw inputs: create = current active raw keys; edit = stored keys.
+  // Edit mode without an authoritative snapshot is a caller bug — render
+  // a local error instead of silently falling back to create mode.
+  const editMissing = isEdit && !existing;
   const rawKeys = useMemo(() => {
     if (!defs) return [];
-    if (isEdit) return Object.keys(existing.metrics);
+    if (isEdit) return existing ? Object.keys(existing.metrics) : [];
     return defs
       .filter(
         (d) =>
@@ -265,7 +275,11 @@ export function MetricSnapshotModal({
           </DialogDescription>
         </DialogHeader>
 
-        {!defs ? (
+        {editMissing ? (
+          <div className="rounded-[8px] border border-danger/20 bg-danger/5 p-3 text-xs text-danger">
+            Couldn&apos;t load metric snapshot. Close and retry.
+          </div>
+        ) : !defs ? (
           <p className="text-sm text-ink-muted">Loading metric definitions…</p>
         ) : (
           <div className="space-y-4">

@@ -18,6 +18,7 @@ import {
   type SnapshotSummary,
 } from "@/components/studio/snapshot-modal";
 import type { Checkpoint } from "@/lib/validation/snapshot";
+import { snapshotEntryMode } from "@/lib/snapshot-entry";
 
 /**
  * Analytics — /app/analytics (M2.5)
@@ -111,7 +112,67 @@ export default function AnalyticsPage() {
     publication: IndexPublication;
     checkpoint: Checkpoint;
     existing: SnapshotSummary | null;
+    mode: "create" | "edit";
   } | null>(null);
+  const [snapEntryLoading, setSnapEntryLoading] = useState<string | null>(null);
+  const [snapEntryError, setSnapEntryError] = useState<{
+    key: string;
+    message: string;
+  } | null>(null);
+
+  /**
+   * Checkpoint-status-driven entry (M2.5 blocker fix):
+   * - due → create mode immediately
+   * - submitted → resolve the authoritative snapshot FIRST (loaded
+   *   detail fast path, else GET detail), then open edit mode.
+   *   A failed read shows a local error + Retry — never falls back
+   *   to create mode, never risks a duplicate POST.
+   */
+  async function openSnapshotEntry(pub: IndexPublication, cp: Checkpoint) {
+    const status = pub.checkpoints.find((c) => c.checkpoint === cp)?.status;
+    const mode = snapshotEntryMode(status ?? "not_due");
+    if (!mode) return;
+
+    if (mode === "create") {
+      setSnapModal({ publication: pub, checkpoint: cp, existing: null, mode });
+      return;
+    }
+
+    // Fast path: selected detail already holds the snapshot.
+    if (
+      detail?.fact.publicationId === pub.publicationId &&
+      detail.fact.checkpoint === cp &&
+      detail.fact.snapshot
+    ) {
+      setSnapModal({
+        publication: pub,
+        checkpoint: cp,
+        existing: detail.fact.snapshot,
+        mode,
+      });
+      return;
+    }
+
+    const key = `${pub.publicationId}:${cp}`;
+    setSnapEntryLoading(key);
+    setSnapEntryError(null);
+    try {
+      const res = await fetch(`/api/analytics/${pub.publicationId}/${cp}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to load");
+      if (!data.fact.snapshot) throw new Error("Snapshot not found");
+      setSnapModal({
+        publication: pub,
+        checkpoint: cp,
+        existing: data.fact.snapshot,
+        mode,
+      });
+    } catch {
+      setSnapEntryError({ key, message: "Couldn't load metric snapshot." });
+    } finally {
+      setSnapEntryLoading(null);
+    }
+  }
 
   const loadIndex = useCallback(async () => {
     try {
@@ -306,7 +367,7 @@ export default function AnalyticsPage() {
                             className="ml-1 font-medium text-mint-600"
                             onClick={(e) => {
                               e.stopPropagation();
-                              setSnapModal({ publication: p, checkpoint: c.checkpoint, existing: null });
+                              openSnapshotEntry(p, c.checkpoint);
                             }}
                           >
                             {" "}· Enter
@@ -317,17 +378,27 @@ export default function AnalyticsPage() {
                             className="ml-1 text-ink-muted hover:text-ink-primary"
                             onClick={(e) => {
                               e.stopPropagation();
-                              // edit uses the detail snapshot if it's the selected one
-                              const existing =
-                                detail?.fact.publicationId === p.publicationId &&
-                                detail.fact.checkpoint === c.checkpoint
-                                  ? detail.fact.snapshot
-                                  : null;
-                              select(p.publicationId, c.checkpoint);
-                              setSnapModal({ publication: p, checkpoint: c.checkpoint, existing });
+                              openSnapshotEntry(p, c.checkpoint);
                             }}
                           >
-                            {" "}· Edit
+                            {" "}·{" "}
+                            {snapEntryLoading === `${p.publicationId}:${c.checkpoint}`
+                              ? "Loading…"
+                              : "Edit"}
+                          </span>
+                        )}
+                        {snapEntryError?.key === `${p.publicationId}:${c.checkpoint}` && (
+                          <span className="ml-1 text-danger">
+                            {snapEntryError.message}
+                            <span
+                              className="ml-1 underline"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openSnapshotEntry(p, c.checkpoint);
+                              }}
+                            >
+                              Retry
+                            </span>
                           </span>
                         )}
                       </span>
@@ -402,11 +473,7 @@ export default function AnalyticsPage() {
                               size="sm"
                               className="mt-3"
                               onClick={() =>
-                                setSnapModal({
-                                  publication: selectedPub,
-                                  checkpoint: selected.checkpoint,
-                                  existing: null,
-                                })
+                                openSnapshotEntry(selectedPub, selected.checkpoint)
                               }
                             >
                               Enter {selected.checkpoint} Metrics
@@ -496,6 +563,7 @@ export default function AnalyticsPage() {
 
       {snapModal && (
         <MetricSnapshotModal
+          key={`${snapModal.publication.publicationId}:${snapModal.checkpoint}`}
           open
           onOpenChange={(o) => !o && setSnapModal(null)}
           publication={{
@@ -505,6 +573,7 @@ export default function AnalyticsPage() {
             publishedAt: snapModal.publication.publishedAt,
           }}
           checkpoint={snapModal.checkpoint}
+          mode={snapModal.mode}
           existing={snapModal.existing}
           onDone={() => {
             const sel = selected;

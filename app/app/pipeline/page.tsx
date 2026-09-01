@@ -507,10 +507,12 @@ export default function PipelinePage() {
       {/* Shared Metric Snapshot modal (same domain action as Studio) */}
       {snapTarget && (
         <MetricSnapshotModal
+          key={`${snapTarget.publication.id}:${snapTarget.checkpoint}`}
           open
           onOpenChange={(o) => !o && setSnapTarget(null)}
           publication={snapTarget.publication}
           checkpoint={snapTarget.checkpoint}
+          mode={snapTarget.existing ? "edit" : "create"}
           existing={snapTarget.existing}
           onDone={() => {
             setSnapTarget(null);

@@ -619,6 +619,7 @@ export function ReviewPanel({
       {/* Mark as Published / Edit Publication modal */}
       {snapModal && (
         <MetricSnapshotModal
+          key={`${snapModal.publication.id}:${snapModal.checkpoint}`}
           open
           onOpenChange={(o) => !o && setSnapModal(null)}
           publication={{
@@ -628,6 +629,15 @@ export function ReviewPanel({
             publishedAt: snapModal.publication.publishedAt,
           }}
           checkpoint={snapModal.checkpoint}
+          mode={
+            metricSnapshots.some(
+              (sn) =>
+                sn.publicationId === snapModal.publication.id &&
+                sn.checkpoint === snapModal.checkpoint
+            )
+              ? "edit"
+              : "create"
+          }
           existing={
             metricSnapshots.find(
               (sn) =>
