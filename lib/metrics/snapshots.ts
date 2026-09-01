@@ -106,51 +106,66 @@ export async function createSnapshot(
   input: SnapshotUpsertInput
 ) {
   const brand = await requireSingleBrand();
+  return db.transaction(async (tx) =>
+    createSnapshotIn(tx, brand.id, publicationId, checkpoint, input, "manual")
+  );
+}
 
-  return db.transaction(async (tx) => {
-    const ctx = await loadContext(tx, publicationId, checkpoint, brand.id);
+/**
+ * Transaction-aware core (M2.7 batch imports share one transaction).
+ * Same rules as M2.3: exact current active raw keys, timing gate,
+ * server-derived source.
+ */
+export async function createSnapshotIn(
+  tx: Parameters<Parameters<typeof db.transaction>[0]>[0],
+  brandId: string,
+  publicationId: string,
+  checkpoint: Checkpoint,
+  input: SnapshotUpsertInput,
+  source: "manual" | "csv" | "xlsx"
+) {
+  const ctx = await loadContext(tx, publicationId, checkpoint, brandId);
 
-    if (ctx.snapshot) {
-      throw new ReviewError(
-        `A ${checkpoint} snapshot already exists. Edit it instead.`,
-        409
-      );
-    }
-
-    // Create shape = exactly the platform's CURRENT active raw keys.
-    const activeRaws = await tx
-      .select({ key: metricDefinitions.key })
-      .from(metricDefinitions)
-      .where(
-        and(
-          eq(metricDefinitions.brandId, brand.id),
-          eq(metricDefinitions.platform, ctx.publication.platform),
-          eq(metricDefinitions.type, "raw"),
-          eq(metricDefinitions.isActive, true)
-        )
-      );
-    assertExactKeySet(
-      Object.keys(input.metrics),
-      activeRaws.map((d) => d.key),
-      "current active raw metrics"
+  if (ctx.snapshot) {
+    throw new ReviewError(
+      `A ${checkpoint} snapshot already exists. Edit it instead.`,
+      409
     );
+  }
 
-    const capturedAt = new Date(input.capturedAt);
-    assertCapturedAtValid(ctx.publication.publishedAt, checkpoint, capturedAt);
+  // Create shape = exactly the platform's CURRENT active raw keys.
+  const activeRaws = await tx
+    .select({ key: metricDefinitions.key })
+    .from(metricDefinitions)
+    .where(
+      and(
+        eq(metricDefinitions.brandId, brandId),
+        eq(metricDefinitions.platform, ctx.publication.platform),
+        eq(metricDefinitions.type, "raw"),
+        eq(metricDefinitions.isActive, true)
+      )
+    );
+  assertExactKeySet(
+    Object.keys(input.metrics),
+    activeRaws.map((d) => d.key),
+    "current active raw metrics"
+  );
 
-    const [created] = await tx
-      .insert(metricSnapshots)
-      .values({
-        publicationId,
-        checkpoint,
-        capturedAt,
-        metrics: input.metrics,
-        source: "manual",
-      })
-      .returning();
+  const capturedAt = new Date(input.capturedAt);
+  assertCapturedAtValid(ctx.publication.publishedAt, checkpoint, capturedAt);
 
-    return { snapshot: toSummary(created) };
-  });
+  const [created] = await tx
+    .insert(metricSnapshots)
+    .values({
+      publicationId,
+      checkpoint,
+      capturedAt,
+      metrics: input.metrics,
+      source,
+    })
+    .returning();
+
+  return { snapshot: toSummary(created) };
 }
 
 export async function editSnapshot(
@@ -159,39 +174,57 @@ export async function editSnapshot(
   input: SnapshotUpsertInput
 ) {
   const brand = await requireSingleBrand();
+  return db.transaction(async (tx) =>
+    editSnapshotIn(tx, brand.id, publicationId, checkpoint, input)
+  );
+}
 
-  return db.transaction(async (tx) => {
-    const ctx = await loadContext(tx, publicationId, checkpoint, brand.id);
+/**
+ * Transaction-aware core. source: when provided (csv/xlsx import), a
+ * real update also records the latest authoritative input source.
+ */
+export async function editSnapshotIn(
+  tx: Parameters<Parameters<typeof db.transaction>[0]>[0],
+  brandId: string,
+  publicationId: string,
+  checkpoint: Checkpoint,
+  input: SnapshotUpsertInput,
+  source?: "csv" | "xlsx"
+) {
+  const ctx = await loadContext(tx, publicationId, checkpoint, brandId);
 
-    if (!ctx.snapshot) {
-      throw new ReviewError(
-        `No ${checkpoint} snapshot exists yet. Create it first.`,
-        404
-      );
-    }
-
-    // Edit shape = exactly the STORED key set (history never reshaped
-    // by later Settings changes).
-    const storedKeys = Object.keys(
-      ctx.snapshot.metrics as Record<string, number | null>
+  if (!ctx.snapshot) {
+    throw new ReviewError(
+      `No ${checkpoint} snapshot exists yet. Create it first.`,
+      404
     );
-    assertExactKeySet(
-      Object.keys(input.metrics),
-      storedKeys,
-      "the stored snapshot metrics"
-    );
+  }
 
-    const capturedAt = new Date(input.capturedAt);
-    assertCapturedAtValid(ctx.publication.publishedAt, checkpoint, capturedAt);
+  // Edit shape = exactly the STORED key set (history never reshaped
+  // by later Settings changes).
+  const storedKeys = Object.keys(
+    ctx.snapshot.metrics as Record<string, number | null>
+  );
+  assertExactKeySet(
+    Object.keys(input.metrics),
+    storedKeys,
+    "the stored snapshot metrics"
+  );
 
-    const [updated] = await tx
-      .update(metricSnapshots)
-      .set({ metrics: input.metrics, capturedAt })
-      .where(eq(metricSnapshots.id, ctx.snapshot.id))
-      .returning();
+  const capturedAt = new Date(input.capturedAt);
+  assertCapturedAtValid(ctx.publication.publishedAt, checkpoint, capturedAt);
 
-    return { snapshot: toSummary(updated) };
-  });
+  const [updated] = await tx
+    .update(metricSnapshots)
+    .set({
+      metrics: input.metrics,
+      capturedAt,
+      ...(source ? { source } : {}),
+    })
+    .where(eq(metricSnapshots.id, ctx.snapshot.id))
+    .returning();
+
+  return { snapshot: toSummary(updated) };
 }
 
 function assertExactKeySet(actual: string[], expected: string[], label: string) {

@@ -23,6 +23,7 @@ import {
   LoopAnalysis,
   type DiagnosisRecord,
 } from "@/components/analytics/loop-analysis";
+import { ImportMetricsModal } from "@/components/analytics/import-modal";
 
 /**
  * Analytics — /app/analytics (M2.5)
@@ -114,6 +115,7 @@ export default function AnalyticsPage() {
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailError, setDetailError] = useState<string | null>(null);
 
+  const [importOpen, setImportOpen] = useState(false);
   const [snapModal, setSnapModal] = useState<{
     publication: IndexPublication;
     checkpoint: Checkpoint;
@@ -356,7 +358,12 @@ export default function AnalyticsPage() {
     <div className="flex h-full">
       {/* Main: index + fact/baseline/comparison */}
       <div className="flex-1 overflow-y-auto p-6">
-        <h1 className="text-lg font-semibold text-ink-primary">Analytics</h1>
+        <div className="flex items-center justify-between">
+          <h1 className="text-lg font-semibold text-ink-primary">Analytics</h1>
+          <Button variant="secondary" size="sm" onClick={() => setImportOpen(true)}>
+            Import Metrics
+          </Button>
+        </div>
 
         {index.length === 0 ? (
           <div className="mt-12 flex flex-col items-center text-center">
@@ -616,6 +623,21 @@ export default function AnalyticsPage() {
           </div>
         )}
       </div>
+
+      <ImportMetricsModal
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        publications={index.map((p) => ({
+          publicationId: p.publicationId,
+          finalTitle: p.finalTitle,
+          platform: p.platform,
+        }))}
+        onDone={() => {
+          setImportOpen(false);
+          loadIndex();
+          if (selected) loadDetail(selected.publicationId, selected.checkpoint);
+        }}
+      />
 
       {snapModal && (
         <MetricSnapshotModal
