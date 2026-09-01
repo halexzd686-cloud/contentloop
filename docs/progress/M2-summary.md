@@ -1,6 +1,6 @@
 # M2 Summary — Real Publication & Analytics（进行中）
 
-> Status: M2.1 / M2.2 / M2.3 / M2.4 **Frozen**。下一步 M2.5 — Analytics Core。
+> Status: M2.1 / M2.2 / M2.3 / M2.4 / M2.5 **Frozen**（人工浏览器验收通过）。下一步 M2.6 — Structured Diagnosis。
 >
 > 前置：M1 已 Frozen（见 `M1-summary.md`，tag `v0.2-core-workflow`）。
 
@@ -69,6 +69,20 @@
 - 查询：target 1 RTT + 并行 [account, pillar?, definitions] ≈4 RTT，无 N+1
 - 197 tests 通过；DEMO baseline fixtures（明确 [DEMO] 标记）验证数学正确性
 
+### M2.5 — Analytics Core（Frozen，人工浏览器验收通过）
+
+- **Analytics unit = Publication + Checkpoint**；Content 仅 grouping；禁止跨平台汇总（无 total views 等）
+- M2.5 链 = **Fact → Baseline → Deterministic Comparison**；Interpretation/Diagnosis/Action 全属 M2.6+
+- **无 AI**、无诊断文案、无质量评分、无 Needs Attention/Good/Bad；Direction 仅 above/below/equal 数学关系（MetricDefinition 无 quality direction semantics）；无红绿配色，mint 仅 emphasis
+- Comparison：count 带符号 delta；**percentage 用百分点**（0.10 vs 0.08 → +2.0 pp，绝不 +2%）；ratio 纯单位（+2.5）；relativeDelta engine 保留但 UI 默认不显示；baseline=0/null → relative null；无 NaN/Infinity
+- Baseline 呈现：每 metric 独立 `sampleCount`（n=）+ cohort `candidateCount` context；无 pillar → 明确 "Pillar baseline unavailable — no pillar assigned"；无历史 → "No historical {checkpoint} snapshots yet."
+- **Fact 与 Baseline 独立 failure boundary**（`tryBaseline` helper）：baseline 失败 → Fact 保留 + 局部 "Couldn't load baseline. Retry"；**Retry 只调 M2.4 只读端点，不 refetch Fact**
+- Default selection：最近有 snapshot 的 Publication；同 publication 内 72h > 24h；旧 72h 不压新 24h；全无 → null 不伪造
+- Capture provenance：fact 显示 target/captured/偏移（中性）；baseline metadata 显示 median capture offset
+- Quick Update 第三入口：复用 MetricSnapshotModal；**entry mode 由 checkpoint status 驱动**（due→create / submitted→edit / not_due→无）；edit 前必须先解析 authoritative snapshot（失败局部 Retry，永不 fallback create）；modal 按 `publicationId:checkpoint` key 隔离
+- **Create 模式 unresolved input 渲染 blank**，不显示 fake zero；显式 0 与显式 N/A 语义不变
+- 221 tests 通过
+
 ## Schema Changes
 
 - 无。M2.1 完全使用 M0 已建 publications 表。
@@ -109,6 +123,11 @@
 - content_pillars: 3（AI Agent Tutorial / AI Tool Review / Workflow，均 active）
 - contents: 4（1 published / 1 review / 1 scheduled / 1 planning；fixture 710f90c0 pillar=null）
 
+## Deferred（M2.5 明确记录）
+
+- **7d/30d Aggregate Overview**：需先冻结 checkpoint 选择 / 跨 publication / 跨平台聚合语义，且当前样本极少
+- **Analytics Funnel**：optional raw（impressions/followers_gained）默认 inactive 且漏斗语义未冻结；不渲染 mostly-N/A pseudo-funnel
+
 ## Next
 
-- M2.5 — Analytics Core：Fact → Baseline → Deterministic Comparison 的 human-facing 页面（不含 M2.6 Diagnosis/Action）
+- M2.6 — Structured Diagnosis：Fact+Baseline+Evidence → AI structured proposal → Human Review → Save Diagnosis
