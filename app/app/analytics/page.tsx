@@ -19,6 +19,10 @@ import {
 } from "@/components/studio/snapshot-modal";
 import type { Checkpoint } from "@/lib/validation/snapshot";
 import { snapshotEntryMode } from "@/lib/snapshot-entry";
+import {
+  LoopAnalysis,
+  type DiagnosisRecord,
+} from "@/components/analytics/loop-analysis";
 
 /**
  * Analytics — /app/analytics (M2.5)
@@ -82,6 +86,8 @@ interface Detail {
   accountBaseline: BaselineScope | null;
   pillarBaseline: (BaselineScope & { pillarId: string | null }) | { unavailable: string } | null;
   baselineError: string | null;
+  diagnosis: DiagnosisRecord | null;
+  diagnosisStale: boolean;
 }
 
 const PLATFORM_LABEL: Record<string, string> = {
@@ -583,14 +589,32 @@ export default function AnalyticsPage() {
         )}
       </div>
 
-      {/* Loop Analysis placeholder (M2.6) */}
-      <div className="w-[22%] shrink-0 border-l border-border bg-canvas p-4">
-        <p className="text-xs font-semibold uppercase tracking-wide text-ink-muted">
-          Loop Analysis
-        </p>
-        <p className="mt-3 text-xs text-ink-faint">
-          Structured diagnosis becomes available in the next analysis stage.
-        </p>
+      {/* Loop Analysis — M2.6 structured diagnosis */}
+      <div className="w-[25%] shrink-0 overflow-y-auto border-l border-border bg-canvas p-4">
+        {detail && selected ? (
+          <LoopAnalysis
+            key={`${selected.publicationId}:${selected.checkpoint}`}
+            publicationId={selected.publicationId}
+            checkpoint={selected.checkpoint}
+            hasSnapshot={detail.fact.hasSnapshot}
+            diagnosis={detail.diagnosis}
+            diagnosisStale={detail.diagnosisStale}
+            onSaved={(d, stale) =>
+              setDetail((prev) =>
+                prev ? { ...prev, diagnosis: d, diagnosisStale: stale } : prev
+              )
+            }
+          />
+        ) : (
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-ink-muted">
+              Loop Analysis
+            </p>
+            <p className="mt-3 text-xs text-ink-faint">
+              Select a publication to see structured diagnosis.
+            </p>
+          </div>
+        )}
       </div>
 
       {snapModal && (

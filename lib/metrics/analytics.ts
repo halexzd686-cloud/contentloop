@@ -23,6 +23,8 @@ import {
   CHECKPOINTS,
   type Checkpoint,
 } from "@/lib/validation/snapshot";
+import { subjectFingerprint } from "@/lib/metrics/fingerprint";
+import { getDiagnosis } from "@/lib/metrics/diagnosis";
 
 /**
  * Partial-failure boundary (M2.5 frozen): a baseline failure NEVER
@@ -251,5 +253,30 @@ export async function getAnalyticsDetail(
     }
   }
 
-  return { fact, accountBaseline, pillarBaseline, baselineError };
+  // Saved diagnosis + deterministic staleness (fingerprint compare).
+  let diagnosis = null;
+  let diagnosisStale = false;
+  if (target.snapshotId) {
+    diagnosis = await getDiagnosis(target.snapshotId);
+    if (diagnosis) {
+      const currentFp = subjectFingerprint({
+        snapshotId: target.snapshotId,
+        checkpoint,
+        capturedAt: target.capturedAt!.toISOString(),
+        metrics: rawValues,
+        finalTitle: target.finalTitle,
+        pillarId: target.pillarId,
+      });
+      diagnosisStale = diagnosis.subjectFingerprint !== currentFp;
+    }
+  }
+
+  return {
+    fact,
+    accountBaseline,
+    pillarBaseline,
+    baselineError,
+    diagnosis,
+    diagnosisStale,
+  };
 }

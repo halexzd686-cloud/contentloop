@@ -541,32 +541,44 @@ export const metricSnapshots = pgTable(
 
 // ─── Analytics & Learning ───────────────────────────────────────────────────
 
-export const diagnoses = pgTable("diagnoses", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  publicationId: uuid("publication_id")
-    .references(() => publications.id)
-    .notNull(),
-  metricSnapshotId: uuid("metric_snapshot_id").references(
-    () => metricSnapshots.id
-  ),
-  whatHappened: text("what_happened").notNull(),
-  evidence: jsonb("evidence")
-    .$type<
-      {
-        metricKey: string;
-        currentValue?: number;
-        baselineValue?: number;
-        comparisonText: string;
-      }[]
-    >()
-    .notNull(),
-  possibleReasons: jsonb("possible_reasons").$type<string[]>().notNull(),
-  confidence: confidenceEnum("confidence").notNull(),
-  nextActions: jsonb("next_actions").$type<string[]>().notNull(),
-  createdAt: timestamp("created_at", { withTimezone: true })
-    .defaultNow()
-    .notNull(),
-});
+export const diagnoses = pgTable(
+  "diagnoses",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    publicationId: uuid("publication_id")
+      .references(() => publications.id)
+      .notNull(),
+    // M2.6: Diagnosis identity = MetricSnapshot (Publication + Checkpoint).
+    // No snapshot-less diagnosis; one current diagnosis per snapshot.
+    metricSnapshotId: uuid("metric_snapshot_id")
+      .references(() => metricSnapshots.id)
+      .notNull(),
+    whatHappened: text("what_happened").notNull(),
+    evidence: jsonb("evidence")
+      .$type<
+        {
+          metricKey: string;
+          baselineScope?: "account" | "pillar";
+          currentValue?: number | null;
+          baselineValue?: number | null;
+          sampleCount?: number | null;
+          absoluteDelta?: number | null;
+          comparisonText: string;
+        }[]
+      >()
+      .notNull(),
+    possibleReasons: jsonb("possible_reasons").$type<string[]>().notNull(),
+    confidence: confidenceEnum("confidence").notNull(),
+    nextActions: jsonb("next_actions").$type<string[]>().notNull(),
+    // Deterministic subject fingerprint at save time; staleness is derived
+    // by comparing it to the current subject fingerprint on read.
+    subjectFingerprint: text("subject_fingerprint").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [unique().on(table.metricSnapshotId)]
+);
 
 export const tests = pgTable("tests", {
   id: uuid("id").defaultRandom().primaryKey(),
