@@ -7,7 +7,9 @@ import {
   contentBriefs,
   contentMasters,
   contentReviews,
+  metricSnapshots,
   platformVersions,
+  publications,
   teamMembers,
 } from "@/lib/db/schema";
 import { requireSingleBrand } from "@/lib/brand";
@@ -53,6 +55,34 @@ export async function GET() {
         .where(eq(teamMembers.brandId, brand.id)),
     ]);
 
+    const versionIds = versions.map((v) => v.id);
+    const pubs = versionIds.length
+      ? await db
+          .select()
+          .from(publications)
+          .where(
+            and(
+              inArray(publications.platformVersionId, versionIds),
+              isNull(publications.deletedAt)
+            )
+          )
+      : [];
+    const snapshots = pubs.length
+      ? await db
+          .select()
+          .from(metricSnapshots)
+          .where(
+            inArray(
+              metricSnapshots.publicationId,
+              pubs.map((p) => p.id)
+            )
+          )
+      : [];
+    const pubByVersion = new Map(pubs.map((p) => [p.platformVersionId, p]));
+    const snapByKey = new Map(
+      snapshots.map((s) => [`${s.publicationId}:${s.checkpoint}`, s])
+    );
+
     const reviews = versions.length
       ? await db
           .select()
@@ -93,12 +123,46 @@ export async function GET() {
                 r.humanReviewed,
               ]
             : null;
+          const pub = pubByVersion.get(v.id);
           return {
             versionId: v.id,
             platform: v.platform,
             status: v.status,
             checklistDone: checklist ? checklist.filter(Boolean).length : 0,
             checklistTotal: 5,
+            publication: pub
+              ? {
+                  id: pub.id,
+                  finalTitle: pub.finalTitle,
+                  publishedAt: pub.publishedAt.toISOString(),
+                  snapshot24h: snapByKey.has(`${pub.id}:24h`),
+                  snapshot72h: snapByKey.has(`${pub.id}:72h`),
+                  snapshots: {
+                    "24h": snapByKey.get(`${pub.id}:24h`)
+                      ? {
+                          id: snapByKey.get(`${pub.id}:24h`)!.id,
+                          publicationId: pub.id,
+                          checkpoint: "24h",
+                          capturedAt: snapByKey.get(`${pub.id}:24h`)!.capturedAt.toISOString(),
+                          metrics: snapByKey.get(`${pub.id}:24h`)!.metrics,
+                          source: snapByKey.get(`${pub.id}:24h`)!.source,
+                          createdAt: snapByKey.get(`${pub.id}:24h`)!.createdAt.toISOString(),
+                        }
+                      : null,
+                    "72h": snapByKey.get(`${pub.id}:72h`)
+                      ? {
+                          id: snapByKey.get(`${pub.id}:72h`)!.id,
+                          publicationId: pub.id,
+                          checkpoint: "72h",
+                          capturedAt: snapByKey.get(`${pub.id}:72h`)!.capturedAt.toISOString(),
+                          metrics: snapByKey.get(`${pub.id}:72h`)!.metrics,
+                          source: snapByKey.get(`${pub.id}:72h`)!.source,
+                          createdAt: snapByKey.get(`${pub.id}:72h`)!.createdAt.toISOString(),
+                        }
+                      : null,
+                  },
+                }
+              : null,
           };
         }),
     }));

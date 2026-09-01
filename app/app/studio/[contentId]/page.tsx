@@ -24,6 +24,7 @@ import {
 } from "@/components/studio/review-panel";
 import type { PublicationSummary } from "@/lib/publication";
 import type { PublicationResult } from "@/components/studio/publication-modal";
+import type { SnapshotSummary } from "@/components/studio/snapshot-modal";
 import {
   applyVersionsSnapshot,
   isLatestWorkflowRevision,
@@ -167,6 +168,20 @@ export default function StudioContentPage({
   const [publications, setPublications] = useState<PublicationSummary[]>([]);
   const hasPublications = publications.length > 0;
 
+  // ─── Metric Snapshots (M2.3) ──────────────────────────
+  const [metricSnapshots, setMetricSnapshots] = useState<SnapshotSummary[]>([]);
+  const handleSnapshot = useCallback((snap: SnapshotSummary) => {
+    setMetricSnapshots((prev) => {
+      const i = prev.findIndex(
+        (p) => p.publicationId === snap.publicationId && p.checkpoint === snap.checkpoint
+      );
+      if (i === -1) return [...prev, snap];
+      const next = [...prev];
+      next[i] = snap;
+      return next;
+    });
+  }, []);
+
   // ─── Workflow snapshot (M1.6 state-sync architecture) ──
   const workflowRevRef = useRef(0);
   const beginWorkflowAction = useCallback(() => ++workflowRevRef.current, []);
@@ -268,6 +283,7 @@ export default function StudioContentPage({
       setPlaybookPlatforms(data.playbookPlatforms ?? []);
       setContentReviews(data.contentReviews ?? []);
       setPublications(data.publications ?? []);
+      setMetricSnapshots(data.metricSnapshots ?? []);
     } catch (err) {
       setLoadError(err instanceof Error ? err.message : "Failed to load");
     } finally {
@@ -738,6 +754,8 @@ export default function StudioContentPage({
               versionData={versionDataMap}
               contentTitle={content.title}
               onPublication={handlePublication}
+              metricSnapshots={metricSnapshots}
+              onSnapshot={handleSnapshot}
             />
           )}
         </div>

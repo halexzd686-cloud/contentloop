@@ -23,6 +23,12 @@ import {
 } from "@/components/ui/drawer";
 import { RefreshCw, ExternalLink } from "lucide-react";
 import { PublicationModal } from "@/components/studio/publication-modal";
+import { MetricSnapshotModal } from "@/components/studio/snapshot-modal";
+import {
+  checkpointDueAt,
+  checkpointStatus,
+  type Checkpoint,
+} from "@/lib/validation/snapshot";
 
 /**
  * Pipeline — /app/pipeline (M1.6)
@@ -40,6 +46,14 @@ interface PlatformState {
   status: string;
   checklistDone: number;
   checklistTotal: number;
+  publication?: {
+    id: string;
+    finalTitle: string;
+    publishedAt: string;
+    snapshot24h: boolean;
+    snapshot72h: boolean;
+    snapshots?: Record<string, import("@/components/studio/snapshot-modal").SnapshotSummary | null>;
+  } | null;
 }
 
 interface PipelineItem {
@@ -193,6 +207,11 @@ export default function PipelinePage() {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [selected, setSelected] = useState<PipelineItem | null>(null);
   const [pubTarget, setPubTarget] = useState<{ item: PipelineItem; platform: string } | null>(null);
+  const [snapTarget, setSnapTarget] = useState<{
+    publication: { id: string; platform: string; finalTitle: string; publishedAt: string };
+    checkpoint: Checkpoint;
+    existing: import("@/components/studio/snapshot-modal").SnapshotSummary | null;
+  } | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } })
@@ -402,6 +421,55 @@ export default function PipelinePage() {
                           )}
                         </div>
                       ))}
+                      {selected.platforms.some((p) => p.publication) && (
+                        <div className="mt-2 space-y-1 border-t border-border pt-2">
+                          {selected.platforms
+                            .filter((p) => p.publication)
+                            .flatMap((p) =>
+                              (["24h", "72h"] as Checkpoint[]).map((c) => {
+                                const pub = p.publication!;
+                                const has = c === "24h" ? pub.snapshot24h : pub.snapshot72h;
+                                const st = checkpointStatus(pub.publishedAt, c, has);
+                                return (
+                                  <div
+                                    key={`${p.platform}-${c}`}
+                                    className="flex items-center justify-between text-xs"
+                                  >
+                                    <span className="text-ink-secondary">
+                                      {PLATFORM_SHORT[p.platform] ?? p.platform} {c}{" "}
+                                      <span className="text-ink-muted">
+                                        {st === "submitted"
+                                          ? "Submitted"
+                                          : st === "due"
+                                            ? `Due since ${checkpointDueAt(pub.publishedAt, c).toLocaleString()}`
+                                            : "Not due"}
+                                      </span>
+                                    </span>
+                                    {st !== "not_due" && (
+                                      <button
+                                        className="font-medium text-mint-600 hover:underline"
+                                        onClick={() =>
+                                          setSnapTarget({
+                                            publication: {
+                                              id: pub.id,
+                                              platform: p.platform,
+                                              finalTitle: pub.finalTitle,
+                                              publishedAt: pub.publishedAt,
+                                            },
+                                            checkpoint: c,
+                                            existing: pub.snapshots?.[c] ?? null,
+                                          })
+                                        }
+                                      >
+                                        {st === "submitted" ? "Edit" : `Enter ${c}`}
+                                      </button>
+                                    )}
+                                  </div>
+                                );
+                              })
+                            )}
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
@@ -435,6 +503,22 @@ export default function PipelinePage() {
           )}
         </DrawerContent>
       </Drawer>
+
+      {/* Shared Metric Snapshot modal (same domain action as Studio) */}
+      {snapTarget && (
+        <MetricSnapshotModal
+          open
+          onOpenChange={(o) => !o && setSnapTarget(null)}
+          publication={snapTarget.publication}
+          checkpoint={snapTarget.checkpoint}
+          existing={snapTarget.existing}
+          onDone={() => {
+            setSnapTarget(null);
+            setSelected(null);
+            load();
+          }}
+        />
+      )}
 
       {/* Shared Mark as Published modal (same domain action as Studio) */}
       {pubTarget && (

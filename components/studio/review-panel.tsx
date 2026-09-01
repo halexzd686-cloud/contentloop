@@ -17,7 +17,15 @@ import {
   type PublicationResult,
 } from "@/components/studio/publication-modal";
 import type { PublicationSummary } from "@/lib/publication";
-import { deriveCheckpoints } from "@/lib/validation/publication";
+import {
+  MetricSnapshotModal,
+  type SnapshotSummary,
+} from "@/components/studio/snapshot-modal";
+import {
+  checkpointDueAt,
+  checkpointStatus,
+  type Checkpoint,
+} from "@/lib/validation/snapshot";
 
 /**
  * Studio Review tab — M1.6.
@@ -92,6 +100,10 @@ interface ReviewPanelProps {
   contentTitle: string;
   /** Apply a publication mutation result (snapshot + record upsert). */
   onPublication: (result: PublicationResult, rev: number) => void;
+  /** Metric snapshots for this content's publications (M2.3). */
+  metricSnapshots: SnapshotSummary[];
+  /** Upsert a snapshot after Save Snapshot / Save Changes. */
+  onSnapshot: (snapshot: SnapshotSummary) => void;
 }
 
 export function ReviewPanel({
@@ -108,6 +120,8 @@ export function ReviewPanel({
   versionData,
   contentTitle,
   onPublication,
+  metricSnapshots,
+  onSnapshot,
 }: ReviewPanelProps) {
   // busy = explicit structural actions only (send/withdraw/approve/
   // return/submit). Checklist saves NEVER set busy and never block.
@@ -117,6 +131,7 @@ export function ReviewPanel({
   const [saveStates, setSaveStates] = useState<Record<string, SaveQueueState>>({});
   const editorsRef = useRef<Map<string, ChecklistEditor>>(new Map());
   const [pubModal, setPubModal] = useState<{ platform: Platform; edit: boolean } | null>(null);
+  const [snapModal, setSnapModal] = useState<{ publication: PublicationSummary; checkpoint: Checkpoint } | null>(null);
 
   function checklistFromProps(versionId: string): ReviewChecklist {
     const r = reviews.find((rv) => rv.platformVersionId === versionId);
@@ -379,7 +394,6 @@ export function ReviewPanel({
                         </p>
                       );
                     }
-                    const cp = deriveCheckpoints(pub.publishedAt);
                     return (
                       <div className="mt-3 rounded-[8px] border border-mint-600/30 bg-mint-100/40 p-3">
                         <p className="text-sm font-medium text-ink-primary">
@@ -406,11 +420,53 @@ export function ReviewPanel({
                             Notes: {pub.notes}
                           </p>
                         )}
-                        <p className="mt-2 text-xs text-ink-muted">
-                          24h data due: {new Date(cp.checkpoint24h).toLocaleString()}
-                          {" · "}
-                          72h data due: {new Date(cp.checkpoint72h).toLocaleString()}
-                        </p>
+                        {/* M2.3: checkpoint metric entry */}
+                        <div className="mt-2 space-y-1">
+                          {(["24h", "72h"] as Checkpoint[]).map((c) => {
+                            const snap = metricSnapshots.find(
+                              (sn) =>
+                                sn.publicationId === pub.id && sn.checkpoint === c
+                            );
+                            const st = checkpointStatus(pub.publishedAt, c, !!snap);
+                            return (
+                              <div
+                                key={c}
+                                className="flex items-center justify-between text-xs"
+                              >
+                                <span className="text-ink-secondary">
+                                  {c}{" "}
+                                  <span className="text-ink-muted">
+                                    {st === "submitted"
+                                      ? `Submitted · captured ${new Date(snap!.capturedAt).toLocaleString()}`
+                                      : st === "due"
+                                        ? `Due since ${checkpointDueAt(pub.publishedAt, c).toLocaleString()}`
+                                        : `Not due · target ${checkpointDueAt(pub.publishedAt, c).toLocaleString()}`}
+                                  </span>
+                                </span>
+                                {st === "due" && (
+                                  <button
+                                    className="font-medium text-mint-600 hover:underline"
+                                    onClick={() =>
+                                      setSnapModal({ publication: pub, checkpoint: c })
+                                    }
+                                  >
+                                    Enter {c} Metrics
+                                  </button>
+                                )}
+                                {st === "submitted" && (
+                                  <button
+                                    className="text-ink-muted hover:text-ink-primary"
+                                    onClick={() =>
+                                      setSnapModal({ publication: pub, checkpoint: c })
+                                    }
+                                  >
+                                    Edit
+                                  </button>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
                         <button
                           className="mt-2 text-xs text-mint-600 hover:underline"
                           onClick={() => setPubModal({ platform: v.platform, edit: true })}
@@ -561,6 +617,27 @@ export function ReviewPanel({
       </div>
 
       {/* Mark as Published / Edit Publication modal */}
+      {snapModal && (
+        <MetricSnapshotModal
+          open
+          onOpenChange={(o) => !o && setSnapModal(null)}
+          publication={{
+            id: snapModal.publication.id,
+            platform: snapModal.publication.platform,
+            finalTitle: snapModal.publication.finalTitle,
+            publishedAt: snapModal.publication.publishedAt,
+          }}
+          checkpoint={snapModal.checkpoint}
+          existing={
+            metricSnapshots.find(
+              (sn) =>
+                sn.publicationId === snapModal.publication.id &&
+                sn.checkpoint === snapModal.checkpoint
+            ) ?? null
+          }
+          onDone={onSnapshot}
+        />
+      )}
       {pubModal && (
         <PublicationModal
           open

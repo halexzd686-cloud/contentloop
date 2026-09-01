@@ -1,7 +1,12 @@
 import { eq, and } from "drizzle-orm";
 
 import { db } from "@/lib/db";
-import { metricDefinitions } from "@/lib/db/schema";
+import {
+  contents,
+  metricDefinitions,
+  metricSnapshots,
+  publications,
+} from "@/lib/db/schema";
 import { requireSingleBrand } from "@/lib/brand";
 import { ReviewError } from "@/lib/review";
 import { buildCanonicalFormula } from "@/lib/metrics/engine";
@@ -130,8 +135,38 @@ export async function editMetric(id: string, input: MetricEditInput) {
     }
     if (input.isActive !== undefined) updates.isActive = input.isActive;
   } else {
-    // Derived: formula fields editable pre-Snapshot (M2.3 will lock them
-    // once historical snapshots reference the metric).
+    // M2.3 post-Snapshot lock: once any real snapshot exists for this
+    // brand+platform, derived semantic fields are frozen so historical
+    // analytics can never be reinterpreted.
+    const semanticChange =
+      (input.numeratorKey !== undefined && input.numeratorKey !== def.numeratorKey) ||
+      (input.denominatorKey !== undefined && input.denominatorKey !== def.denominatorKey) ||
+      (input.format !== undefined && input.format !== def.format);
+    if (semanticChange) {
+      const [existing] = await db
+        .select({ id: metricSnapshots.id })
+        .from(metricSnapshots)
+        .innerJoin(
+          publications,
+          eq(metricSnapshots.publicationId, publications.id)
+        )
+        .innerJoin(contents, eq(publications.contentId, contents.id))
+        .where(
+          and(
+            eq(contents.brandId, brand.id),
+            eq(publications.platform, def.platform)
+          )
+        )
+        .limit(1);
+      if (existing) {
+        throw new ReviewError(
+          "Historical metric data exists for this platform. Formula fields (numerator / denominator / format) are locked; alias, meaning, caution and active state remain editable.",
+          409
+        );
+      }
+    }
+
+    // Derived: formula fields editable pre-Snapshot.
     const numeratorKey = input.numeratorKey ?? def.numeratorKey;
     const denominatorKey = input.denominatorKey ?? def.denominatorKey;
     const format = input.format ?? def.format;

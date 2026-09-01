@@ -8,6 +8,7 @@ import {
   contentMasters,
   contentReviews,
   platformPlaybooks,
+  metricSnapshots,
   platformVersions,
   publications,
   signals,
@@ -115,6 +116,18 @@ export async function GET(
         and(eq(publications.contentId, id), isNull(publications.deletedAt))
       );
 
+    const snapshots = pubs.length
+      ? await db
+          .select()
+          .from(metricSnapshots)
+          .where(
+            inArray(
+              metricSnapshots.publicationId,
+              pubs.map((p) => p.id)
+            )
+          )
+      : [];
+
     const playbooks = await db
       .select({ platform: platformPlaybooks.platform })
       .from(platformPlaybooks)
@@ -128,6 +141,7 @@ export async function GET(
       platformVersions: versions,
       contentReviews: reviews,
       publications: pubs,
+      metricSnapshots: snapshots,
       enabledPlatforms: brand.enabledPlatforms,
       playbookPlatforms: playbooks.map((p) => p.platform),
     });
