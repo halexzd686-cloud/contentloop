@@ -7,6 +7,7 @@ import { Sparkles, RefreshCw, Lock, Plus, X, FileText } from "lucide-react";
 import {
   PLATFORMS,
   emptyPlatformData,
+  isVersionEditable,
   normalizePlatformData,
   type Platform,
   type PlatformData,
@@ -193,6 +194,44 @@ export function usePlatformsPanel({
   const saveState = saveStates[selected] ?? "idle";
   const proposalPending = proposal !== null;
 
+  // Formal editability rule (M2.1): ONLY draft is editable.
+  const editable = isVersionEditable(version?.status);
+
+  // Live status map for save-queue guards (transition cleanup).
+  const statusRef = useRef<Partial<Record<Platform, string>>>({});
+  useEffect(() => {
+    statusRef.current = Object.fromEntries(
+      versionRows.map((v) => [v.platform, v.status])
+    );
+  }, [versionRows]);
+
+  // Transition cleanup: when a version leaves draft (e.g. Send to Review or
+  // Mark as Published), cancel pending debounce, drop dirty state and reset
+  // any stale save error. In-flight saves self-neutralize via statusRef.
+  useEffect(() => {
+    const t = setTimeout(() => {
+      let changed = false;
+      const next: Partial<Record<Platform, SaveQueueState>> = {};
+      for (const p of PLATFORMS) {
+        const st = statusRef.current[p];
+        if (st && st !== "draft") {
+          dirtyRef.current.delete(p);
+          if (saveStates[p] && saveStates[p] !== "idle") {
+            next[p] = "idle";
+            changed = true;
+          }
+        }
+      }
+      if (!editable && debounceRef.current) {
+        clearTimeout(debounceRef.current);
+        debounceRef.current = null;
+      }
+      if (changed) setSaveStates((prev) => ({ ...prev, ...next }));
+    }, 0);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [versionRows, editable]);
+
   function setPlatformSaveState(p: Platform, s: SaveQueueState) {
     setSaveStates((prev) => ({ ...prev, [p]: s }));
   }
@@ -201,6 +240,10 @@ export function usePlatformsPanel({
     if (!queuesRef.current[p]) {
       queuesRef.current[p] = createSaveQueue<PlatformData>(
         async (snapshot) => {
+          // Transition guard: a save that became obsolete (version left
+          // draft — review/approved/published) is dropped silently, never
+          // sent. The server remains the final authority regardless.
+          if (!isVersionEditable(statusRef.current[p])) return;
           const res = await fetch(
             `/api/contents/${contentId}/versions/${p}`,
             {
@@ -212,7 +255,14 @@ export function usePlatformsPanel({
           const data = await res.json();
           if (!res.ok) throw new Error(data.error || "Save failed");
         },
-        (s) => setPlatformSaveState(p, s)
+        (s) => {
+          // Obsolete ack after transition: never surface Saving/Failed/Retry.
+          if (!isVersionEditable(statusRef.current[p])) {
+            setPlatformSaveState(p, "idle");
+            return;
+          }
+          setPlatformSaveState(p, s);
+        }
       );
     }
     return queuesRef.current[p];
@@ -220,6 +270,7 @@ export function usePlatformsPanel({
 
   /** Persist latest draft for a platform (clears its dirty flag on enqueue). */
   function enqueue(p: Platform, data: PlatformData) {
+    if (!isVersionEditable(statusRef.current[p])) return;
     getQueue(p)?.enqueue(data);
     dirtyRef.current.delete(p);
   }
@@ -254,26 +305,26 @@ export function usePlatformsPanel({
   }
 
   function fieldChange(key: string, value: string) {
-    if (!draft || locked || proposalPending) return;
+    if (!draft || locked || proposalPending || !editable) return;
     commitDraft(selected, { ...draft, [key]: value }, { structural: false });
   }
 
   function listItemChange(key: string, index: number, value: string) {
-    if (!draft || locked || proposalPending) return;
+    if (!draft || locked || proposalPending || !editable) return;
     const list = [...((draft as Record<string, unknown>)[key] as string[])];
     list[index] = value;
     commitDraft(selected, { ...draft, [key]: list }, { structural: false });
   }
 
   function listAdd(key: string) {
-    if (!draft || locked || proposalPending) return;
+    if (!draft || locked || proposalPending || !editable) return;
     const list = [...((draft as Record<string, unknown>)[key] as string[])];
     list.push("");
     commitDraft(selected, { ...draft, [key]: list }, { structural: true });
   }
 
   function listRemove(key: string, index: number) {
-    if (!draft || locked || proposalPending) return;
+    if (!draft || locked || proposalPending || !editable) return;
     const list = [...((draft as Record<string, unknown>)[key] as string[])];
     list.splice(index, 1);
     commitDraft(selected, { ...draft, [key]: list }, { structural: true });
@@ -313,7 +364,7 @@ export function usePlatformsPanel({
   // ─── AI Adapt / Re-adapt (proposal only — no DB write) ──
 
   async function adapt() {
-    if (locked) return;
+    if (locked || (version && !editable)) return;
     setAdapting(true);
     setAdaptError(null);
     try {
@@ -625,28 +676,44 @@ export function usePlatformsPanel({
         {version && !proposalPending && draft && (
           <div>
             <div className="mb-4 flex items-center justify-between">
-              <Badge variant="default">{version.status.toUpperCase()}</Badge>
-              <span
-                className={`text-xs ${
-                  saveState === "failed"
-                    ? "text-danger"
-                    : saveState === "saved"
-                      ? "text-mint-600"
-                      : "text-ink-muted"
-                }`}
-              >
-                {SAVE_LABEL[saveState]}
-                {saveState === "failed" && (
-                  <button
-                    className="ml-1 underline"
-                    onClick={() => getQueue(selected)?.retry()}
-                  >
-                    Retry
-                  </button>
-                )}
-              </span>
+              <Badge variant={version.status === "published" ? "mint" : "default"}>
+                {version.status.toUpperCase()}
+              </Badge>
+              {editable && (
+                <span
+                  className={`text-xs ${
+                    saveState === "failed"
+                      ? "text-danger"
+                      : saveState === "saved"
+                        ? "text-mint-600"
+                        : "text-ink-muted"
+                  }`}
+                >
+                  {SAVE_LABEL[saveState]}
+                  {saveState === "failed" && (
+                    <button
+                      className="ml-1 underline"
+                      onClick={() => getQueue(selected)?.retry()}
+                    >
+                      Retry
+                    </button>
+                  )}
+                </span>
+              )}
             </div>
-            {renderEditor(draft, locked)}
+            {version.status === "published" && (
+              <p className="mb-4 rounded-[8px] border border-mint-600/30 bg-mint-100/40 px-3 py-2 text-xs text-ink-secondary">
+                Published version is read-only. Use Edit Publication in the
+                Review tab to correct the publication record.
+              </p>
+            )}
+            {(version.status === "review" || version.status === "approved") && (
+              <p className="mb-4 rounded-[8px] border border-warning/30 bg-warning/5 px-3 py-2 text-xs text-ink-secondary">
+                This version is {version.status}. Read-only — use Return to
+                Draft in the Review tab to edit it.
+              </p>
+            )}
+            {renderEditor(draft, locked || !editable)}
           </div>
         )}
       </div>
@@ -657,22 +724,32 @@ export function usePlatformsPanel({
 
   const hasPlaybook = playbookPlatforms.includes(selected);
 
+  const canAdapt = !locked && (!version || editable);
+
   const aiPanel = !hasMaster ? null : (
     <div className="space-y-3">
-      <Button
-        variant="secondary"
-        size="sm"
-        className="w-full"
-        onClick={adapt}
-        disabled={adapting || locked || proposalPending}
-      >
-        <Sparkles className="mr-1 h-3 w-3" />
-        {adapting
-          ? "Adapting…"
-          : version
-            ? "Re-adapt from Master"
-            : "Adapt from Master"}
-      </Button>
+      {canAdapt ? (
+        <Button
+          variant="secondary"
+          size="sm"
+          className="w-full"
+          onClick={adapt}
+          disabled={adapting || proposalPending}
+        >
+          <Sparkles className="mr-1 h-3 w-3" />
+          {adapting
+            ? "Adapting…"
+            : version
+              ? "Re-adapt from Master"
+              : "Adapt from Master"}
+        </Button>
+      ) : (
+        <p className="rounded-[8px] border border-border bg-workspace p-3 text-xs text-ink-muted">
+          {version?.status === "published"
+            ? "Published version is read-only. AI adaptation is unavailable after publication."
+            : `This version is ${version?.status}. AI adaptation is only available for drafts.`}
+        </p>
+      )}
       {adaptError && (
         <div className="rounded-[8px] border border-danger/20 bg-danger/5 p-3">
           <p className="text-xs text-danger">{adaptError}</p>

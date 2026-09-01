@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 
 import {
+  isVersionEditable,
   SAVE_SCHEMAS,
   PROPOSAL_SCHEMAS,
   emptyPlatformData,
@@ -328,5 +329,18 @@ describe("adaptPlatform", () => {
       expect(r.ok).toBe(true);
       if (r.ok) expect(r.proposal).toEqual(valid);
     }
+  });
+});
+
+// ─── Editability rule (M2.1 frozen) ────────────────────
+
+describe("isVersionEditable", () => {
+  it("only draft is editable", () => {
+    expect(isVersionEditable("draft")).toBe(true);
+    expect(isVersionEditable("review")).toBe(false);
+    expect(isVersionEditable("approved")).toBe(false);
+    expect(isVersionEditable("published")).toBe(false);
+    expect(isVersionEditable(null)).toBe(false);
+    expect(isVersionEditable(undefined)).toBe(false);
   });
 });

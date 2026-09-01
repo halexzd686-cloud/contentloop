@@ -22,6 +22,16 @@ export function isPlatform(value: string): value is Platform {
   return (PLATFORMS as readonly string[]).includes(value);
 }
 
+/**
+ * Formal editability rule (frozen M2.1): the ordinary platform editor
+ * is editable ONLY for status = draft. review / approved are read-only
+ * (Return to Draft restores draft); published is strictly read-only —
+ * no auto-save, no Re-adapt, no mutation path at all.
+ */
+export function isVersionEditable(status: string | null | undefined): boolean {
+  return status === "draft";
+}
+
 const text = z.string().max(20000);
 const shortText = z.string().max(500);
 // Empty entries are allowed at the API boundary (e.g. a just-added tag row);
