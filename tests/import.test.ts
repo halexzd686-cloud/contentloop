@@ -10,6 +10,7 @@ import {
   normalizePublicationUrl,
   wallToIso,
 } from "@/lib/import/normalize";
+import { validateImportFile, buildCsvTemplate } from "@/lib/import/template";
 import {
   suggestIdentityMapping,
   suggestMetricMapping,
@@ -202,5 +203,41 @@ describe("mapping", () => {
     );
     expect(missing.some((e) => e.includes("publication"))).toBe(true);
     expect(missing.some((e) => e.includes("checkpoint"))).toBe(true);
+  });
+});
+
+describe("validateImportFile", () => {
+  const f = (name: string, size = 1000) => ({ name, size });
+
+  it("accepts csv and xlsx", () => {
+    expect(validateImportFile(f("a.csv")).ok).toBe(true);
+    expect(validateImportFile(f("a.xlsx")).ok).toBe(true);
+  });
+
+  it("rejects wrong extension", () => {
+    const r = validateImportFile(f("a.xls"));
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.error).toContain(".csv or .xlsx");
+    expect(validateImportFile(f("a.txt")).ok).toBe(false);
+  });
+
+  it("rejects files over 2MB", () => {
+    const r = validateImportFile(f("a.csv", 3 * 1024 * 1024));
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.error).toContain("2MB");
+  });
+});
+
+describe("buildCsvTemplate", () => {
+  it("includes identity columns + the platform's active raw keys", () => {
+    const csv = buildCsvTemplate("xiaohongshu", ["views", "likes", "saves", "comments"]);
+    const [header] = csv.split("\n");
+    expect(header).toBe("publication_url,checkpoint,captured_at,views,likes,saves,comments");
+  });
+
+  it("omits inactive metrics (only given keys are included)", () => {
+    const csv = buildCsvTemplate("douyin", ["views", "likes"]);
+    expect(csv).toContain("views,likes");
+    expect(csv).not.toContain("impressions");
   });
 });

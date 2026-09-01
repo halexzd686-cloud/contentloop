@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -10,8 +10,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Upload, RefreshCw } from "lucide-react";
+import { Upload, RefreshCw, FileUp, X } from "lucide-react";
 import type { ColumnMapping } from "@/lib/import/mapping";
+import { validateImportFile, buildCsvTemplate } from "@/lib/import/template";
 import type { PreviewRow, ImportConfig } from "@/lib/import/service";
 import { EMPTY_MAPPING } from "@/lib/import/mapping";
 import type { Platform } from "@/lib/validation/platform-version";
@@ -28,6 +29,8 @@ import type { Platform } from "@/lib/validation/platform-version";
 interface MetricDefLite {
   key: string;
   label: string;
+  alias: string | null;
+  displayName: string;
 }
 
 interface PublicationLite {
@@ -98,7 +101,35 @@ export function ImportMetricsModal({
   const [overrides, setOverrides] = useState<Record<number, { metrics?: Record<string, number | null>; capturedAt?: string; publicationId?: string }>>({});
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fileError, setFileError] = useState<string | null>(null);
   const [confirmResult, setConfirmResult] = useState<string | null>(null);
+
+  // Load the selected platform's active raw definitions as soon as the
+  // modal opens / platform changes — the CSV template and mapping both
+  // depend on them (fixes the empty-template blocker).
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    fetch("/api/settings/metrics")
+      .then((r) => r.json())
+      .then((data) => {
+        if (cancelled) return;
+        const raws = (data.definitions as { platform: string; type: string; isActive: boolean; key: string; alias: string | null; displayName: string }[])
+          .filter((d) => d.platform === platform && d.type === "raw" && d.isActive);
+        setMetricDefs(
+          raws.map((d) => ({
+            key: d.key,
+            label: d.alias ?? d.displayName,
+            alias: d.alias,
+            displayName: d.displayName,
+          }))
+        );
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [open, platform]);
 
   const headers = useMemo(() => {
     if (!fileMeta) return [];
@@ -124,6 +155,26 @@ export function ImportMetricsModal({
     setFallbackCapturedAt("");
   }
 
+  function acceptFile(f: File | null) {
+    setFileError(null);
+    if (!f) {
+      setFile(null);
+      return;
+    }
+    const check = validateImportFile({ name: f.name, size: f.size });
+    if (!check.ok) {
+      setFile(null);
+      setFileError(check.error);
+      return;
+    }
+    setFile(f);
+  }
+
+  function formatSize(bytes: number): string {
+    if (bytes < 1024) return `${bytes} B`;
+    return `${(bytes / 1024).toFixed(1)} KB`;
+  }
+
   async function upload() {
     if (!file) return;
     setBusy(true);
@@ -138,12 +189,7 @@ export function ImportMetricsModal({
       const firstSheet = data.sheets[0]?.name ?? null;
       setSheet(firstSheet);
 
-      // Load metric definitions for the selected platform and pre-suggest.
-      const defsRes = await fetch("/api/settings/metrics");
-      const defsData = await defsRes.json();
-      const raws = (defsData.definitions as { platform: string; type: string; isActive: boolean; key: string; alias: string | null; displayName: string }[])
-        .filter((d) => d.platform === platform && d.type === "raw" && d.isActive);
-      setMetricDefs(raws.map((d) => ({ key: d.key, label: d.alias ?? d.displayName })));
+      const raws = metricDefs;
 
       const { suggestIdentityMapping, suggestMetricMapping } = await import("@/lib/import/mapping");
       const sheetHeaders = data.sheets.find((s: { name: string }) => s.name === firstSheet)?.headers ?? [];
@@ -216,13 +262,7 @@ export function ImportMetricsModal({
   }
 
   function downloadTemplate() {
-    const cols = [
-      "publication_url",
-      "checkpoint",
-      "captured_at",
-      ...metricDefs.map((d) => d.key),
-    ];
-    const csv = cols.join(",") + "\n";
+    const csv = buildCsvTemplate(platform, metricDefs.map((d) => d.key));
     const blob = new Blob([csv], { type: "text/csv" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
@@ -274,13 +314,66 @@ export function ImportMetricsModal({
               </select>
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-ink-secondary">File (.csv / .xlsx, max 2MB / 200 rows)</label>
+              <span className="mb-1 block text-xs font-medium text-ink-secondary">File</span>
               <input
+                id="import-file-input"
                 type="file"
                 accept=".csv,.xlsx"
-                className="text-sm text-ink-secondary"
-                onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+                className="sr-only"
+                aria-label="Choose a CSV or XLSX metrics file"
+                onChange={(e) => acceptFile(e.target.files?.[0] ?? null)}
               />
+              {!file ? (
+                <label
+                  htmlFor="import-file-input"
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    acceptFile(e.dataTransfer.files?.[0] ?? null);
+                  }}
+                  className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-[8px] border-2 border-dashed border-border bg-canvas px-6 py-8 text-center transition-colors duration-150 hover:border-mint-600 focus-within:border-mint-600"
+                >
+                  <FileUp className="h-6 w-6 text-ink-faint" />
+                  <span className="text-sm font-medium text-ink-primary">
+                    拖拽文件到这里，或点击选择
+                  </span>
+                  <span className="text-xs text-ink-muted">
+                    .csv / .xlsx · 最大 2MB · 最多 200 行
+                  </span>
+                </label>
+              ) : (
+                <div className="flex items-center justify-between rounded-[8px] border border-mint-600/40 bg-mint-100/40 px-4 py-3">
+                  <div className="flex items-center gap-2">
+                    <FileUp className="h-4 w-4 text-mint-600" />
+                    <div>
+                      <p className="text-sm font-medium text-ink-primary">{file.name}</p>
+                      <p className="text-xs text-ink-muted">
+                        {file.name.toLowerCase().endsWith(".csv") ? "CSV" : "XLSX"} · {formatSize(file.size)}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <label
+                      htmlFor="import-file-input"
+                      className="cursor-pointer text-xs text-mint-600 hover:underline"
+                    >
+                      Change
+                    </label>
+                    <button
+                      className="inline-flex items-center gap-1 text-xs text-ink-muted hover:text-danger"
+                      onClick={() => acceptFile(null)}
+                    >
+                      <X className="h-3 w-3" />
+                      Remove
+                    </button>
+                  </div>
+                </div>
+              )}
+              {fileError && (
+                <p className="mt-2 rounded-[8px] border border-danger/20 bg-danger/5 p-2 text-xs text-danger">
+                  {fileError}
+                </p>
+              )}
             </div>
             <div>
               <label className="mb-1 block text-xs font-medium text-ink-secondary">Import timezone (for times without an explicit offset)</label>
