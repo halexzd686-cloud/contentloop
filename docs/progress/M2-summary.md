@@ -1,6 +1,6 @@
 # M2 Summary — Real Publication & Analytics（进行中）
 
-> Status: M2.1 / M2.2 **Frozen**（人工浏览器验收通过）。下一步 M2.3 — 24h/72h Metric Input。
+> Status: M2.1 / M2.2 / M2.3 **Frozen**（人工浏览器验收通过）。下一步 M2.4 — Account / Pillar Baseline。
 >
 > 前置：M1 已 Frozen（见 `M1-summary.md`，tag `v0.2-core-workflow`）。
 
@@ -37,10 +37,26 @@
 - 176 tests 通过
 - Post-Snapshot compatibility（M2.3 起落实）：被真实 Snapshot 引用后，derived 的 numeratorKey/denominatorKey/format 不得再改
 
+### M2.3 — 24h/72h Metric Input（Frozen，人工浏览器验收 A–J 通过）
+
+- MetricSnapshot belongs to Publication（不属 Content）：Publication ├── 24h └── 72h，互相独立
+- Invariant：`UNIQUE(publication_id, checkpoint)` M0 已就绪；M2.3 只开放 24h/72h，`manual` checkpoint 未启用
+- **RAW-only persistence**：JSONB 只存 raw values；derived = Snapshot raw + MetricDefinition + engine runtime 计算，双 truth 不存在
+- 三态语义：无 row = Not Entered；key=null = 显式 N/A；key=0 = 真实零；null 永不转 0；blank 不可提交
+- 时间语义分离：capturedAt = 人工确认的观测时间（可纠错）；checkpoint target = publishedAt + 24/72h（纯派生）；createdAt = DB 建行时间；timing gate 基于 capturedAt（≥ target − 5min），非提交时间；late entry 合法
+- Create shape = 当前 active raw keys 精确集合；Edit shape = 已存 keys 精确集合（Settings 后续变更不改历史 shape）
+- Snapshot 存在 = Human 显式 Submit；开表单/输入零 DB 写入；无 auto-save；POST 409 duplicate / PUT 404 nonexistent；无 Delete
+- source 恒 server-derived manual；identity（publication/checkpoint/platform）不可改
+- Post-Snapshot definition lock 落实：Brand+Platform 有真实 Snapshot 后，derived 的 numeratorKey/denominatorKey/format → 409；alias/meaning/caution/isActive 仍可改；Snapshot 后仍可新建 Custom Derived（创建即锁语义字段）
+- UI：共享 `MetricSnapshotModal`（Studio Publication 卡片主入口 + Pipeline Drawer 次入口）；live derived preview 纯前端引擎；三态文案分离
+- 无 migration；184 tests 通过
+- 验收 fixtures 保留作 M2.4 baseline 样本：b03c0356（published：xhs 24h+72h 已提交、bili 24h+72h 已提交、douyin 无 snapshot）；710f90c0（scheduled 无 publication）
+
 ## Schema Changes
 
 - 无。M2.1 完全使用 M0 已建 publications 表。
 - Migration `0006_perfect_solo.sql`：metric_definitions + format 列 + UNIQUE(brand_id, platform, key)
+- M2.3 无 migration（snapshot 表 M0 已完备）
 
 ## Important Files
 
@@ -66,12 +82,15 @@
 - Mark as Published 必须 Human Confirm；禁止自动 URL / 自动当前时间 / 自动 Publication
 - Content published 后无 V1 回退路径
 
-## Current DB State（M2.2 Freeze 时）
+## Current DB State（M2.3 Freeze 时）
 
 - brands: 1（single Brand invariant 成立）
-- metric_definitions: 29（27 默认 + 1 验收遗留 disabled custom + 1 浏览器验收创建；以实际为准）
-- metric_snapshots: 0
+- metric_definitions: 31（27 默认 + 4 个 disabled custom 验收遗留，保留作 disable-retain 示例）
+- metric_snapshots: 4（真实验收数据，M2.4 baseline fixtures）
+- publications: 3
+- content_pillars: 3（AI Agent Tutorial / AI Tool Review / Workflow，均 active）
+- contents: 4（1 published / 1 review / 1 scheduled / 1 planning；fixture 710f90c0 pillar=null）
 
 ## Next
 
-- M2.3 — 24h/72h Metric Input：Human Manual Input → MetricSnapshot（raw-only 持久化 + live derived preview），不做 Baseline/Analytics/Diagnosis/CSV
+- M2.4 — Account / Pillar Baseline：最近 20 条可比 Publication Snapshots 的 metric-wise Median 纯函数服务（无持久化、无 UI dashboard、无 AI）
