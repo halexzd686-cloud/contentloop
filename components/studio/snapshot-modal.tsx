@@ -20,6 +20,7 @@ import {
   checkpointDueAt,
   type Checkpoint,
 } from "@/lib/validation/snapshot";
+import { initSnapshotInputs } from "@/lib/snapshot-entry";
 
 /**
  * MetricSnapshotModal — M2.3 shared Quick Update form.
@@ -166,17 +167,7 @@ export function MetricSnapshotModal({
     const t = setTimeout(() => {
       setInputs((prev) => {
         if (Object.keys(prev).length > 0) return prev;
-        const next: Record<string, RawInput> = {};
-        for (const k of rawKeys) {
-          const stored = existing?.metrics[k];
-          next[k] =
-            stored === null
-              ? { value: "", isNA: true }
-              : stored !== undefined
-                ? { value: String(stored), isNA: false }
-                : { value: "", isNA: false };
-        }
-        return next;
+        return initSnapshotInputs(rawKeys, existing?.metrics ?? null);
       });
     }, 0);
     return () => clearTimeout(t);
@@ -311,7 +302,6 @@ export function MetricSnapshotModal({
                       <input
                         inputMode="numeric"
                         className="flex-1 rounded-[8px] border border-border bg-workspace px-3 py-2 text-sm text-ink-primary outline-none focus:border-mint-600"
-                        placeholder="0"
                         value={input.value}
                         onChange={(e) =>
                           setInputs((prev) => ({
