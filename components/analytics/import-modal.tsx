@@ -384,6 +384,11 @@ export function ImportMetricsModal({
               />
               <p className="mt-1 text-[11px] text-ink-faint">IANA timezone, e.g. Asia/Shanghai. Shown again in the preview.</p>
             </div>
+            <p className="text-[11px] text-ink-faint">
+              Example row values: publication_url https://… · checkpoint 24h ·
+              captured_at 2026-08-29T16:30:00+08:00. The template contains
+              headers only — add one data row per publication.
+            </p>
             <div className="flex gap-2">
               <Button variant="ghost" size="sm" onClick={downloadTemplate}>
                 Download CSV Template

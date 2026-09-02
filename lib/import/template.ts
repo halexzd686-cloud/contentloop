@@ -33,19 +33,14 @@ export function validateImportFile(file: {
 
 /**
  * CSV template for the selected platform: identity columns + the
- * platform's CURRENT active raw metric keys. No universal
- * mixed-platform template.
+ * platform's CURRENT active raw metric keys. HEADER ONLY — every data
+ * row in a CSV is a real import row, so the template must never ship
+ * an example row. Example values live in the modal's help text.
  */
 export function buildCsvTemplate(
   platform: string,
   rawMetricKeys: string[]
 ): string {
   const cols = ["publication_url", "checkpoint", "captured_at", ...rawMetricKeys];
-  const sample = [
-    "https://example.com/your-published-post",
-    "24h",
-    "2026-01-01T10:05:00+08:00",
-    ...rawMetricKeys.map(() => ""),
-  ];
-  return `${cols.join(",")}\n${sample.join(",")}\n`;
+  return `${cols.join(",")}\n`;
 }
