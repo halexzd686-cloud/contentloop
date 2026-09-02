@@ -229,8 +229,8 @@ export function ResultSection({
       {running && concludeOpen && (
         <div className="mt-3 space-y-3 rounded-[8px] border border-mint-600/30 bg-mint-100/40 p-3">
           <p className="text-xs font-medium text-ink-primary">
-            Review the observed results above, then conclude. The evidence is
-            frozen exactly as shown.
+            Review the observed results above. The evidence will be
+            revalidated and frozen when you confirm.
           </p>
           {result.readiness.forcedOutcome === "no_clear_result" && (
             <p className="rounded-[8px] border border-warning/30 bg-warning/5 p-2 text-[11px] text-ink-secondary">
