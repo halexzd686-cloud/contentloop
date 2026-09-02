@@ -1,6 +1,6 @@
 # M2 Summary — Real Publication & Analytics（进行中）
 
-> Status: M2.1 / M2.2 / M2.3 / M2.4 / M2.5 / M2.6 **Frozen**（人工浏览器验收 A–P 通过）。下一步 M2.7 — CSV/XLSX Metric Import。
+> Status: M2.1–M2.7 全部 **Frozen**（人工浏览器验收通过）。**M2 — Real Publication & Analytics COMPLETE ✅**。下一步 M3 — Test & Learning Loop。
 >
 > 前置：M1 已 Frozen（见 `M1-summary.md`，tag `v0.2-core-workflow`）。
 
@@ -96,6 +96,19 @@
 - DeepSeek provider timeout 调至 60s（真实调用多次 >30s）；max 2 requests/action（第二次仅 repair）
 - 245 tests 通过；真实 DeepSeek smoke 全通过
 
+### M2.7 — CSV/XLSX Metric Import（Frozen，人工浏览器验收 A–P 通过）
+
+- 一次导入 = 一个 Brand + 一个 Platform + 一个 Sheet；无跨平台批导
+- **Preview before write**；preview/confirm 均 server re-parse 原始文件字节；client 行数据仅展示；human 修正走 rowOverrides
+- Blank ≠ N/A ≠ 0；显式 N/A token；derived 不可映射；unmatched URL 可人工选 Publication；文件内重复 target 拒绝
+- create / update（changed-only diff）/ no_change（默认 skip）；update 后 source=csv/xlsx（server 按真实文件类型派生，client 不可伪造）；历史 shape 不一致 → conflict
+- previewFingerprint（fileHash + 配置 + target 快照内容指纹）；preview→confirm 间任何漂移 → 409 整批 rollback；确认单事务原子写
+- import 修正 → 已存 Diagnosis 经 subjectFingerprint 自然 stale；baseline runtime 自然吸收；零 DeepSeek 调用
+- SheetJS CE 0.20.3 官方 tarball 锁定；CSV raw-text 模式（修复 ISO 时间戳乱转 bug）；XLSX formula 只读 cached value
+- Upload affordance：dropzone（真实 DnD + a11y label）；模板 header-only（无示例数据行）+ 按平台动态 active raw 列
+- 无 metric_import_jobs、无 import history、不存原始文件
+- 269 tests 通过
+
 ## Schema Changes
 
 - 无。M2.1 完全使用 M0 已建 publications 表。
@@ -128,7 +141,7 @@
 - Mark as Published 必须 Human Confirm；禁止自动 URL / 自动当前时间 / 自动 Publication
 - Content published 后无 V1 回退路径
 
-## Current DB State（M2.3 Freeze 时）
+## Current DB State（M2.3 Freeze 时，历史记录）
 
 - brands: 1（single Brand invariant 成立）
 - metric_definitions: 31（27 默认 + 4 个 disabled custom 验收遗留，保留作 disable-retain 示例）
@@ -142,6 +155,11 @@
 - **7d/30d Aggregate Overview**：需先冻结 checkpoint 选择 / 跨 publication / 跨平台聚合语义，且当前样本极少
 - **Analytics Funnel**：optional raw（impressions/followers_gained）默认 inactive 且漏斗语义未冻结；不渲染 mostly-N/A pseudo-funnel
 
+## Final DB Audit（M2.7 Freeze 时）
+
+- metric_snapshots = 6（4 条人工业务/验收 + 2 条 M2.4 明确保留的 [DEMO] Baseline Fixture）；无 orphan smoke fixture
+- brands = 1；diagnoses = 2；tests / learnings = 0
+
 ## Next
 
-- M2.7 — CSV/XLSX Metric Import：File → Parse → Map → Validate → Preview → Human Confirm → Snapshot（deterministic，无 AI）
+- M3 — Test & Learning Loop：Diagnosis → Human Create Test → Attach Publications → Result → Human Save Learning → Learning 影响未来 Content
