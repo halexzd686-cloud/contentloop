@@ -432,7 +432,16 @@ function TestDetailDrawer({
         }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Conclude failed");
+      if (!res.ok) {
+        // Fingerprint conflict: close the panel, refetch the latest
+        // authoritative result — the human must re-review before
+        // concluding. The error never touches the result state.
+        if (res.status === 409) {
+          setConcludeOpen(false);
+          await load();
+        }
+        throw new Error(data.error || "Conclude failed");
+      }
       setConcludeOpen(false);
       setConclusion("");
       await load();

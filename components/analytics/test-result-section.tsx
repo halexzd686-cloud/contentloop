@@ -24,11 +24,12 @@ const OUTCOME_LABEL: Record<string, string> = {
 
 export interface ResultData {
   test: { checkpoint: string };
-  primaryMetric: {
+  /** Present on running (runtime); concluded carries it inside evidence. */
+  primaryMetric?: {
     key: string;
     format: "count" | "percentage" | "ratio";
     label: string;
-  };
+  } | null;
   rows: ResultRow[];
   readiness: {
     canConclude: boolean;
@@ -37,7 +38,14 @@ export interface ResultData {
   };
   previewFingerprint: string;
   baselineError: string | null;
-  evidence?: { publications: ResultRow[] };
+  evidence?: {
+    primaryMetric?: {
+      key: string;
+      format: "count" | "percentage" | "ratio";
+      label: string;
+    };
+    publications: ResultRow[];
+  };
   outcome?: string | null;
   conclusion?: string | null;
   concludedAt?: string | null;
@@ -113,11 +121,13 @@ export function ResultSection({
   }
 
   const rows = result.evidence?.publications ?? result.rows ?? [];
+  // Running → runtime primaryMetric; concluded → frozen evidence's.
+  const pm = result.primaryMetric ?? result.evidence?.primaryMetric ?? null;
 
   return (
     <section className="rounded-[8px] border border-border bg-canvas p-3">
       <p className="text-xs font-semibold uppercase tracking-wide text-ink-muted">
-        Observed Results — {result.primaryMetric.label} · {result.test.checkpoint}
+        Observed Results — {pm?.label ?? "Primary metric"} · {result.test.checkpoint}
       </p>
 
       {!running && (
@@ -159,12 +169,12 @@ export function ResultSection({
             ) : (
               <p className="mt-0.5 text-xs text-ink-secondary">
                 <span className="font-medium text-ink-primary">
-                  {formatMetricValue(result.primaryMetric.format, r.value)}
+                  {pm ? formatMetricValue(pm.format, r.value) : "N/A"}
                 </span>
                 {" · "}Account{" "}
-                <BaselineText cell={r.accountBaseline} format={result.primaryMetric.format} />
+                <BaselineText cell={r.accountBaseline} format={pm?.format ?? "count"} />
                 {" · "}Pillar{" "}
-                <BaselineText cell={r.pillarBaseline} format={result.primaryMetric.format} />
+                <BaselineText cell={r.pillarBaseline} format={pm?.format ?? "count"} />
                 {r.captureDeltaMinutes !== null && (
                   <span className="ml-1 text-ink-faint">
                     · captured {r.captureDeltaMinutes >= 0 ? "+" : ""}

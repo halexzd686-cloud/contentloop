@@ -300,9 +300,15 @@ export async function getConcludedResult(testId: string) {
   if (test.status !== "concluded") {
     throw new ReviewError("Test has not concluded.", 409);
   }
+  const evidence = test.resultEvidence as {
+    primaryMetric?: { key: string; format: "count" | "percentage" | "ratio"; label: string };
+  } | null;
   const currentFp = subjectsFingerprint(test, subjects);
   return {
     test,
+    // Frozen evidence carries its own primary metric definition so the
+    // concluded view renders without any runtime recomputation.
+    primaryMetric: evidence?.primaryMetric ?? null,
     evidence: test.resultEvidence,
     outcome: test.outcome,
     conclusion: test.conclusion,
