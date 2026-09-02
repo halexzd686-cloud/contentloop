@@ -198,14 +198,14 @@ export function ResultSection({
 
       {!running && (
         <div className="mt-3 border-t border-border pt-3">
-          <p className="text-xs font-semibold text-ink-secondary">
-            Outcome:{" "}
+          <div className="flex items-center gap-2 text-xs font-semibold text-ink-secondary">
+            <span>Outcome:</span>
             <Badge variant={result.outcome === "win" ? "mint" : "default"}>
               {result.outcome
                 ? (OUTCOME_LABEL[result.outcome]?.split(" — ")[0] ?? result.outcome)
                 : "—"}
             </Badge>
-          </p>
+          </div>
           <p className="mt-1 text-xs text-ink-primary">{result.conclusion}</p>
           {result.concludedAt && (
             <p className="mt-1 text-[11px] text-ink-faint">
