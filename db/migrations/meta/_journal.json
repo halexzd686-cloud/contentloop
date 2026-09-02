@@ -57,6 +57,13 @@
       "when": 1788268642049,
       "tag": "0007_quiet_vance_astro",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1788326863995,
+      "tag": "0008_numerous_amazoness",
+      "breakpoints": true
     }
   ]
 }

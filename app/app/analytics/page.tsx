@@ -24,6 +24,7 @@ import {
   type DiagnosisRecord,
 } from "@/components/analytics/loop-analysis";
 import { ImportMetricsModal } from "@/components/analytics/import-modal";
+import { TestsSection } from "@/components/analytics/tests-section";
 
 /**
  * Analytics — /app/analytics (M2.5)
@@ -594,6 +595,15 @@ export default function AnalyticsPage() {
             )}
           </>
         )}
+
+        {/* Tests — M3.1 */}
+        <TestsSection
+          publications={index.map((p) => ({
+            publicationId: p.publicationId,
+            finalTitle: p.finalTitle,
+            platform: p.platform,
+          }))}
+        />
       </div>
 
       {/* Loop Analysis — M2.6 structured diagnosis */}

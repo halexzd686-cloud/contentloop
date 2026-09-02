@@ -589,6 +589,10 @@ export const tests = pgTable("tests", {
   hypothesis: text("hypothesis").notNull(),
   change: text("change").notNull(),
   primaryMetricKey: varchar("primary_metric_key", { length: 100 }).notNull(),
+  // M3.1: Test identity includes platform + checkpoint (primaryMetricKey is
+  // NOT cross-platform unique). Manual checkpoint is not valid for Tests.
+  platform: platformEnum("platform").notNull(),
+  checkpoint: metricCheckpointEnum("checkpoint").notNull(),
   keepConsistent: text("keep_consistent"),
   compareWith: text("compare_with"),
   method: testMethodEnum("method").notNull(),
