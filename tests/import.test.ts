@@ -204,6 +204,28 @@ describe("mapping", () => {
     expect(missing.some((e) => e.includes("publication"))).toBe(true);
     expect(missing.some((e) => e.includes("checkpoint"))).toBe(true);
   });
+
+  it("rejects derived / inactive metric mappings explicitly", () => {
+    const errs = validateMapping(
+      {
+        ...EMPTY_MAPPING,
+        publicationUrl: "a",
+        checkpoint: "b",
+        metrics: { like_rate: "c" },
+        metricNAAll: [],
+      },
+      ["a", "b", "c"],
+      ["views", "likes"]
+    );
+    expect(errs.some((e) => e.includes("like_rate") && e.includes("cannot be imported"))).toBe(true);
+
+    const ok = validateMapping(
+      { ...EMPTY_MAPPING, publicationUrl: "a", checkpoint: "b", metrics: { views: "c" }, metricNAAll: [] },
+      ["a", "b", "c"],
+      ["views", "likes"]
+    );
+    expect(ok).toEqual([]);
+  });
 });
 
 describe("validateImportFile", () => {

@@ -199,8 +199,8 @@ export async function buildImportPreview(
   const sheet = parseSheet(bytes, fileName, config.sheet ?? undefined);
   const { defs, pubs } = await loadPlatformScope(brand.id, config.platform);
 
-  const mappingErrors = validateMapping(config.mapping, sheet.headers);
   const metricKeys = defs.map((d) => d.key);
+  const mappingErrors = validateMapping(config.mapping, sheet.headers, metricKeys);
 
   const rows: EffectiveRow[] = [];
   const seenTargets = new Map<string, number>();

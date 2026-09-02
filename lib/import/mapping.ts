@@ -83,7 +83,8 @@ export function suggestMetricMapping(
 /** Mapping validation: no source column mapped twice; derived never mapped (caller passes only raw defs). */
 export function validateMapping(
   mapping: ColumnMapping,
-  headers: string[]
+  headers: string[],
+  rawMetricKeys?: string[]
 ): string[] {
   const errors: string[] = [];
   const used = new Map<string, string>();
@@ -108,7 +109,20 @@ export function validateMapping(
   claim(mapping.capturedAt, "captured_at");
   claim(mapping.platform, "platform");
   for (const [key, source] of Object.entries(mapping.metrics)) {
+    if (rawMetricKeys && !rawMetricKeys.includes(key)) {
+      errors.push(
+        `"${key}" is not an active raw metric for this platform (derived or inactive metrics cannot be imported).`
+      );
+      continue;
+    }
     claim(source, `metric:${key}`);
+  }
+  if (rawMetricKeys) {
+    for (const key of mapping.metricNAAll) {
+      if (!rawMetricKeys.includes(key)) {
+        errors.push(`"${key}" is not an active raw metric for this platform.`);
+      }
+    }
   }
 
   if (!mapping.publicationUrl && !mapping.publicationId) {
