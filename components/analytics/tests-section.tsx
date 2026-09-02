@@ -343,6 +343,10 @@ function TestDetailDrawer({
   const [attachId, setAttachId] = useState("");
   const [role, setRole] = useState("comparison");
   const [busy, setBusy] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [editTitle, setEditTitle] = useState("");
+  const [editKeep, setEditKeep] = useState("");
+  const [editCompare, setEditCompare] = useState("");
 
   const load = useCallback(async () => {
     try {
@@ -360,6 +364,44 @@ function TestDetailDrawer({
     const t = setTimeout(() => load(), 0);
     return () => clearTimeout(t);
   }, [load]);
+
+  function startEdit() {
+    if (!detail) return;
+    setEditTitle(detail.test.title);
+    setEditKeep(detail.test.keepConsistent ?? "");
+    setEditCompare(detail.test.compareWith ?? "");
+    setEditing(true);
+  }
+
+  function cancelEdit() {
+    setEditing(false);
+  }
+
+  async function saveEdit() {
+    if (!detail || busy || editTitle.trim() === "") return;
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/tests/${testId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: editTitle,
+          keepConsistent: editKeep || null,
+          compareWith: editCompare || null,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Save failed");
+      setEditing(false);
+      await load();
+      onChanged();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Save failed");
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function attach() {
     if (!attachId || busy) return;
@@ -418,7 +460,18 @@ function TestDetailDrawer({
         {detail ? (
           <>
             <DrawerHeader>
-              <DrawerTitle>{detail.test.title}</DrawerTitle>
+              {editing ? (
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-ink-secondary">Title</label>
+                  <input
+                    className="w-full rounded-[8px] border border-border bg-canvas px-3 py-2 text-sm text-ink-primary outline-none focus:border-mint-600"
+                    value={editTitle}
+                    onChange={(e) => setEditTitle(e.target.value)}
+                  />
+                </div>
+              ) : (
+                <DrawerTitle>{detail.test.title}</DrawerTitle>
+              )}
               <DrawerDescription>
                 {PLATFORM_LABEL[detail.test.platform]} · {detail.test.checkpoint} ·{" "}
                 {METHOD_LABEL[detail.test.method]} · {detail.test.primaryMetricKey} ·{" "}
@@ -427,6 +480,45 @@ function TestDetailDrawer({
             </DrawerHeader>
 
             <div className="space-y-4 text-sm">
+              {running && !editing && (
+                <div className="flex justify-end">
+                  <Button variant="ghost" size="sm" onClick={startEdit}>
+                    Edit
+                  </Button>
+                </div>
+              )}
+              {editing && (
+                <div className="space-y-3 rounded-[8px] border border-mint-600/30 bg-mint-100/40 p-3">
+                  <p className="text-xs font-medium text-ink-primary">
+                    Editing — only Title, Keep Consistent and Compare With can
+                    change. The test definition is locked.
+                  </p>
+                  <div>
+                    <label className="mb-1 block text-xs font-medium text-ink-secondary">Keep Consistent</label>
+                    <input
+                      className="w-full rounded-[8px] border border-border bg-workspace px-3 py-2 text-sm outline-none focus:border-mint-600"
+                      value={editKeep}
+                      onChange={(e) => setEditKeep(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs font-medium text-ink-secondary">Compare With</label>
+                    <input
+                      className="w-full rounded-[8px] border border-border bg-workspace px-3 py-2 text-sm outline-none focus:border-mint-600"
+                      value={editCompare}
+                      onChange={(e) => setEditCompare(e.target.value)}
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <Button variant="primary" size="sm" onClick={saveEdit} disabled={busy || editTitle.trim() === ""}>
+                      {busy ? "Saving…" : "Save"}
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={cancelEdit}>
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              )}
               <section>
                 <p className="text-xs font-semibold uppercase tracking-wide text-ink-muted">Hypothesis</p>
                 <p className="mt-1 text-ink-primary">{detail.test.hypothesis}</p>
@@ -435,7 +527,7 @@ function TestDetailDrawer({
                 <p className="text-xs font-semibold uppercase tracking-wide text-ink-muted">Change</p>
                 <p className="mt-1 text-ink-primary">{detail.test.change}</p>
               </section>
-              {(detail.test.keepConsistent || detail.test.compareWith) && (
+              {!editing && (detail.test.keepConsistent || detail.test.compareWith) && (
                 <section className="text-xs text-ink-muted">
                   {detail.test.keepConsistent && <p>Keep consistent: {detail.test.keepConsistent}</p>}
                   {detail.test.compareWith && <p>Compare with: {detail.test.compareWith}</p>}
