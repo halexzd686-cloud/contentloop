@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 
+import { formatMetricValue } from "@/lib/metrics/engine";
 import {
   computeReadiness,
   isOutcomeAllowed,
@@ -135,5 +136,31 @@ describe("concludeTestSchema", () => {
     expect(
       concludeTestSchema.safeParse({ ...VALID, outcome: "significant" }).success
     ).toBe(false);
+  });
+});
+
+describe("result baseline formatting (shared formatter, one format per metric)", () => {
+  it("percentage: current and medians all formatted as percentage", () => {
+    expect(formatMetricValue("percentage", 0.1)).toBe("10.0%");
+    expect(formatMetricValue("percentage", 0.05)).toBe("5.0%");
+    expect(formatMetricValue("percentage", 0.065)).toBe("6.5%");
+  });
+
+  it("count: medians use count formatting", () => {
+    expect(formatMetricValue("count", 1250)).toBe("1,250");
+  });
+
+  it("ratio: medians use ratio formatting", () => {
+    expect(formatMetricValue("ratio", 12.5)).toBe("12.5 : 1");
+  });
+
+  it("real zero stays 0, never N/A", () => {
+    expect(formatMetricValue("percentage", 0)).toBe("0.0%");
+    expect(formatMetricValue("count", 0)).toBe("0");
+  });
+
+  it("null / unavailable → N/A", () => {
+    expect(formatMetricValue("percentage", null)).toBe("N/A");
+    expect(formatMetricValue("count", null)).toBe("N/A");
   });
 });

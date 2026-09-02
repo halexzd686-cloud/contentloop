@@ -44,11 +44,19 @@ export interface ResultData {
   resultStale?: boolean;
 }
 
-function BaselineText({ cell }: { cell: BaselineCell }) {
+function BaselineText({
+  cell,
+  format,
+}: {
+  cell: BaselineCell;
+  format: "count" | "percentage" | "ratio";
+}) {
   if (!cell.available) return <span className="text-ink-faint">N/A</span>;
   return (
     <span className="text-ink-secondary">
-      {cell.median !== null ? Number(cell.median.toPrecision(3)) : "N/A"}
+      {/* Same shared formatter as the primary value — one format per
+          MetricDefinition, presentation-only. */}
+      {formatMetricValue(format, cell.median)}
       <span className="ml-1 text-ink-faint">n={cell.sampleCount}</span>
     </span>
   );
@@ -153,8 +161,10 @@ export function ResultSection({
                 <span className="font-medium text-ink-primary">
                   {formatMetricValue(result.primaryMetric.format, r.value)}
                 </span>
-                {" · "}Account <BaselineText cell={r.accountBaseline} />
-                {" · "}Pillar <BaselineText cell={r.pillarBaseline} />
+                {" · "}Account{" "}
+                <BaselineText cell={r.accountBaseline} format={result.primaryMetric.format} />
+                {" · "}Pillar{" "}
+                <BaselineText cell={r.pillarBaseline} format={result.primaryMetric.format} />
                 {r.captureDeltaMinutes !== null && (
                   <span className="ml-1 text-ink-faint">
                     · captured {r.captureDeltaMinutes >= 0 ? "+" : ""}

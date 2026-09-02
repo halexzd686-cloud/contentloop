@@ -18,8 +18,7 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer";
-import { FlaskConical, Plus, X, Check } from "lucide-react";
-import { formatMetricValue } from "@/lib/metrics/engine";
+import { FlaskConical, Plus, X } from "lucide-react";
 import { ResultSection, type ResultData } from "@/components/analytics/test-result-section";
 
 /**
