@@ -603,6 +603,9 @@ export const tests = pgTable("tests", {
     .defaultNow()
     .notNull(),
   concludedAt: timestamp("concluded_at", { withTimezone: true }),
+  // M3.2: frozen at Human Complete. NULL while running.
+  resultEvidence: jsonb("result_evidence").$type<Record<string, unknown>>(),
+  resultFingerprint: text("result_fingerprint"),
 });
 
 export const testPublications = pgTable(

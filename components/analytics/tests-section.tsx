@@ -18,7 +18,9 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer";
-import { FlaskConical, Plus, X } from "lucide-react";
+import { FlaskConical, Plus, X, Check } from "lucide-react";
+import { formatMetricValue } from "@/lib/metrics/engine";
+import { ResultSection, type ResultData } from "@/components/analytics/test-result-section";
 
 /**
  * Tests section — M3.1 Test Core (Analytics → Tests).
@@ -347,6 +349,11 @@ function TestDetailDrawer({
   const [editTitle, setEditTitle] = useState("");
   const [editKeep, setEditKeep] = useState("");
   const [editCompare, setEditCompare] = useState("");
+  const [result, setResult] = useState<ResultData | null>(null);
+  const [resultError, setResultError] = useState<string | null>(null);
+  const [concludeOpen, setConcludeOpen] = useState(false);
+  const [outcome, setOutcome] = useState("no_clear_result");
+  const [conclusion, setConclusion] = useState("");
 
   const load = useCallback(async () => {
     try {
@@ -355,6 +362,14 @@ function TestDetailDrawer({
       if (!res.ok) throw new Error(data.error || "Failed to load");
       setDetail(data);
       setError(null);
+      const rres = await fetch(`/api/tests/${testId}/result`);
+      const rdata = await rres.json();
+      if (rres.ok) {
+        setResult(rdata);
+        setResultError(null);
+      } else {
+        setResultError(rdata.error || "Failed to load result");
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load");
     }
@@ -398,6 +413,33 @@ function TestDetailDrawer({
       onChanged();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Save failed");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function conclude() {
+    if (!result || busy) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/tests/${testId}/conclude`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          outcome,
+          conclusion,
+          previewFingerprint: result.previewFingerprint,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Conclude failed");
+      setConcludeOpen(false);
+      setConclusion("");
+      await load();
+      onChanged();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Conclude failed");
     } finally {
       setBusy(false);
     }
@@ -598,12 +640,21 @@ function TestDetailDrawer({
                 )}
               </section>
 
-              <section className="rounded-[8px] border border-border bg-canvas p-3">
-                <p className="text-xs text-ink-faint">
-                  Observed results and conclusion become available in the next
-                  stage (M3.2).
-                </p>
-              </section>
+              <ResultSection
+                running={running}
+                result={result}
+                resultError={resultError}
+                onRetryResult={load}
+                concludeOpen={concludeOpen}
+                onOpenConclude={() => setConcludeOpen(true)}
+                onCloseConclude={() => setConcludeOpen(false)}
+                outcome={outcome}
+                setOutcome={setOutcome}
+                conclusion={conclusion}
+                setConclusion={setConclusion}
+                onConclude={conclude}
+                busy={busy}
+              />
 
               {error && (
                 <div className="rounded-[8px] border border-danger/20 bg-danger/5 p-3 text-xs text-danger">{error}</div>

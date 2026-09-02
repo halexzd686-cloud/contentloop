@@ -64,6 +64,13 @@
       "when": 1788326863995,
       "tag": "0008_numerous_amazoness",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1788332766426,
+      "tag": "0009_pale_xavin",
+      "breakpoints": true
     }
   ]
 }
