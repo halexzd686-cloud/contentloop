@@ -468,9 +468,11 @@ function TestDetailDrawer({
                 </div>
 
                 {running && (
-                  <div className="mt-3 flex items-center gap-2">
+                  <div className="mt-3 space-y-2">
+                    {/* Row 1: publication selector takes the full width —
+                        long titles can never push the action out. */}
                     <select
-                      className="flex-1 rounded-[8px] border border-border bg-workspace px-2 py-1.5 text-xs outline-none focus:border-mint-600"
+                      className="w-full min-w-0 rounded-[8px] border border-border bg-workspace px-2 py-1.5 text-xs outline-none focus:border-mint-600"
                       value={attachId}
                       onChange={(e) => setAttachId(e.target.value)}
                     >
@@ -479,18 +481,27 @@ function TestDetailDrawer({
                         <option key={p.publicationId} value={p.publicationId}>{p.finalTitle}</option>
                       ))}
                     </select>
-                    <select
-                      className="rounded-[8px] border border-border bg-workspace px-2 py-1.5 text-xs outline-none focus:border-mint-600"
-                      value={role}
-                      onChange={(e) => setRole(e.target.value)}
-                    >
-                      <option value="comparison">comparison</option>
-                      <option value="control">control</option>
-                      <option value="variant">variant</option>
-                    </select>
-                    <Button variant="secondary" size="sm" onClick={attach} disabled={!attachId || busy}>
-                      Attach
-                    </Button>
+                    {/* Row 2: role flexible, Add never shrinks away. */}
+                    <div className="flex items-center gap-2">
+                      <select
+                        className="min-w-0 flex-1 rounded-[8px] border border-border bg-workspace px-2 py-1.5 text-xs outline-none focus:border-mint-600"
+                        value={role}
+                        onChange={(e) => setRole(e.target.value)}
+                      >
+                        <option value="comparison">comparison</option>
+                        <option value="control">control</option>
+                        <option value="variant">variant</option>
+                      </select>
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        className="shrink-0"
+                        onClick={attach}
+                        disabled={!attachId || busy}
+                      >
+                        Add
+                      </Button>
+                    </div>
                   </div>
                 )}
               </section>
