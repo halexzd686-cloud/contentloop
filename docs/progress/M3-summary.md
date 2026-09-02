@@ -1,6 +1,6 @@
 # M3 Summary — Test & Learning Loop（进行中）
 
-> Status: M3.1 **Frozen**（人工浏览器验收通过）。下一步 M3.2 — Result & Conclude。
+> Status: M3.1 / M3.2 **Frozen**（人工浏览器验收通过）。下一步 M3.3 — Learning。
 >
 > 前置：M2 COMPLETE（见 `M2-summary.md`）。
 
@@ -32,11 +32,30 @@
 - `components/analytics/tests-section.tsx` — Tests 区块 + Create Modal + Detail Drawer（Edit 模式 + 两行 attach 布局）
 - `tests/test-core.test.ts`（9）— 累计 278 tests
 
+### M3.2 — Result & Conclude（Frozen，人工浏览器验收 A–P 通过）
+
+- 正式链：Running Test → runtime Observed Result（server 权威）→ Human Review → Complete → frozen resultEvidence + outcome + conclusion
+- Migration `0009`：`result_evidence` JSONB NULL + `result_fingerprint` TEXT NULL + **DB CHECK**：concluded ⇒ outcome/conclusion/concludedAt/resultEvidence/resultFingerprint 全 NOT NULL（单向）
+- **Readiness 矩阵（冻结）**：0 pubs → blocked；0 observed → blocked（≠ no_clear_result）；1 observed → 仅 no_clear_result；≥2 observed 但有 awaiting/metric_unavailable → 仅 no_clear_result；≥2 全 available → 四 outcome 开放。observedCount≥2 是结构性比较下限，非统计显著性
+- **双 fingerprint 语义**：previewFingerprint（runtime，含 baseline context）保护 Review→Complete；resultFingerprint（持久化，定义+membership+subject，**不含 baseline**）驱动 concluded stale
+- Stale 触发：snapshot metrics / capturedAt / finalTitle / pillarId / membership / role；baseline 漂移 / alias 变化 → 不 stale；frozen evidence 永不静默覆盖
+- Outcome Human-owned：win / loss / trade_off / no_clear_result；无 winner/causal/significant 语言；server 只强制 readiness 限制的 no_clear_result
+- Baseline：legitimately unavailable（带 reason）可入 frozen evidence；transient failure → Complete 阻止 + Retry，不冻结残缺 evidence
+- 零 AI、零 Learning、零 Diagnosis 集成、零 Playbook 变更；只写 tests
+- 已修浏览器 blockers：baseline 共用 formatter（percentage 一致性）、concluded primaryMetric 从 frozen evidence 提供（render crash）、409 冲突关面板+重拉最新 result、concluded outcome Badge 的 p>div 嵌套
+- 验收 fixture 全清理；M2 数据恢复权威值（含 DEMO Fixture B likes 恢复 400，删除 junk 72h 伪 snapshot）
+
 ## Known Limitations
 
 - tests 无 updatedAt/revision —— V1 单用户接受弱并发保护
 - free-text hypothesis 可能与结构化 checkpoint/metric 不一致 —— 结构化字段权威，V1 不做 prose NLP 校验
-- Result Evidence / Result Fingerprint 明确留 M3.2（届时需 migration：`tests.result_evidence` JSONB + `tests.result_fingerprint` TEXT）
+## M3.2 Known Limitations
+
+- trade_off 是 Human 对 mixed observation 的判断；V1 无 multi-metric causal trade-off engine
+- 无 Reopen / conclusion history
+- baseline transient failure 会临时阻止 Complete（Retry 即可）
+- Test 核心身份（platform/checkpoint/method/primaryMetric/hypothesis/change）创建后 immutable；选错需重建 Test（未来可规划 Duplicate/Recreate UX）
+- tests 无 updatedAt/revision；关键 conclude race 由 previewFingerprint 保护
 
 ## Frozen Constraints（M3.1 新增）
 
@@ -47,4 +66,4 @@
 
 ## Next
 
-- M3.2 — Result & Conclude：resultEvidence + resultFingerprint + runtime observed result + deterministic readiness + Human conclusion
+- M3.3 — Learning：concluded Test → server canonical evidenceSummary + optional AI text draft → Human Save；source Test stale 传播
