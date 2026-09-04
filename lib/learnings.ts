@@ -9,6 +9,7 @@ import {
 import { requireSingleBrand } from "@/lib/brand";
 import { ReviewError } from "@/lib/review";
 import { computeTestResultStale } from "@/lib/tests-result";
+import { getAppliedCounts } from "@/lib/learning-applications";
 import { formatMetricValue } from "@/lib/metrics/engine";
 import type {
   LearningSaveInput,
@@ -274,6 +275,8 @@ export async function listLearnings() {
     : [];
   const pillarById = new Map(pillars.map((p) => [p.id, p.name]));
 
+  const appliedCounts = await getAppliedCounts();
+
   // Derived staleness per learning (never persisted).
   const staleById = new Map<string, boolean>();
   for (const l of rows) {
@@ -293,6 +296,7 @@ export async function listLearnings() {
       sourceTestTitle: l.sourceTestId ? (byId.get(l.sourceTestId)?.title ?? null) : null,
       sourceTestOutcome: l.sourceTestId ? (byId.get(l.sourceTestId)?.outcome ?? null) : null,
       sourceStale: staleById.get(l.id) ?? false,
+      appliedCount: appliedCounts.get(l.id) ?? 0,
       createdAt: l.createdAt,
       updatedAt: l.updatedAt,
     })),

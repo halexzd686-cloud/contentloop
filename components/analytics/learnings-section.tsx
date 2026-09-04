@@ -17,6 +17,7 @@ interface LearningRow {
   sourceTestTitle: string | null;
   sourceTestOutcome: string | null;
   sourceStale: boolean;
+  appliedCount: number;
   createdAt: string;
 }
 
@@ -82,6 +83,9 @@ export function LearningsSection() {
                 )}
                 {l.sourceStale && (
                   <Badge variant="warning">source test data changed</Badge>
+                )}
+                {l.appliedCount > 0 && (
+                  <span>· currently applied to {l.appliedCount} content{l.appliedCount === 1 ? "" : "s"}</span>
                 )}
               </div>
             </div>

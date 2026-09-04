@@ -34,6 +34,7 @@ import {
   BriefFields,
   type BriefFieldValues,
 } from "@/components/studio/brief-fields";
+import { LearningsPanel } from "@/components/studio/learnings-panel";
 import {
   normalizeModuleOrder,
   type MasterModule,
@@ -708,6 +709,9 @@ export default function StudioContentPage({
               an AI draft from the Loop AI panel.
             </p>
           )}
+
+          {/* Learnings — M3.4 guidance/provenance only */}
+          <LearningsPanel contentId={content.id} />
           </>
           ) : activeTab === "Master" ? (
             <MasterWorkspace
