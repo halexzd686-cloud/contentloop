@@ -57,3 +57,28 @@ export const attachPublicationSchema = z
   .strict();
 
 export type AttachPublicationInput = z.infer<typeof attachPublicationSchema>;
+
+/**
+ * M4.2 — Create Test dialog submittability (pure).
+ *
+ * Method is part of the locked Test identity, so it must be an
+ * explicit human choice: the dialog starts with method unset
+ * ("— select —") and this gate keeps Confirm disabled until one is
+ * picked. The diagnosis entry prefills only platform/checkpoint —
+ * never method.
+ */
+export function createTestFormSubmittable(input: {
+  method: string;
+  title: string;
+  hypothesis: string;
+  change: string;
+  primaryMetricKey: string;
+}): boolean {
+  return (
+    (TEST_METHODS as readonly string[]).includes(input.method) &&
+    input.title.trim() !== "" &&
+    input.hypothesis.trim() !== "" &&
+    input.change.trim() !== "" &&
+    input.primaryMetricKey !== ""
+  );
+}

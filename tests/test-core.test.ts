@@ -4,6 +4,7 @@ import {
   createTestSchema,
   patchTestSchema,
   attachPublicationSchema,
+  createTestFormSubmittable,
 } from "@/lib/validation/test";
 
 /**
@@ -91,5 +92,39 @@ describe("attachPublicationSchema", () => {
     });
     expect(r.success).toBe(true);
     if (r.success) expect(r.data.role).toBe("comparison");
+  });
+});
+
+// ─── M4.2: method must be an explicit human choice ─────
+
+describe("createTestFormSubmittable (M4.2)", () => {
+  const FULL = {
+    method: "content_comparison",
+    title: "t",
+    hypothesis: "h",
+    change: "c",
+    primaryMetricKey: "views",
+  };
+
+  it("method unset → not submittable (diagnosis entry: only platform/checkpoint prefilled)", () => {
+    expect(createTestFormSubmittable({ ...FULL, method: "" })).toBe(false);
+  });
+
+  it("ordinary Create Test also starts unresolved — no silent default method", () => {
+    // The dialog initial state is "" for every new Test; a human must
+    // pick one of TEST_METHODS before Confirm enables.
+    expect(createTestFormSubmittable({ ...FULL, method: "" })).toBe(false);
+    expect(createTestFormSubmittable(FULL)).toBe(true);
+  });
+
+  it("unknown method rejected", () => {
+    expect(createTestFormSubmittable({ ...FULL, method: "ab_test" })).toBe(false);
+  });
+
+  it("other required fields still gate", () => {
+    expect(createTestFormSubmittable({ ...FULL, title: "  " })).toBe(false);
+    expect(createTestFormSubmittable({ ...FULL, hypothesis: "" })).toBe(false);
+    expect(createTestFormSubmittable({ ...FULL, change: "" })).toBe(false);
+    expect(createTestFormSubmittable({ ...FULL, primaryMetricKey: "" })).toBe(false);
   });
 });

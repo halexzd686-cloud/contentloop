@@ -21,6 +21,7 @@ import {
 import { FlaskConical, Plus, X } from "lucide-react";
 import { ResultSection, type ResultData } from "@/components/analytics/test-result-section";
 import { LearningSection } from "@/components/analytics/learning-section";
+import { createTestFormSubmittable } from "@/lib/validation/test";
 
 /**
  * Tests section — M3.1 Test Core (Analytics → Tests).
@@ -220,7 +221,7 @@ function CreateTestDialog({
   onCreated: () => void;
 }) {
   const [platform, setPlatform] = useState(initialPlatform ?? "xiaohongshu");
-  const [method, setMethod] = useState("content_comparison");
+  const [method, setMethod] = useState("");
   const [checkpoint, setCheckpoint] = useState(initialCheckpoint ?? "24h");
   const [title, setTitle] = useState("");
   const [hypothesis, setHypothesis] = useState("");
@@ -248,8 +249,13 @@ function CreateTestDialog({
     };
   }, [platform]);
 
-  const valid =
-    title.trim() && hypothesis.trim() && change.trim() && primaryMetricKey;
+  const valid = createTestFormSubmittable({
+    method,
+    title,
+    hypothesis,
+    change,
+    primaryMetricKey,
+  });
 
   async function submit() {
     if (!valid || busy) return;
@@ -316,6 +322,7 @@ function CreateTestDialog({
             <div>
               <label className="mb-1 block text-xs font-medium text-ink-secondary">Method *</label>
               <select className="w-full rounded-[8px] border border-border bg-workspace px-3 py-2 text-sm outline-none focus:border-mint-600" value={method} onChange={(e) => setMethod(e.target.value)}>
+                <option value="">— select —</option>
                 {Object.entries(METHOD_LABEL).map(([k, l]) => <option key={k} value={k}>{l}</option>)}
               </select>
             </div>
