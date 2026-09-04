@@ -1,10 +1,55 @@
 # M4 Summary — Productization（进行中）
 
-> Status: M4.0 Audit **Complete**；M4.1 **Frozen**（人工浏览器验收 A–O 通过）。下一步 M4.2 — Loop Continuity & Entry UX（未开始）。
+> Status: M4.0 Audit **Complete**；M4.1 **Frozen**；M4.2 **Frozen**（人工浏览器验收 A–V 通过 + Method explicit-choice regression）。下一步 M4.3 — Language & Comprehension（未开始）。
 >
 > 前置：M3 Frozen（见 `M3-summary.md`）。
 
 ## Completed
+
+### M4.2 — Loop Continuity & Entry UX（Frozen，浏览器验收 A–V 通过）
+
+**Home（每日入口，0 AI / 0 新 API / navigation only）**
+
+- `app/app/page.tsx` 重写：Needs Attention（due metrics + review content）→ Continue Working（planning/in_progress ≤5，updatedAt DESC）→ Monitoring（scheduled + running tests ≤3）
+- `lib/home.ts` 纯函数 `buildHomeModel`；客户端 Promise.all 组合 contents / analytics index / tests 三个现有 read model，无 `/api/home`
+- DEMO 经 `contents.is_demo` 排除（content + publication work）；tests 无 demo authority 不过滤；archived 由既有 API 过滤；空库 Add Signal / New Content 双 CTA；无 overdue 概念（遵循 M2 决策）
+- analytics index additive：`dueAt`（authoritative `checkpointDueAt()`）+ `isDemo`；client 只 display/sort/navigate
+
+**Next-action（全部 current-state 派生、持久、每状态至多一个 primary CTA）**
+
+- Brief approved && !master → "Continue to Master"（仅切 tab，Master Create gate 不变，零自动创建）
+- Review panel status=scheduled → 持久 "View in Pipeline" 链接
+- Publication→Metrics：实查确认 Studio Review 与 Pipeline drawer 已有权威持久 checkpoint 引导，未重复造按钮
+- Metrics→Diagnosis：不加 CTA（同屏既有入口足够）
+
+**Diagnosis → Test（G-07 修复）**
+
+- saved && !stale Diagnosis → "Create Test from this diagnosis"；proposal-only / stale 无 CTA（stale warning 保留）
+- Safe prefill 仅 platform（detail.fact.platform）+ checkpoint（selected.checkpoint），下拉仍可改；其余字段全部 Human 手填；无 Diagnosis 文本→Hypothesis/Change 转换
+- context label "Creating a Test from: \<finalTitle\> · \<checkpoint\>" 纯展示，无新 FK；同一 CreateTestDialog + 同一 POST/server validation
+- **Create Test method now requires explicit Human selection; legacy Content Comparison UI default removed. Test domain and immutable identity semantics unchanged.**（验收 blocker 修复：method 初始 `— select —`，`createTestFormSubmittable` 纯函数 gate；空 method 提交 server Zod 仍 400）
+
+**Learning → Studio（G-08 修复）**
+
+- Test drawer saved Learning 持久指引："Saved. This does not change any content. Apply it from Studio → Brief on eligible content."
+- Analytics Learning card 增加 "Apply in Studio →"（仅导航 /app/studio）；Analytics 零 LearningApplication mutation；Studio LearningsPanel 仍唯一 Apply/Dismiss surface（M3.4 boundary 保持）
+
+**Context correctness**
+
+- Studio header 只读显示 primaryPlatform（detail API full-row 已含，无 API 变更）
+- PlatformsPanel 改读 `content.primaryPlatform`（删 Signal fallback；manual content 默认平台修复）
+- Manual Content Loop AI helper 不再谎称 linked signal（条件化文案）
+
+**验收与清理**
+
+- 浏览器验收 A–V 通过（A/N 为 automated/code-path）+ Method explicit-choice regression 通过
+- 验收 fixtures 单事务清理（preflight 身份断言 + 事务内 13 项 post-count 断言）；含浏览器侧 artifact `M4.2 Manual Context Acceptance`（childless，provenance 明确）
+- 最终 DB 回到 M4.1 frozen baseline：contents=6, demos=2, publications=5, snapshots=6, diagnoses=2, tests/learnings/applications=0, versions=8, briefs=3, masters=3
+
+## Schema Changes
+
+- M4.2：**无**（0 migration、0 新 API、0 新 authoritative state）
+- Migration `0011_young_expediter.sql`：contents + is_demo + primary_platform（含 exact fixture backfill）
 
 ### M4.0 — Productization Audit & Release Gap Analysis（Complete）
 
@@ -72,9 +117,10 @@
 4. Archived Content 无 archive reason/history
 5. Published / Publication-bearing Content 不可 Archive
 6. Demo provenance 目前从 Content level 开始
-7. P2 backlog：Content Detail 未明显展示 primaryPlatform（context visibility）
-8. P2 backlog：Manual Content 的 Loop AI helper 仍写 "based on the linked signal..."（copy 修正，归 M4.2/M4.3）
+7. ~~P2 backlog：Content Detail 未明显展示 primaryPlatform~~ → M4.2 已解决（Studio header 只读显示）
+8. ~~P2 backlog：Manual Content 的 Loop AI helper linked-signal copy~~ → M4.2 已解决（条件化文案）
 9. Manual Content without linked Signal 的 platform authority 已由 M4.1 解决；M3-summary 中 M3.4 "Signal 派生" 描述被本条取代
+10. M4.2 backlog：Home due metric 链到 Analytics 列表而非深链具体 publication/checkpoint；running tests 无 demo 过滤；Home 不算 Test readiness；Master→Platforms CTA、LearningsPanel placement 留 P3
 
 ## Frozen Constraints（M4.1 新增）
 
@@ -84,6 +130,13 @@
 - Archive 需 status != published 且 publicationCount = 0；永不 hard delete
 - Discard 仅 running；concluded 永不可 discard；无 discard 状态枚举
 
+## Frozen Constraints（M4.2 新增）
+
+- Home = navigation surface：0 AI、0 mutation、0 新 API；DEMO 经 isDemo 排除；无 overdue 概念
+- Next-action UI 必须 current-state 派生且持久；每状态至多一个 primary CTA
+- Diagnosis→Test：CTA 仅 saved && !stale；prefill 仅 platform/checkpoint；Test method 必须 Human 显式选择（无 UI 默认值）
+- Learning Application mutation 唯一 surface 仍为 Studio（Analytics/Home 仅导航）
+
 ## Next
 
-- M4.2 — Loop Continuity & Entry UX（规划门未开）
+- M4.3 — Language & Comprehension（规划门未开）
