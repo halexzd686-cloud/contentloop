@@ -68,6 +68,8 @@ async function loadCandidates(
         eq(metricSnapshots.checkpoint, checkpoint),
         lt(publications.publishedAt, targetPublishedAt),
         isNull(contents.deletedAt),
+        eq(contents.isDemo, false), // M4.1: real-only cohorts, never demo
+
         isNull(publications.deletedAt),
         ...(pillarId ? [eq(contents.pillarId, pillarId)] : [])
       )

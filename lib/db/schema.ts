@@ -341,6 +341,11 @@ export const contents = pgTable(
     ownerId: uuid("owner_id").references(() => teamMembers.id),
     reviewerId: uuid("reviewer_id").references(() => teamMembers.id),
     priority: contentPriorityEnum("priority").default("normal").notNull(),
+    // M4.1: Content-level primary platform authority (a Content may own
+    // several PlatformVersions; this is NOT platform identity of a version).
+    primaryPlatform: platformEnum("primary_platform"),
+    // M4.1: structured DEMO provenance for the whole content chain.
+    isDemo: boolean("is_demo").default(false).notNull(),
     scheduledAt: timestamp("scheduled_at", { withTimezone: true }),
     deadlineAt: timestamp("deadline_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true })

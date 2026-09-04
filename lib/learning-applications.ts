@@ -6,7 +6,6 @@ import {
   contentPillars,
   learningApplications,
   learnings,
-  signals,
   tests,
 } from "@/lib/db/schema";
 import { requireSingleBrand } from "@/lib/brand";
@@ -61,22 +60,12 @@ async function loadContentScope(
     );
   if (!content) throw new ReviewError("Content not found", 404);
 
-  // Content platform derives from the linked Signal's primaryPlatform
-  // (manual content without a signal has no platform → only general
-  // learnings are eligible).
-  let platform: string | null = null;
-  if (content.sourceSignalId) {
-    const [signal] = await tx
-      .select({ primaryPlatform: signals.primaryPlatform })
-      .from(signals)
-      .where(eq(signals.id, content.sourceSignalId));
-    platform = signal?.primaryPlatform ?? null;
-  }
-
+  // M4.1: Content.primaryPlatform is the authority. Signal's value is
+  // only create-time provenance, never re-read.
   return {
     id: content.id,
     status: content.status,
-    platform,
+    platform: content.primaryPlatform,
     pillarId: content.pillarId,
   };
 }
@@ -231,18 +220,10 @@ export async function getApplicationsForContent(contentId: string) {
     .then((r) => r[0]);
   if (!content) throw new ReviewError("Content not found", 404);
 
-  let platform: string | null = null;
-  if (content.sourceSignalId) {
-    const [signal] = await db
-      .select({ primaryPlatform: signals.primaryPlatform })
-      .from(signals)
-      .where(eq(signals.id, content.sourceSignalId));
-    platform = signal?.primaryPlatform ?? null;
-  }
   const scope: ContentScope = {
     id: content.id,
     status: content.status,
-    platform,
+    platform: content.primaryPlatform,
     pillarId: content.pillarId,
   };
 

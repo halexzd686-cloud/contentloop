@@ -27,8 +27,8 @@ import { LearningSection } from "@/components/analytics/learning-section";
  *
  * Create modal IS the review gate: confirm writes the test with
  * status=running (server-owned). Core definition is locked at create.
- * Running tests: edit descriptive fields, attach/detach publications.
- * No result/conclude UI here (M3.2), no AI, no learning.
+ * Running tests: edit descriptive fields, attach/detach publications,
+ * or Discard (M4.1 — removes the test and its links only).
  */
 
 interface TestRow {
@@ -352,6 +352,7 @@ function TestDetailDrawer({
   const [result, setResult] = useState<ResultData | null>(null);
   const [resultError, setResultError] = useState<string | null>(null);
   const [concludeOpen, setConcludeOpen] = useState(false);
+  const [discardOpen, setDiscardOpen] = useState(false);
   const [outcome, setOutcome] = useState("no_clear_result");
   const [conclusion, setConclusion] = useState("");
 
@@ -454,8 +455,26 @@ function TestDetailDrawer({
     }
   }
 
-  async function attach() {
-    if (!attachId || busy) return;
+  async function discard() {
+    if (busy) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/tests/${testId}`, { method: "DELETE" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Discard failed");
+      setDiscardOpen(false);
+      onChanged();
+      onClose();
+    } catch (err) {
+      setDiscardOpen(false);
+      setError(err instanceof Error ? err.message : "Discard failed");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function attach() {    if (!attachId || busy) return;
     setBusy(true);
     setError(null);
     try {
@@ -667,10 +686,45 @@ function TestDetailDrawer({
                 busy={busy}
               />
 
+              {running && (
+                <div className="border-t border-border pt-3">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-danger hover:bg-danger/5 hover:text-danger"
+                    onClick={() => setDiscardOpen(true)}
+                  >
+                    Discard Test
+                  </Button>
+                </div>
+              )}
+
               {error && (
                 <div className="rounded-[8px] border border-danger/20 bg-danger/5 p-3 text-xs text-danger">{error}</div>
               )}
             </div>
+
+            {discardOpen && (
+              <Dialog open onOpenChange={(o) => !o && setDiscardOpen(false)}>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Discard Test</DialogTitle>
+                    <DialogDescription>
+                      This removes this running Test and its publication links.
+                      It does not delete published content or metric data.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <DialogFooter>
+                    <Button variant="ghost" onClick={() => setDiscardOpen(false)}>
+                      Cancel
+                    </Button>
+                    <Button variant="danger" onClick={discard} disabled={busy}>
+                      {busy ? "Discarding…" : "Discard Test"}
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            )}
           </>
         ) : (
           <p className="text-sm text-ink-muted">Loading test…</p>

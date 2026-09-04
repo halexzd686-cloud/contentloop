@@ -264,6 +264,34 @@ export async function attachPublication(
   });
 }
 
+/**
+ * Discard Test — M4.1. Running tests only (any membership count).
+ * Deletes the test and its membership links in one transaction;
+ * Publications, Snapshots, Diagnoses, Contents and Learnings are
+ * never touched. Concluded tests are never discardable.
+ */
+export async function discardTest(testId: string) {
+  const brand = await requireSingleBrand();
+
+  return db.transaction(async (tx) => {
+    const [test] = await tx
+      .select()
+      .from(tests)
+      .where(and(eq(tests.id, testId), eq(tests.brandId, brand.id)));
+    if (!test) throw new ReviewError("Test not found", 404);
+    if (test.status !== "running") {
+      throw new ReviewError("Concluded tests cannot be discarded.", 409);
+    }
+
+    await tx
+      .delete(testPublications)
+      .where(eq(testPublications.testId, test.id));
+    await tx.delete(tests).where(eq(tests.id, test.id));
+
+    return { discarded: true };
+  });
+}
+
 export async function detachPublication(testId: string, publicationId: string) {
   const brand = await requireSingleBrand();
 

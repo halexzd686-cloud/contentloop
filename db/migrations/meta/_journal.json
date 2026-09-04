@@ -78,6 +78,13 @@
       "when": 1788501477193,
       "tag": "0010_overrated_daredevil",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1788513967273,
+      "tag": "0011_young_expediter",
+      "breakpoints": true
     }
   ]
 }

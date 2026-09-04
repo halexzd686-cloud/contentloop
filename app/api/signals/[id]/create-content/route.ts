@@ -115,6 +115,9 @@ export async function POST(
           status: "planning",
           ownerId: input.ownerId,
           priority: "normal",
+          // M4.1: Content-level platform authority. Signal keeps the
+          // selection as provenance; Content owns it from here on.
+          primaryPlatform: input.primaryPlatform,
         })
         .returning();
 
