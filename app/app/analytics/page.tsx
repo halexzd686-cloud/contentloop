@@ -25,6 +25,7 @@ import {
 } from "@/components/analytics/loop-analysis";
 import { ImportMetricsModal } from "@/components/analytics/import-modal";
 import { TestsSection } from "@/components/analytics/tests-section";
+import { LearningsSection } from "@/components/analytics/learnings-section";
 
 /**
  * Analytics — /app/analytics (M2.5)
@@ -604,6 +605,9 @@ export default function AnalyticsPage() {
             platform: p.platform,
           }))}
         />
+
+        {/* Learnings — M3.3 */}
+        <LearningsSection />
       </div>
 
       {/* Loop Analysis — M2.6 structured diagnosis */}

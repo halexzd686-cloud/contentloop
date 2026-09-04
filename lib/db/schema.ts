@@ -22,8 +22,10 @@ import {
   timestamp,
   jsonb,
   unique,
+  uniqueIndex,
   index,
 } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 import type { AnalysisEvidenceItem } from "@/lib/ai/schemas";
 
 // ─── Enums ──────────────────────────────────────────────────────────────────
@@ -642,7 +644,13 @@ export const learnings = pgTable("learnings", {
   updatedAt: timestamp("updated_at", { withTimezone: true })
     .defaultNow()
     .notNull(),
-});
+}, (table) => [
+  // M3.3: one canonical Learning per source Test (manual learnings with
+  // NULL sourceTestId stay allowed).
+  uniqueIndex("learnings_source_test_id_unique")
+    .on(table.sourceTestId)
+    .where(sql`${table.sourceTestId} is not null`),
+]);
 
 export const learningApplications = pgTable(
   "learning_applications",

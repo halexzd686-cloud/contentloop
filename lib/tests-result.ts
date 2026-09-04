@@ -293,6 +293,14 @@ export async function getTestResult(testId: string) {
   };
 }
 
+/** Derived staleness for a concluded test (used by Learning reads). */
+export async function computeTestResultStale(testId: string): Promise<boolean> {
+  const brand = await requireSingleBrand();
+  const { test, subjects } = await loadTestContext(testId, brand.id);
+  if (test.status !== "concluded" || !test.resultFingerprint) return false;
+  return subjectsFingerprint(test, subjects) !== test.resultFingerprint;
+}
+
 /** Concluded read: frozen evidence first, plus derived staleness. */
 export async function getConcludedResult(testId: string) {
   const brand = await requireSingleBrand();

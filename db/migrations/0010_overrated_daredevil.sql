@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "learnings_source_test_id_unique" ON "learnings" USING btree ("source_test_id") WHERE "learnings"."source_test_id" is not null;

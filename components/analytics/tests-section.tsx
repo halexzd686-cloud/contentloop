@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/drawer";
 import { FlaskConical, Plus, X } from "lucide-react";
 import { ResultSection, type ResultData } from "@/components/analytics/test-result-section";
+import { LearningSection } from "@/components/analytics/learning-section";
 
 /**
  * Tests section — M3.1 Test Core (Analytics → Tests).
@@ -647,6 +648,8 @@ function TestDetailDrawer({
                   </div>
                 )}
               </section>
+
+              {!running && <LearningSection testId={testId} />}
 
               <ResultSection
                 running={running}
