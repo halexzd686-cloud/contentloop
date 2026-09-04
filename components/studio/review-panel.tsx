@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Lock, RefreshCw, Undo2, Check, Send } from "lucide-react";
@@ -263,6 +264,14 @@ export function ReviewPanel({
         </div>
         {approverName && (
           <span className="text-xs text-ink-muted">Reviewer: {approverName}</span>
+        )}
+        {contentStatus === "scheduled" && (
+          <Link
+            href="/app/pipeline"
+            className="text-xs font-medium text-mint-600 hover:underline"
+          >
+            View in Pipeline
+          </Link>
         )}
       </div>
 

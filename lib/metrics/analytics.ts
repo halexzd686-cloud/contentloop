@@ -65,6 +65,7 @@ export async function getAnalyticsIndex() {
       contentId: contents.id,
       contentTitle: contents.title,
       pillarName: contentPillars.name,
+      isDemo: contents.isDemo,
     })
     .from(publications)
     .innerJoin(contents, eq(publications.contentId, contents.id))
@@ -99,6 +100,7 @@ export async function getAnalyticsIndex() {
       platform: r.platform,
       pillarName: r.pillarName,
       publishedAt: r.publishedAt.toISOString(),
+      isDemo: r.isDemo,
       has24h: snapSet.has(`${r.publicationId}:24h`),
       has72h: snapSet.has(`${r.publicationId}:72h`),
       checkpoints: CHECKPOINTS.map((c) => ({
@@ -108,6 +110,9 @@ export async function getAnalyticsIndex() {
           c,
           snapSet.has(`${r.publicationId}:${c}`)
         ),
+        // M4.2: dueAt from the authoritative read layer (checkpointDueAt);
+        // clients display/sort only, never recompute publishedAt + offset.
+        dueAt: checkpointDueAt(r.publishedAt, c).toISOString(),
       })),
     })),
   };

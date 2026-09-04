@@ -152,6 +152,12 @@ export function LearningSection({ testId }: { testId: string }) {
             {ctx.learning.pillarId ? ` · pillar scoped` : ""}
             {" · "}saved {new Date(ctx.learning.createdAt).toLocaleString()}
           </p>
+          {/* M4.2: persistent guidance — a saved Learning never rewrites
+              content; Studio (Brief tab) is the only Apply surface. */}
+          <p className="text-xs text-ink-muted">
+            Saved. This does not change any content. Apply it from Studio →
+            Brief on eligible content.
+          </p>
           <details className="text-xs text-ink-muted">
             <summary className="cursor-pointer">Evidence summary</summary>
             <pre className="mt-1 whitespace-pre-wrap rounded-[8px] border border-border bg-workspace p-2 font-sans">

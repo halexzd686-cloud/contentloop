@@ -24,7 +24,7 @@ import {
   type DiagnosisRecord,
 } from "@/components/analytics/loop-analysis";
 import { ImportMetricsModal } from "@/components/analytics/import-modal";
-import { TestsSection } from "@/components/analytics/tests-section";
+import { TestsSection, type TestCreateRequest } from "@/components/analytics/tests-section";
 import { LearningsSection } from "@/components/analytics/learnings-section";
 
 /**
@@ -129,6 +129,8 @@ export default function AnalyticsPage() {
     key: string;
     message: string;
   } | null>(null);
+  const [testCreateRequest, setTestCreateRequest] =
+    useState<TestCreateRequest | null>(null);
 
   /**
    * Checkpoint-status-driven entry (M2.5 blocker fix):
@@ -604,6 +606,8 @@ export default function AnalyticsPage() {
             finalTitle: p.finalTitle,
             platform: p.platform,
           }))}
+          createRequest={testCreateRequest}
+          onCreateRequestHandled={() => setTestCreateRequest(null)}
         />
 
         {/* Learnings — M3.3 */}
@@ -624,6 +628,13 @@ export default function AnalyticsPage() {
               setDetail((prev) =>
                 prev ? { ...prev, diagnosis: d, diagnosisStale: stale } : prev
               )
+            }
+            onCreateTest={() =>
+              setTestCreateRequest({
+                platform: detail.fact.platform,
+                checkpoint: selected.checkpoint,
+                contextLabel: `${detail.fact.finalTitle} · ${selected.checkpoint}`,
+              })
             }
           />
         ) : (

@@ -79,16 +79,36 @@ const METHOD_LABEL: Record<string, string> = {
   content_comparison: "Content Comparison",
 };
 
+export interface TestCreateRequest {
+  platform: string;
+  checkpoint: string;
+  contextLabel: string;
+}
+
 export function TestsSection({
   publications,
+  createRequest,
+  onCreateRequestHandled,
 }: {
   publications: { publicationId: string; finalTitle: string; platform: string }[];
+  /** M4.2: external entry (e.g. from a saved diagnosis). Opens the same
+   *  Create Test dialog with safe prefill — never a second mutation path. */
+  createRequest?: TestCreateRequest | null;
+  onCreateRequestHandled?: () => void;
 }) {
   const [tests, setTests] = useState<TestRow[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  // External create request opens the same dialog — derived, no effect.
+  const createVisible = createOpen || !!createRequest;
+
+  function closeCreate() {
+    setCreateOpen(false);
+    onCreateRequestHandled?.();
+  }
 
   const load = useCallback(async () => {
     try {
@@ -156,11 +176,14 @@ export function TestsSection({
         </div>
       )}
 
-      {createOpen && (
+      {createVisible && (
         <CreateTestDialog
-          onClose={() => setCreateOpen(false)}
+          initialPlatform={createRequest?.platform}
+          initialCheckpoint={createRequest?.checkpoint}
+          contextLabel={createRequest?.contextLabel}
+          onClose={closeCreate}
           onCreated={() => {
-            setCreateOpen(false);
+            closeCreate();
             load();
           }}
         />
@@ -181,15 +204,24 @@ export function TestsSection({
 // ─── Create Test (modal = the review gate) ─────────────
 
 function CreateTestDialog({
+  initialPlatform,
+  initialCheckpoint,
+  contextLabel,
   onClose,
   onCreated,
 }: {
+  /** M4.2 safe prefill — presentation only. Platform/checkpoint stay
+   *  editable; every other field is always human-chosen. The submit
+   *  path and server validation are unchanged. */
+  initialPlatform?: string;
+  initialCheckpoint?: string;
+  contextLabel?: string;
   onClose: () => void;
   onCreated: () => void;
 }) {
-  const [platform, setPlatform] = useState("xiaohongshu");
+  const [platform, setPlatform] = useState(initialPlatform ?? "xiaohongshu");
   const [method, setMethod] = useState("content_comparison");
-  const [checkpoint, setCheckpoint] = useState("24h");
+  const [checkpoint, setCheckpoint] = useState(initialCheckpoint ?? "24h");
   const [title, setTitle] = useState("");
   const [hypothesis, setHypothesis] = useState("");
   const [change, setChange] = useState("");
@@ -259,6 +291,12 @@ function CreateTestDialog({
             hypothesis and primary metric are locked afterwards.
           </DialogDescription>
         </DialogHeader>
+
+        {contextLabel && (
+          <p className="rounded-[8px] border border-border bg-canvas px-3 py-2 text-xs text-ink-muted">
+            Creating a Test from: {contextLabel}
+          </p>
+        )}
 
         <div className="space-y-3">
           <div className="grid grid-cols-3 gap-3">

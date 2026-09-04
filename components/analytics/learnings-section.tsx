@@ -1,12 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { BookOpen } from "lucide-react";
 
 /**
  * Learnings list — M3.3, inside Analytics below Tests.
- * Lightweight read model only; application links arrive in M3.4.
+ * Read model + Studio navigation (M4.2). Apply/Dismiss mutations
+ * live only in Studio (M3.4 frozen boundary).
  */
 
 interface LearningRow {
@@ -88,6 +90,14 @@ export function LearningsSection() {
                   <span>· currently applied to {l.appliedCount} content{l.appliedCount === 1 ? "" : "s"}</span>
                 )}
               </div>
+              {/* M4.2: navigation only — Studio (Brief tab) remains the
+                  only Apply/Dismiss mutation surface. */}
+              <Link
+                href="/app/studio"
+                className="mt-1.5 inline-block text-xs font-medium text-mint-600 hover:underline"
+              >
+                Apply in Studio →
+              </Link>
             </div>
           ))}
         </div>

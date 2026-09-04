@@ -84,6 +84,7 @@ interface ContentData {
   status: string;
   ownerId: string | null;
   reviewerId: string | null;
+  primaryPlatform: string | null;
   owner: { id: string; name: string } | null;
   reviewer: { id: string; name: string } | null;
 }
@@ -105,6 +106,12 @@ const STATUS_LABEL: Record<string, string> = {
   review: "Review",
   scheduled: "Scheduled",
   published: "Published",
+};
+
+const PLATFORM_LABEL: Record<string, string> = {
+  xiaohongshu: "Xiaohongshu",
+  bilibili: "Bilibili",
+  douyin: "Douyin",
 };
 
 const TABS = ["Brief", "Master", "Platforms", "Review"] as const;
@@ -500,7 +507,7 @@ export default function StudioContentPage({
     contentId: contentId ?? "",
     approved,
     hasMaster: master !== null,
-    primaryPlatform: signal?.primaryPlatform ?? null,
+    primaryPlatform: content?.primaryPlatform ?? null,
     versions: platformVersions,
     onVersionChange: handleVersionChange,
     enabledPlatforms,
@@ -559,6 +566,11 @@ export default function StudioContentPage({
           <Badge variant={content.status === "in_progress" ? "warning" : "default"}>
             {STATUS_LABEL[content.status] || content.status}
           </Badge>
+          {content.primaryPlatform && (
+            <span className="text-xs text-ink-muted">
+              {PLATFORM_LABEL[content.primaryPlatform] ?? content.primaryPlatform}
+            </span>
+          )}
           <div className="ml-auto flex items-center gap-4 text-xs text-ink-muted">
             {content.owner && <span>Owner: {content.owner.name}</span>}
             {approverName && <span>Approver: {approverName}</span>}
@@ -672,6 +684,24 @@ export default function StudioContentPage({
               {approverName ? ` by ${approverName}` : ""}. Read-only — use Edit
               Brief to make changes.
             </p>
+          )}
+
+          {/* M4.2: persistent next action — approve never auto-creates the
+              Master; the CTA only switches to the Master tab, where the
+              explicit Create gate remains the authority. */}
+          {approved && !master && (
+            <div className="mb-4 flex items-center justify-between rounded-[8px] border border-mint-600/30 bg-mint-100/40 px-3 py-2.5">
+              <p className="text-xs text-ink-secondary">
+                Brief approved — next: create the Content Master.
+              </p>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => setActiveTab("Master")}
+              >
+                Continue to Master
+              </Button>
+            </div>
           )}
 
           {approveError && (
@@ -809,8 +839,9 @@ export default function StudioContentPage({
               </div>
             )}
             <p className="text-xs text-ink-faint">
-              AI proposes a draft based on the linked signal, brand context and
-              playbook. Nothing is saved until you Apply and edit.
+              {signal
+                ? "AI proposes a draft based on the linked signal, brand context and playbook. Nothing is saved until you Apply and edit."
+                : "AI proposes a draft based on this content's context, brand context and playbook. Nothing is saved until you Apply and edit."}
             </p>
           </div>
           )}

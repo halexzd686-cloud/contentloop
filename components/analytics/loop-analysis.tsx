@@ -49,6 +49,9 @@ interface LoopAnalysisProps {
   diagnosis: DiagnosisRecord | null;
   diagnosisStale: boolean;
   onSaved: (d: DiagnosisRecord, stale: boolean) => void;
+  /** M4.2: entry to the existing Create Test flow with safe prefill.
+   *  Shown only for a saved, non-stale diagnosis — never for a proposal. */
+  onCreateTest?: () => void;
 }
 
 export function LoopAnalysis({
@@ -58,6 +61,7 @@ export function LoopAnalysis({
   diagnosis,
   diagnosisStale,
   onSaved,
+  onCreateTest,
 }: LoopAnalysisProps) {
   const [proposal, setProposal] = useState<Proposal | null>(null);
   const [generating, setGenerating] = useState(false);
@@ -221,6 +225,16 @@ export function LoopAnalysis({
             <Sparkles className="mr-1 h-3 w-3" />
             {generating ? "Preparing diagnosis…" : "Regenerate"}
           </Button>
+          {onCreateTest && !diagnosisStale && (
+            <Button
+              variant="primary"
+              size="sm"
+              className="w-full"
+              onClick={onCreateTest}
+            >
+              Create Test from this diagnosis
+            </Button>
+          )}
         </div>
       )}
 
