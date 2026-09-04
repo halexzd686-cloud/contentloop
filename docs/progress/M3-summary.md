@@ -1,6 +1,6 @@
 # M3 Summary — Test & Learning Loop（进行中）
 
-> Status: M3.1 / M3.2 **Frozen**（人工浏览器验收通过）。下一步 M3.3 — Learning。
+> Status: M3.1 / M3.2 / M3.3 **Frozen**（人工浏览器验收通过）。下一步 M3.4 — Learning Application。
 >
 > 前置：M2 COMPLETE（见 `M2-summary.md`）。
 
@@ -32,6 +32,20 @@
 - `components/analytics/tests-section.tsx` — Tests 区块 + Create Modal + Detail Drawer（Edit 模式 + 两行 attach 布局）
 - `tests/test-core.test.ts`（9）— 累计 278 tests
 
+### M3.3 — Learning（Frozen，人工浏览器验收 A–O 通过）
+
+- 正式链：Concluded Test → Frozen Result Evidence → Optional AI Draft（wording）→ Human Edit → Human Save → Learning
+- Migration `0010`：`learnings_source_test_id_unique` partial unique index（1 Test → 0..1 canonical Learning；NULL sourceTestId 保持 schema 弹性）
+- **evidenceSummary = server deterministic**（`buildLearningEvidenceSummary`，固定 English canonical 模板；title/conclusion 原文）；分层："Observed at conclusion"（server 事实）/ "Human outcome" / "Human conclusion"；client 不提交、AI 不生成、编辑永不重写
+- Availability 四态：available 值 / "Awaiting {cp} data" / "Metric unavailable" / baseline "unavailable"（不混淆、不归零）
+- Scope：platform 派生只读；pillar Human 可选（同 Brand）；defaultPillarId 仅全部 frozen publications 同非空 pillar 时预填
+- sourceStale = 派生自 source Test resultStale；stale source 可建 Learning（warning：基于 frozen evidence）；Learning text/summary 不因 stale 改写
+- AI：单请求 `{text}` ≤500；输入仅 frozen Test context（禁 current runtime/Diagnosis/Playbook/外部知识）；Generate/Apply/Discard 零写；provider 失败 → 局部错误，手写路径不受影响（实测 bad-key 502 后手写 save 201）
+- Save strict `{text, pillarId?}`（注入 brand/platform/sourceTestId/evidenceSummary 一律 400）；duplicate 409（unique + 服务端双重）
+- PATCH 仅 text/pillarId；evidenceSummary 不可变（实测 text+pillar 修订后 summary 不变）
+- M3.3 不做 manual Learning / Delete / Application / Playbook promotion；learning_applications 恒 0
+- 验收 fixture 全清理；M2 数据完整（snapshots=6 无 junk）
+
 ### M3.2 — Result & Conclude（Frozen，人工浏览器验收 A–P 通过）
 
 - 正式链：Running Test → runtime Observed Result（server 权威）→ Human Review → Complete → frozen resultEvidence + outcome + conclusion
@@ -49,6 +63,14 @@
 
 - tests 无 updatedAt/revision —— V1 单用户接受弱并发保护
 - free-text hypothesis 可能与结构化 checkpoint/metric 不一致 —— 结构化字段权威，V1 不做 prose NLP 校验
+## M3.3 Known Limitations
+
+- Learning 无 delete / history（编辑即治理）
+- M3.3 不开放 manual Learning（无 sourceTest）入口
+- source stale 仅 warning，不自动 invalidate/delete Learning
+- pillar scope 变更不重写 evidenceSummary
+- 1 Test 至多 1 canonical Learning；未来多 Learning 需重规划 cardinality
+
 ## M3.2 Known Limitations
 
 - trade_off 是 Human 对 mixed observation 的判断；V1 无 multi-metric causal trade-off engine
@@ -66,4 +88,4 @@
 
 ## Next
 
-- M3.3 — Learning：concluded Test → server canonical evidenceSummary + optional AI text draft → Human Save；source Test stale 传播
+- M3.4 — Learning Application：Learning ↔ future Content 显式关联（applied/dismissed）+ Studio guidance，无内容自动改写
