@@ -1,6 +1,6 @@
 # M3 Summary — Test & Learning Loop（进行中）
 
-> Status: M3.1 / M3.2 / M3.3 **Frozen**（人工浏览器验收通过）。下一步 M3.4 — Learning Application。
+> Status: M3.1 / M3.2 / M3.3 / M3.4 **Frozen**（人工浏览器验收通过）。M3 — Test & Learning Loop 全链完成。下一步 M4 — Productization。
 >
 > 前置：M2 COMPLETE（见 `M2-summary.md`）。
 
@@ -31,6 +31,21 @@
 - `app/api/tests/` — list/create、detail/patch、publications attach/detach
 - `components/analytics/tests-section.tsx` — Tests 区块 + Create Modal + Detail Drawer（Edit 模式 + 两行 attach 布局）
 - `tests/test-core.test.ts`（9）— 累计 278 tests
+
+### M3.4 — Learning Application（Frozen，人工浏览器验收 A–O 通过）
+
+- 正式链：Saved Learning → Eligible Future Content → Human Apply / Dismiss → LearningApplication（纯 provenance/governance link）→ Studio Brief 可见
+- **Apply ≠ 内容改写**：唯一业务 mutation 是 learning_applications；Brief/Master/Versions/Content status/Publications/Snapshots/Diagnosis/Playbooks 零变更（实测）
+- Eligibility（新 relation 与 dismissed→applied 重激活）：same Brand + status ∈ {planning, in_progress, review, scheduled} + platform strict（null=general，否则 exact，Content platform 经 linked Signal.primaryPlatform 派生）+ pillar strict（同规则）；**published 禁新增**（409 + available 空）
+- Existing provenance：scope 变化/publish 后 relation 保留；`scopeMismatch` runtime 派生 warning；applied+mismatch → dismiss 允许；dismissed+mismatch → re-apply 409；published 既有 relation 只读
+- Learning × Content → 0..1 row（既有 UNIQUE）；action=applied/dismissed；无 action history；`applied_at` 物理列 domain 语义 = decisionAt（create/transition 均写 now，same-action 409）
+- Application 不 snapshot wording：Applied Content 显示 canonical 最新 text；evidenceSummary 保持 M3.3 frozen
+- Candidate matcher：server deterministic（Brand → lifecycle → platform → pillar → 冻结排序）；零 AI / 零 semantic ranking / 零打分
+- sourceStale = warning only，不影响 candidate eligibility；实测 stale Learning 仍可 Apply
+- Read model：applied[]/dismissed[]/available[]，每项带 server-provided evidenceSummary
+- Analytics "Currently applied to N contents" 仅计 applied（dismissed 不计；无 success/effectiveness 语义）
+- Studio Brief tab Learnings 面板（三栏布局不变）；无新导航
+- 验收 fixture 全清理；M2 数据完整
 
 ### M3.3 — Learning（Frozen，人工浏览器验收 A–O 通过）
 
@@ -63,6 +78,14 @@
 
 - tests 无 updatedAt/revision —— V1 单用户接受弱并发保护
 - free-text hypothesis 可能与结构化 checkpoint/metric 不一致 —— 结构化字段权威，V1 不做 prose NLP 校验
+## M3.4 Known Limitations
+
+- 无 Application action history；latest successful Human transition wins（无 revision）
+- `applied_at` 为 legacy 物理列名，domain 解释 = decisionAt
+- Application 不 snapshot Learning wording（显示 canonical 最新 text）
+- scopeMismatch 仅 warning，不自动撤销 existing relation
+- **Manual Content（无 linked Signal）当前无 authoritative platform identity，无法匹配 platform-scoped Learning** —— 后续单独规划 Content-level platform authority，本 milestone 不临时推断
+
 ## M3.3 Known Limitations
 
 - Learning 无 delete / history（编辑即治理）
@@ -88,4 +111,4 @@
 
 ## Next
 
-- M3.4 — Learning Application：Learning ↔ future Content 显式关联（applied/dismissed）+ Studio guidance，无内容自动改写
+- M4 — Productization（按 implementation-plan）
