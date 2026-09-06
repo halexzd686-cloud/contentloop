@@ -1,6 +1,6 @@
 # M4 Summary — Productization（进行中）
 
-> Status: M4.0 Audit **Complete**；M4.1 / M4.2 / M4.3 **Frozen**（M4.3 浏览器验收 A–T 通过）。下一步 M4.4 — Demo / Live Visual Trust & Final Product Polish（未开始）。
+> Status: M4.0 Audit **Complete**；M4.1 / M4.2 / M4.3 **Frozen**（M4.3 浏览器验收 A–T 通过）。M4.4 visual implementation is technically stable (safety gate passed)；**final aesthetic acceptance and unified visual polish are deferred to M5.6 Final Visual Pass** — M4.4 不标记 Frozen。
 >
 > 前置：M3 Frozen（见 `M3-summary.md`）。
 
