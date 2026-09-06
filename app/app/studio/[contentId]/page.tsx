@@ -42,6 +42,9 @@ import {
 } from "@/lib/validation/master";
 import { createSaveQueue, type SaveQueueState } from "@/lib/save-queue";
 import { briefStatusLabel, contentStatusLabel, platformLabel } from "@/lib/labels";
+import { ShinyText } from "@/components/reactbits/shiny-text";
+import { BlurText } from "@/components/reactbits/blur-text";
+import { studioAIVisual, shinyTextActive } from "@/lib/ai-visual";
 import { ArrowLeft, Sparkles, RefreshCw, Check, Lock } from "lucide-react";
 
 /**
@@ -538,6 +541,10 @@ export default function StudioContentPage({
 
   const approverName = content.reviewer?.name ?? content.owner?.name ?? null;
 
+  // M4.4: Studio AI visual lifecycle — total mapping, ShinyText and
+  // BlurText can never be active at the same time.
+  const aiVisual = studioAIVisual({ generating, proposalPending });
+
   return (
     <div className="flex h-full flex-col">
       {/* Header */}
@@ -698,10 +705,16 @@ export default function StudioContentPage({
 
           {proposalPending && (
             <div className="mb-4 rounded-[8px] border border-mint-600/30 bg-mint-100 p-3">
-              <p className="text-xs font-medium text-ink-primary">
-                AI Draft proposal — auto-save is paused. Review below, then
-                Apply or Discard.
-              </p>
+              {/* M4.4: BlurText one-shot reveal on proposal arrival
+                  (mount-triggered; static under reduced motion). */}
+              <BlurText
+                text="AI Draft proposal — auto-save is paused. Review below, then Apply or Discard."
+                className="text-xs font-medium text-ink-primary"
+                animateBy="words"
+                direction="top"
+                delay={60}
+                stepDuration={0.22}
+              />
               <div className="mt-2 flex gap-2">
                 <Button variant="primary" size="sm" onClick={handleApplyDraft}>
                   Apply Draft
@@ -785,8 +798,16 @@ export default function StudioContentPage({
           <p className="text-xs font-semibold uppercase tracking-wide text-ink-muted">
             Loop AI
           </p>
+          {/* M4.4: ShinyText identity — shimmer active ONLY during a
+              genuine AI request; static at all other times. */}
           <p className="mt-1 text-xs text-ink-secondary">
-            AI proposes · You review and confirm
+            <ShinyText
+              text="AI proposes · You review and confirm"
+              disabled={!shinyTextActive(aiVisual)}
+              speed={1.6}
+              color="#5F625D"
+              shineColor="#4E9F84"
+            />
           </p>
           {activeTab === "Platforms" ? (
             <div className="mt-3">{platformsPanel.aiPanel}</div>

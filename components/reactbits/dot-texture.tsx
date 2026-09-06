@@ -3,14 +3,14 @@
 import { motion, useReducedMotion } from "framer-motion";
 
 /**
- * HalftoneReveal — vendored React Bits family (M4.4, frozen V1 set).
+ * DotTexture — custom ContentLoop editorial texture (NOT React Bits).
  *
- * Editorial dot-grid reveal for the Radar empty state. Pure CSS
- * radial-gradient pattern + one-shot mask/opacity animation. No
- * canvas, no WebGL, no new dependency. prefers-reduced-motion →
- * static faint dot pattern (content always present).
+ * The official React Bits HalftoneReveal is an OGL/WebGL shader and
+ * was evaluated and rejected for V1 (dependency cost not justified).
+ * This is a plain CSS dot-grid accent for the Radar empty state.
+ * prefers-reduced-motion → static faint dot pattern.
  */
-export function HalftoneReveal({ className = "" }: { className?: string }) {
+export function DotTexture({ className = "" }: { className?: string }) {
   const reduceMotion = useReducedMotion();
 
   const pattern = (

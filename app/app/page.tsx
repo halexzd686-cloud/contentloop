@@ -105,16 +105,33 @@ export default function HomePage() {
     model.scheduledContents.length > 0 || model.runningTests.length > 0;
 
   return (
-    <div className="h-full overflow-y-auto p-8">
-      {/* M4.4: one-shot brand moment (EchoText) — semantic phrase, not
-          the IA title. Static under prefers-reduced-motion. */}
-      <p className="font-serif text-sm italic text-ink-muted">
-        <EchoText text="Close the loop." />
-      </p>
-      <h1 className="mt-1 text-xl font-semibold text-ink-primary">Home</h1>
-      <p className="mt-0.5 text-sm text-ink-muted">
-        What needs attention, and where to continue.
-      </p>
+    <div className="h-full overflow-y-auto">
+      {/* M4.4: editorial brand strip — official EchoText (entrance-only,
+          one-shot, mint tint). Static full text under reduced motion.
+          Work sections below remain the primary actionable content. */}
+      <div className="border-b border-border bg-canvas px-8 pb-5 pt-6">
+        <div className="font-serif text-ink-primary" style={{ minHeight: "2.6rem" }}>
+          <EchoText
+            text="Close the loop."
+            mode="entrance"
+            echoes={7}
+            offset={16}
+            duration={800}
+            ease="ease-out"
+            direction="left"
+            tint="#4E9F84"
+            color="#181A18"
+            fontSize="clamp(1.6rem, 2.6vw, 2.3rem)"
+            fontWeight={500}
+          />
+        </div>
+        <p className="mt-1 text-sm text-ink-muted">
+          What needs attention, and where to continue.
+        </p>
+      </div>
+
+      <div className="p-8">
+      <h1 className="text-xl font-semibold text-ink-primary">Home</h1>
 
       {model.isEmpty ? (
         <div className="py-16 text-center">
@@ -272,6 +289,7 @@ export default function HomePage() {
           </section>
         </div>
       )}
+      </div>
     </div>
   );
 }

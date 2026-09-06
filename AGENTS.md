@@ -728,24 +728,48 @@ Avoid nested card stacks.
 
 # 24. React Bits Contract
 
-V1 only allows:
+> **Revised in M4.4** (visual impact audit): the original
+> EchoText/HalftoneReveal/Prism whitelist is replaced. The revision was
+> driven by official-source dependency reality (HalftoneReveal and Prism
+> require OGL/WebGL) and visual-impact requirements.
+
+V1 only allows these React Bits components (vendored from the official
+React Bits source, `components/reactbits/`):
 
 ```text
 EchoText
-HalftoneReveal
-Prism
+BlurText
+ShinyText
 ```
 
 Usage:
 
 ## EchoText
-Landing and light success/page-entry feedback.
+Home editorial brand strip ("Close the loop."), entrance-only, one-shot,
+mint tint. No pointer interaction.
 
-## HalftoneReveal
-Radar high-value signals and landing discovery.
+## BlurText
+Two placements only: Radar tagline page entry; Studio AI proposal
+arrival reveal. One-shot each.
 
-## Prism
-Home intelligence and landing.
+## ShinyText
+Studio Loop AI identity line; shimmer active ONLY during a genuine AI
+request. Static at all other times.
+
+Custom (NOT React Bits):
+
+```text
+DotTexture   — ContentLoop editorial dot texture, Radar empty state only
+```
+
+Evaluated and rejected (intentional V1 decisions, not backlog):
+
+```text
+HalftoneReveal  — requires OGL/WebGL; cost not justified
+Prism           — requires OGL/WebGL; decorative value not justified
+SplitText       — requires GSAP; dependency not justified
+DecryptedText   — evaluated, not selected
+```
 
 Not allowed:
 
@@ -756,6 +780,10 @@ other React Bits additions
 ```
 
 unless the design specification changes.
+
+Hard rules for any React Bits usage: prefers-reduced-motion static
+fallback, no layout shift, no continuous idle animation, never in
+Analytics / Pipeline / Settings / data-authority surfaces.
 
 ---
 

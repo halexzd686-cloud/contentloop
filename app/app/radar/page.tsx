@@ -6,7 +6,8 @@ import { AddSignalDialog } from "@/components/radar/add-signal-dialog";
 import { SignalFilters } from "@/components/radar/signal-filters";
 import { QuickReview } from "@/components/radar/quick-review";
 import { Button } from "@/components/ui/button";
-import { HalftoneReveal } from "@/components/reactbits/halftone-reveal";
+import { DotTexture } from "@/components/reactbits/dot-texture";
+import { BlurText } from "@/components/reactbits/blur-text";
 import { RefreshCw } from "lucide-react";
 
 /**
@@ -208,9 +209,16 @@ export default function RadarPage() {
       <div className="flex items-center justify-between border-b border-border bg-workspace px-6 py-4">
         <div>
           <h1 className="text-xl font-semibold text-ink-primary">Radar</h1>
-          <p className="mt-0.5 text-sm text-ink-muted">
-            What&apos;s worth creating?
-          </p>
+          {/* M4.4: official BlurText — one-shot word blur-in on page
+              entry. Static full text under reduced motion. */}
+          <BlurText
+            text="What's worth creating?"
+            className="mt-0.5 text-sm text-ink-muted"
+            animateBy="words"
+            direction="top"
+            delay={120}
+            stepDuration={0.28}
+          />
           <p className="mt-0.5 text-xs text-ink-secondary">
             Signals are leads worth evaluating as future content — a URL or an
             idea.
@@ -258,10 +266,10 @@ export default function RadarPage() {
               </div>
             ) : signals.length === 0 ? (
               <div className="relative flex flex-col items-center justify-center overflow-hidden py-16 text-center">
-                {/* M4.4: single restrained HalftoneReveal placement —
+                {/* M4.4: single restrained DotTexture placement —
                     editorial accent for the discovery surface. Static
                     under prefers-reduced-motion. */}
-                <HalftoneReveal className="pointer-events-none absolute inset-x-8 top-2 h-24" />
+                <DotTexture className="pointer-events-none absolute inset-x-8 top-2 h-24" />
                 <p className="relative text-sm text-ink-secondary">
                   Add your first Signal to start deciding what to create.
                 </p>

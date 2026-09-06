@@ -851,11 +851,30 @@ Active 状态：
 
 # 23. React Bits Usage
 
-V1 最终只保留：
+> **M4.4 修订**（React Bits Visual Impact Audit 批准）：原
+> EchoText/HalftoneReveal/Prism 白名单被正式替换。原因：官方
+> HalftoneReveal 与 Prism 依赖 OGL/WebGL，成本与视觉收益不成比例；
+> 初版自定义近似实现视觉辨识度过低。下文 §24–26 的原始组件规范
+> 已被本节取代，仅作历史记录保留。
 
-1. EchoText
-2. HalftoneReveal
-3. Prism
+V1 正式允许的 React Bits（官方源码 vendored 于 `components/reactbits/`）：
+
+1. **EchoText** — Home 顶部 editorial brand strip（"Close the loop."），entrance-only 一次性，mint tint，无 pointer 交互
+2. **BlurText** — 仅两处：Radar tagline 页面进入；Studio AI proposal 到达时的一次性 reveal
+3. **ShinyText** — Studio Loop AI identity 行；仅在真实 AI 请求进行中激活 shimmer，其余时间完全静态
+
+自定义非 React Bits：
+
+- **DotTexture** — ContentLoop 自定义 editorial 点阵纹理，仅 Radar empty state
+
+已评估并明确拒绝（V1 正式决策，非 backlog）：
+
+- HalftoneReveal — 需 OGL/WebGL
+- Prism — 需 OGL/WebGL，装饰收益不足
+- SplitText — 需 GSAP
+- DecryptedText — 评估后未入选
+
+硬性规则：所有 React Bits 必须支持 prefers-reduced-motion 完整静态回退、无 layout shift、无 idle 持续动画；Analytics / Pipeline / Settings / 数据权威区域禁止使用。
 
 # MetaBalls — CUT
 # Lanyard — CUT
