@@ -197,3 +197,14 @@ export function localInputToIso(value: string): string | null {
   const d = new Date(value);
   return isNaN(d.getTime()) ? null : d.toISOString();
 }
+
+/**
+ * M5.2 G-53 fix — the capturedAt override control is available on EVERY
+ * import row, including ready_create / ready_update. Capture time is
+ * authoritative per snapshot, so a Human must be able to correct it
+ * before Confirm even when the parsed file value is already valid.
+ * (First M5.2 pass wrongly gated it to blocker rows only.)
+ */
+export function capturedAtOverrideVisible(): boolean {
+  return true;
+}

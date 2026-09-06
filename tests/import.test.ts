@@ -11,6 +11,7 @@ import {
   wallToIso,
   isoToLocalInput,
   localInputToIso,
+  capturedAtOverrideVisible,
 } from "@/lib/import/normalize";
 import { validateImportFile, buildCsvTemplate } from "@/lib/import/template";
 import {
@@ -287,5 +288,16 @@ describe("capturedAt override input conversions (M5.2)", () => {
     // the parsed file value / batch fallback, and the preview fingerprint
     // changes because rowOverrides changed.
     expect(localInputToIso("") ?? undefined).toBeUndefined();
+  });
+});
+
+// ─── M5.2 G-53 fix: override control available on ready rows ──
+
+describe("capturedAtOverrideVisible (M5.2 fix)", () => {
+  it("every import row exposes the override — ready and blocker rows alike", () => {
+    // Contract: ready_create / ready_update / no_change / needs_resolution /
+    // invalid / duplicate / unmatched / ambiguous / conflict all show the
+    // control. The predicate is intentionally unconditional.
+    expect(capturedAtOverrideVisible()).toBe(true);
   });
 });

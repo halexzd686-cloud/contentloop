@@ -14,7 +14,7 @@ import { Upload, RefreshCw, FileUp, X } from "lucide-react";
 import type { ColumnMapping } from "@/lib/import/mapping";
 import { validateImportFile, buildCsvTemplate } from "@/lib/import/template";
 import type { PreviewRow, ImportConfig } from "@/lib/import/service";
-import { isoToLocalInput, localInputToIso } from "@/lib/import/normalize";
+import { isoToLocalInput, localInputToIso, capturedAtOverrideVisible } from "@/lib/import/normalize";
 import { EMPTY_MAPPING } from "@/lib/import/mapping";
 import type { Platform } from "@/lib/validation/platform-version";
 import { platformLabel, METRIC_NA_HELPER } from "@/lib/labels";
@@ -616,13 +616,10 @@ function PreviewRowCard({
   const unresolvedKeys = needsResolution && row.reason
     ? (row.reason.match(/Unresolved metrics: (.+?) —/)?.[1].split(", ") ?? [])
     : [];
-  // G-53: show the capture-time override when the blocker is about
-  // captured_at (missing / invalid / future / before reading point).
-  const showCapturedAtOverride =
-    row.status !== "ready_create" &&
-    row.status !== "ready_update" &&
-    row.status !== "no_change" &&
-    (row.reason ?? "").includes("captured_at");
+  // G-53: the capture-time override is available on every row,
+  // including ready rows — the control itself never invalidates a row;
+  // the server re-validates any override on preview/confirm.
+  const showCapturedAtOverride = capturedAtOverrideVisible();
 
   return (
     <div className="rounded-[8px] border border-border bg-workspace p-3">
