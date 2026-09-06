@@ -7,6 +7,7 @@ import { requireSingleBrand } from "@/lib/brand";
 import { ReviewError } from "@/lib/review";
 import { draftLearning } from "@/lib/ai/draft-learning";
 import { createDeepSeekProvider } from "@/lib/ai/provider";
+import { aiUserMessage } from "@/lib/ai/user-error";
 
 /**
  * POST /api/tests/[id]/learning/draft — M3.3 AI draft (wording only).
@@ -53,7 +54,11 @@ export async function POST(
     );
 
     if (!result.ok) {
-      return NextResponse.json({ error: result.error }, { status: 502 });
+      console.error("learning draft failed:", result.error);
+      return NextResponse.json(
+        { error: aiUserMessage(result.error) },
+        { status: 502 }
+      );
     }
     return NextResponse.json({ draft: result.draft });
   } catch (error) {

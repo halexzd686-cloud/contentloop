@@ -90,11 +90,11 @@ function toSummary(s: typeof metricSnapshots.$inferSelect) {
 
 function assertCapturedAtValid(publishedAt: Date, checkpoint: Checkpoint, capturedAt: Date) {
   if (capturedAt.getTime() > Date.now() + CAPTURED_AT_FUTURE_SKEW_MS) {
-    throw new ReviewError("capturedAt cannot be in the future.", 400);
+    throw new ReviewError("Capture time can't be in the future.", 400);
   }
   if (!isCaptureOnTime(publishedAt, checkpoint, capturedAt)) {
     throw new ReviewError(
-      `capturedAt is before the ${checkpoint} checkpoint target. The observation must happen at or after the checkpoint time.`,
+      `Capture time is before the ${checkpoint} reading point. Record the data only after that time.`,
       409
     );
   }
@@ -148,7 +148,7 @@ export async function createSnapshotIn(
   assertExactKeySet(
     Object.keys(input.metrics),
     activeRaws.map((d) => d.key),
-    "current active raw metrics"
+    "the metrics available for this platform"
   );
 
   const capturedAt = new Date(input.capturedAt);
@@ -208,7 +208,7 @@ export async function editSnapshotIn(
   assertExactKeySet(
     Object.keys(input.metrics),
     storedKeys,
-    "the stored snapshot metrics"
+    "the previously saved metrics"
   );
 
   const capturedAt = new Date(input.capturedAt);
@@ -235,7 +235,7 @@ function assertExactKeySet(actual: string[], expected: string[], label: string) 
     if (missing.length > 0) parts.push(`missing: ${missing.join(", ")}`);
     if (extra.length > 0) parts.push(`unexpected: ${extra.join(", ")}`);
     throw new ReviewError(
-      `Metrics must exactly cover ${label} (${parts.join("; ")}).`,
+      `Edited metrics must exactly match ${label} — ${parts.join("; ")}.`,
       400
     );
   }

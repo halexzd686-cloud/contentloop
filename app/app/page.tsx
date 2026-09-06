@@ -12,6 +12,7 @@ import {
   type HomeTestRow,
   type HomeModel,
 } from "@/lib/home";
+import { platformLabel } from "@/lib/labels";
 
 /**
  * Home — M4.2 daily entry surface.
@@ -21,12 +22,6 @@ import {
  * derived from the current server state on every load — nothing here
  * depends on transient success state.
  */
-
-const PLATFORM_LABEL: Record<string, string> = {
-  xiaohongshu: "XHS",
-  bilibili: "Bili",
-  douyin: "Douyin",
-};
 
 export default function HomePage() {
   const [model, setModel] = useState<HomeModel | null>(null);
@@ -158,7 +153,7 @@ export default function HomePage() {
                         {d.finalTitle}
                       </p>
                       <p className="text-xs text-ink-muted">
-                        {PLATFORM_LABEL[d.platform] ?? d.platform} · {d.checkpoint}{" "}
+                        {platformLabel(d.platform)} · {d.checkpoint}{" "}
                         metrics due since {new Date(d.dueAt).toLocaleString()}
                       </p>
                     </div>

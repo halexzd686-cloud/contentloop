@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { generateDiagnosisProposal } from "@/lib/metrics/diagnosis";
+import { aiUserMessage } from "@/lib/ai/user-error";
 import { ReviewError } from "@/lib/review";
 import { isCheckpoint } from "@/lib/validation/snapshot";
 
@@ -17,14 +18,15 @@ export async function POST(
     const { publicationId, checkpoint } = await params;
     if (!isCheckpoint(checkpoint)) {
       return NextResponse.json(
-        { error: "Unsupported checkpoint (V1: 24h / 72h)" },
+        { error: "Unsupported checkpoint (24h / 72h only)" },
         { status: 400 }
       );
     }
     const result = await generateDiagnosisProposal(publicationId, checkpoint);
     if (!result.ok) {
+      console.error("diagnosis proposal failed:", result.error);
       return NextResponse.json(
-        { error: `Diagnosis generation failed: ${result.error}` },
+        { error: aiUserMessage(result.error) },
         { status: 502 }
       );
     }

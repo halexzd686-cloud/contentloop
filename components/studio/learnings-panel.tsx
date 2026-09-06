@@ -4,6 +4,11 @@ import { useCallback, useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { BookOpen, ChevronDown, ChevronRight } from "lucide-react";
 import type { ApplicationItem } from "@/lib/learning-applications";
+import {
+  LEARNING_APPLY_HELPER,
+  platformLabel,
+  testOutcomeLabel,
+} from "@/lib/labels";
 
 /**
  * Studio Learnings panel — M3.4, inside the Brief tab.
@@ -89,7 +94,8 @@ export function LearningsPanel({ contentId }: { contentId: string }) {
 
       {total === 0 && (
         <p className="mt-2 text-xs text-ink-faint">
-          No learnings match this content&apos;s scope yet.
+          No Learnings match this Content yet. Learnings come from concluded
+          Tests and match by platform and Pillar.
         </p>
       )}
 
@@ -112,6 +118,9 @@ export function LearningsPanel({ contentId }: { contentId: string }) {
         <div className="mt-3">
           <p className="text-[11px] font-semibold uppercase tracking-wide text-ink-faint">
             Available
+          </p>
+          <p className="mt-1 text-[11px] text-ink-faint">
+            {LEARNING_APPLY_HELPER}
           </p>
           <div className="mt-1.5 space-y-2">
             {data.available.map((item) => (
@@ -184,26 +193,26 @@ function LearningCard({
       <div className="flex items-start justify-between gap-2">
         <p className="text-xs text-ink-primary">{item.text}</p>
         {state === "applied" && (
-          <Badge variant="mint">applied</Badge>
+          <Badge variant="mint">Applied</Badge>
         )}
       </div>
       <div className="mt-1 flex flex-wrap items-center gap-x-2 text-[11px] text-ink-muted">
-        {item.platform && <span>{item.platform}</span>}
+        {item.platform && <span>{platformLabel(item.platform)}</span>}
         {item.pillarName && <span>· {item.pillarName}</span>}
         {item.sourceTestTitle && (
           <span>
             · test: {item.sourceTestTitle}
-            {item.sourceTestOutcome ? ` (${item.sourceTestOutcome})` : ""}
+            {item.sourceTestOutcome ? ` (${testOutcomeLabel(item.sourceTestOutcome)})` : ""}
           </span>
         )}
         {item.sourceStale && (
           <span className="text-warning">
-            · source test data changed
+            · source test data changed — review before relying on it
           </span>
         )}
         {item.scopeMismatch && (
           <span className="text-warning">
-            · no longer matches this content&apos;s scope
+            · no longer matches this content&apos;s platform or pillar
           </span>
         )}
       </div>

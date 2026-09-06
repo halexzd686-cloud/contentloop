@@ -22,6 +22,18 @@ import { FlaskConical, Plus, X } from "lucide-react";
 import { ResultSection, type ResultData } from "@/components/analytics/test-result-section";
 import { LearningSection } from "@/components/analytics/learning-section";
 import { createTestFormSubmittable } from "@/lib/validation/test";
+import {
+  platformLabel,
+  testMethodLabel,
+  testStatusLabel,
+  testRoleLabel,
+  TEST_METHOD_HELPERS,
+  TEST_METHODS_FOOTNOTE,
+  TEST_SECTION_HELPER,
+  TEST_ROLE_HELPER,
+  CHECKPOINT_HELPER,
+  PRIMARY_METRIC_HELPER,
+} from "@/lib/labels";
 
 /**
  * Tests section — M3.1 Test Core (Analytics → Tests).
@@ -67,18 +79,7 @@ interface TestDetail {
   }[];
 }
 
-const PLATFORM_LABEL: Record<string, string> = {
-  xiaohongshu: "Xiaohongshu",
-  bilibili: "Bilibili",
-  douyin: "Douyin",
-};
-
-const METHOD_LABEL: Record<string, string> = {
-  ab: "A/B",
-  sequential: "Sequential",
-  before_after: "Before / After",
-  content_comparison: "Content Comparison",
-};
+const PLATFORM_KEYS = ["xiaohongshu", "bilibili", "douyin"] as const;
 
 export interface TestCreateRequest {
   platform: string;
@@ -137,6 +138,7 @@ export function TestsSection({
           <FlaskConical className="h-4 w-4 text-ink-muted" />
           <span className="text-sm font-semibold text-ink-primary">Tests</span>
           <span className="text-xs text-ink-faint">{tests.length}</span>
+          <span className="text-xs text-ink-faint">{TEST_SECTION_HELPER}</span>
         </div>
         <Button variant="secondary" size="sm" onClick={() => setCreateOpen(true)}>
           <Plus className="mr-1 h-3 w-3" />
@@ -164,12 +166,12 @@ export function TestsSection({
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium text-ink-primary">{t.title}</span>
                 <Badge variant={t.status === "running" ? "warning" : "default"}>
-                  {t.status}
+                  {testStatusLabel(t.status)}
                 </Badge>
               </div>
               <p className="mt-0.5 text-xs text-ink-muted">
-                {PLATFORM_LABEL[t.platform]} · {t.checkpoint} ·{" "}
-                {METHOD_LABEL[t.method] ?? t.method} · {t.primaryMetricKey} ·{" "}
+                {platformLabel(t.platform)} · {t.checkpoint} ·{" "}
+                {testMethodLabel(t.method)} · {t.primaryMetricKey} ·{" "}
                 {t.publicationCount} publication{t.publicationCount === 1 ? "" : "s"}
               </p>
             </button>
@@ -309,7 +311,7 @@ function CreateTestDialog({
             <div>
               <label className="mb-1 block text-xs font-medium text-ink-secondary">Platform *</label>
               <select className="w-full rounded-[8px] border border-border bg-workspace px-3 py-2 text-sm outline-none focus:border-mint-600" value={platform} onChange={(e) => { setPlatform(e.target.value); setPrimaryMetricKey(""); }}>
-                {Object.entries(PLATFORM_LABEL).map(([k, l]) => <option key={k} value={k}>{l}</option>)}
+                {PLATFORM_KEYS.map((k) => <option key={k} value={k}>{platformLabel(k)}</option>)}
               </select>
             </div>
             <div>
@@ -318,13 +320,18 @@ function CreateTestDialog({
                 <option value="24h">24h</option>
                 <option value="72h">72h</option>
               </select>
+              <p className="mt-1 text-xs text-ink-faint">{CHECKPOINT_HELPER}</p>
             </div>
             <div>
               <label className="mb-1 block text-xs font-medium text-ink-secondary">Method *</label>
               <select className="w-full rounded-[8px] border border-border bg-workspace px-3 py-2 text-sm outline-none focus:border-mint-600" value={method} onChange={(e) => setMethod(e.target.value)}>
                 <option value="">— select —</option>
-                {Object.entries(METHOD_LABEL).map(([k, l]) => <option key={k} value={k}>{l}</option>)}
+                {Object.keys(TEST_METHOD_HELPERS).map((k) => <option key={k} value={k}>{testMethodLabel(k)}</option>)}
               </select>
+              {method && TEST_METHOD_HELPERS[method] && (
+                <p className="mt-1 text-xs text-ink-faint">{TEST_METHOD_HELPERS[method]}</p>
+              )}
+              <p className="mt-1 text-xs text-ink-faint">{TEST_METHODS_FOOTNOTE}</p>
             </div>
           </div>
 
@@ -346,6 +353,7 @@ function CreateTestDialog({
               <option value="">— select —</option>
               {metricOptions.map((m) => <option key={m.key} value={m.key}>{m.label} ({m.key})</option>)}
             </select>
+            <p className="mt-1 text-xs text-ink-faint">{PRIMARY_METRIC_HELPER}</p>
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium text-ink-secondary">Keep Consistent</label>
@@ -588,9 +596,9 @@ function TestDetailDrawer({
                 <DrawerTitle>{detail.test.title}</DrawerTitle>
               )}
               <DrawerDescription>
-                {PLATFORM_LABEL[detail.test.platform]} · {detail.test.checkpoint} ·{" "}
-                {METHOD_LABEL[detail.test.method]} · {detail.test.primaryMetricKey} ·{" "}
-                {detail.test.status}
+                {platformLabel(detail.test.platform)} · {detail.test.checkpoint} ·{" "}
+                {testMethodLabel(detail.test.method)} · {detail.test.primaryMetricKey} ·{" "}
+                {testStatusLabel(detail.test.status)}
               </DrawerDescription>
             </DrawerHeader>
 
@@ -659,7 +667,7 @@ function TestDetailDrawer({
                       <div>
                         <p className="text-xs font-medium text-ink-primary">{p.finalTitle}</p>
                         <p className="text-[11px] text-ink-muted">
-                          {p.role} · {p.hasCheckpointData ? `${detail.test.checkpoint} data available` : `Awaiting ${detail.test.checkpoint} data`}
+                          {testRoleLabel(p.role)} · {p.hasCheckpointData ? `${detail.test.checkpoint} data available` : `No ${detail.test.checkpoint} data yet`}
                         </p>
                       </div>
                       {running && (
@@ -695,9 +703,9 @@ function TestDetailDrawer({
                         value={role}
                         onChange={(e) => setRole(e.target.value)}
                       >
-                        <option value="comparison">comparison</option>
-                        <option value="control">control</option>
-                        <option value="variant">variant</option>
+                        <option value="comparison">{testRoleLabel("comparison")}</option>
+                        <option value="control">{testRoleLabel("control")}</option>
+                        <option value="variant">{testRoleLabel("variant")}</option>
                       </select>
                       <Button
                         variant="secondary"
@@ -709,6 +717,7 @@ function TestDetailDrawer({
                         Add
                       </Button>
                     </div>
+                    <p className="text-xs text-ink-faint">{TEST_ROLE_HELPER}</p>
                   </div>
                 )}
               </section>

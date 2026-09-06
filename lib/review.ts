@@ -12,6 +12,11 @@ import {
 import { requireSingleBrand } from "@/lib/brand";
 import { resolveApprover } from "@/lib/brief";
 import {
+  contentStatusLabel,
+  platformLabel,
+  versionStatusLabel,
+} from "@/lib/labels";
+import {
   EMPTY_CHECKLIST,
   isChecklistComplete,
   canDragTransition,
@@ -226,7 +231,7 @@ export async function sendToReview(contentId: string) {
 
     if (agg.content.status !== "in_progress") {
       throw new ReviewError(
-        `Only in-progress content can be sent to review (current: ${agg.content.status}).`,
+        `Only in-progress content can be sent to review (current: ${contentStatusLabel(agg.content.status)}).`,
         409
       );
     }
@@ -249,7 +254,7 @@ export async function sendToReview(contentId: string) {
     if (notDraft.length > 0) {
       throw new ReviewError(
         `All platform versions must be draft to enter review (not draft: ${notDraft
-          .map((v) => v.platform)
+          .map((v) => platformLabel(v.platform))
           .join(", ")}).`,
         409
       );
@@ -340,7 +345,7 @@ export async function withdrawFromReview(contentId: string) {
 
     if (agg.content.status !== "review") {
       throw new ReviewError(
-        `Only content in review can be withdrawn (current: ${agg.content.status}).`,
+        `Only content in review can be withdrawn (current: ${contentStatusLabel(agg.content.status)}).`,
         409
       );
     }
@@ -425,7 +430,7 @@ export async function saveChecklist(
     }
     if (row.version.status !== "review") {
       throw new ReviewError(
-        `Checklist can only be edited while the version is in review (current: ${row.version.status}).`,
+        `Checklist can only be edited while the version is in review (current: ${versionStatusLabel(row.version.status)}).`,
         409
       );
     }
@@ -465,7 +470,7 @@ export async function approveForPublishing(contentId: string) {
       agg.content.status === "scheduled" && agg.publications.length > 0;
     if (agg.content.status !== "review" && !partiallyPublished) {
       throw new ReviewError(
-        `Only content in review can be approved for publishing (current: ${agg.content.status}).`,
+        `Only content in review can be approved for publishing (current: ${contentStatusLabel(agg.content.status)}).`,
         409
       );
     }
@@ -486,7 +491,7 @@ export async function approveForPublishing(contentId: string) {
         blockers.push(`${v.platform} (checklist incomplete)`);
         continue;
       }
-      blockers.push(`${v.platform} (status: ${v.status})`);
+      blockers.push(`${platformLabel(v.platform)} (status: ${versionStatusLabel(v.status)})`);
     }
     if (blockers.length > 0) {
       throw new ReviewError(
@@ -591,7 +596,7 @@ export async function returnVersionToDraft(contentId: string, platform: string) 
     }
     if (version.status !== "review" && version.status !== "approved") {
       throw new ReviewError(
-        `Only a review/approved version can return to draft (current: ${version.status}).`,
+        `Only a review/approved version can return to draft (current: ${versionStatusLabel(version.status)}).`,
         409
       );
     }
@@ -655,7 +660,7 @@ export async function submitVersionToReview(contentId: string, platform: string)
     }
     if (version.status !== "draft") {
       throw new ReviewError(
-        `Only a draft version can be submitted to review (current: ${version.status}).`,
+        `Only a draft version can be submitted to review (current: ${versionStatusLabel(version.status)}).`,
         409
       );
     }

@@ -26,6 +26,7 @@ import {
 import { ImportMetricsModal } from "@/components/analytics/import-modal";
 import { TestsSection, type TestCreateRequest } from "@/components/analytics/tests-section";
 import { LearningsSection } from "@/components/analytics/learnings-section";
+import { platformLabel } from "@/lib/labels";
 
 /**
  * Analytics — /app/analytics (M2.5)
@@ -93,18 +94,13 @@ interface Detail {
   diagnosisStale: boolean;
 }
 
-const PLATFORM_LABEL: Record<string, string> = {
-  xiaohongshu: "XHS",
-  bilibili: "Bili",
-  douyin: "Douyin",
-};
-
 function formatCaptureDelta(minutes: number | null): string {
   if (minutes === null) return "";
-  if (Math.abs(minutes) < 90) return `+${Math.round(minutes)} min from target`;
+  const sign = minutes >= 0 ? "+" : "";
+  if (Math.abs(minutes) < 90) return `${sign}${Math.round(minutes)} min from target`;
   const hours = minutes / 60;
-  if (Math.abs(hours) < 48) return `+${hours.toFixed(1)}h from target`;
-  return `+${(hours / 24).toFixed(1)}d from target`;
+  if (Math.abs(hours) < 48) return `${sign}${hours.toFixed(1)}h from target`;
+  return `${sign}${(hours / 24).toFixed(1)}d from target`;
 }
 
 export default function AnalyticsPage() {
@@ -397,7 +393,7 @@ export default function AnalyticsPage() {
                     <span className="text-sm font-medium text-ink-primary">
                       {p.finalTitle}
                     </span>
-                    <Badge variant="default">{PLATFORM_LABEL[p.platform] ?? p.platform}</Badge>
+                    <Badge variant="default">{platformLabel(p.platform)}</Badge>
                   </div>
                   <div className="mt-1 flex items-center gap-3 text-xs text-ink-muted">
                     <span>{p.contentTitle}</span>
@@ -503,7 +499,7 @@ export default function AnalyticsPage() {
                           {detail.fact.finalTitle}
                         </span>
                         <span className="ml-2">
-                          {PLATFORM_LABEL[detail.fact.platform]} ·{" "}
+                          {platformLabel(detail.fact.platform)} ·{" "}
                           {detail.fact.pillarName ?? "No pillar"} · Published{" "}
                           {new Date(detail.fact.publishedAt).toLocaleString()}
                         </span>
@@ -544,8 +540,8 @@ export default function AnalyticsPage() {
                                 <tr className="bg-canvas text-left text-[11px] uppercase tracking-wide text-ink-muted">
                                   <th className="px-3 py-2">Metric</th>
                                   <th className="px-3 py-2">Current</th>
-                                  <th className="px-3 py-2">Account Median</th>
-                                  <th className="px-3 py-2">Pillar Median</th>
+                                  <th className="px-3 py-2">Account median</th>
+                                  <th className="px-3 py-2">Pillar median</th>
                                 </tr>
                               </thead>
                               <tbody>
@@ -583,12 +579,17 @@ export default function AnalyticsPage() {
                               <span>
                                 {detail.accountBaseline.candidateCount} comparable publications
                                 {detail.accountBaseline.medianCaptureDeltaMinutes !== null &&
-                                  ` · median capture offset ${formatCaptureDelta(detail.accountBaseline.medianCaptureDeltaMinutes)}`}
+                                  ` · median capture ${formatCaptureDelta(detail.accountBaseline.medianCaptureDeltaMinutes)}`}
                               </span>
                             ) : (
                               <span>No historical {selected.checkpoint} snapshots yet.</span>
                             )}
                           </div>
+                          <p className="mt-1 text-xs text-ink-faint">
+                            Medians come from your own workspace history (up to 20
+                            comparable publications) — not industry benchmarks. n =
+                            prior publications with a value for that metric.
+                          </p>
                         </>
                       )}
                     </>

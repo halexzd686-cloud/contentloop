@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { contentStatusLabel } from "@/lib/labels";
+
 /**
  * Review validation — data-model §15, PRD §8.14
  *
@@ -72,5 +74,5 @@ export function dragBlockReason(from: string, to: string): string {
   if (from === "scheduled" && to === "review") {
     return "Return a platform version to draft to reopen review.";
   }
-  return `Transition ${from} → ${to} is not allowed.`;
+  return `Moving from ${contentStatusLabel(from)} to ${contentStatusLabel(to)} is not allowed.`;
 }

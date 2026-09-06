@@ -29,6 +29,12 @@ import {
   checkpointStatus,
   type Checkpoint,
 } from "@/lib/validation/snapshot";
+import {
+  briefStatusLabel,
+  contentStatusLabel,
+  platformLabel,
+  versionStatusLabel,
+} from "@/lib/labels";
 
 /**
  * Pipeline — /app/pipeline (M1.6)
@@ -77,23 +83,11 @@ const COLUMNS = [
   { key: "published", label: "Published" },
 ] as const;
 
-const STATUS_LABEL: Record<string, string> = {
-  planning: "Planning",
-  in_progress: "In Progress",
-  review: "Review",
-  scheduled: "Scheduled",
-  published: "Published",
-};
-
-const PLATFORM_SHORT: Record<string, string> = {
-  xiaohongshu: "XHS",
-  bilibili: "Bili",
-  douyin: "Douyin",
-};
-
 function PlatformChips({ platforms }: { platforms: PlatformState[] }) {
   if (platforms.length === 0) {
-    return <span className="text-[11px] text-ink-faint">No versions</span>;
+    return (
+      <span className="text-[11px] text-ink-faint">No platform versions</span>
+    );
   }
   return (
     <div className="flex flex-wrap gap-1">
@@ -108,8 +102,9 @@ function PlatformChips({ platforms }: { platforms: PlatformState[] }) {
                 : "bg-surface-subtle text-ink-muted"
           }`}
         >
-          {PLATFORM_SHORT[p.platform] ?? p.platform} {p.status}
-          {p.status === "review" && ` ${p.checklistDone}/${p.checklistTotal}`}
+          {platformLabel(p.platform)} · {versionStatusLabel(p.status)}
+          {p.status === "review" &&
+            ` · ${p.checklistDone}/${p.checklistTotal} checklist`}
         </span>
       ))}
     </div>
@@ -305,12 +300,6 @@ export default function PipelinePage() {
           <span className="rounded-md bg-mint-100 px-3 py-1 text-xs font-medium text-ink-primary">
             Pipeline
           </span>
-          <span
-            className="cursor-not-allowed rounded-md px-3 py-1 text-xs text-ink-faint"
-            title="Coming later"
-          >
-            Calendar
-          </span>
         </div>
         {dragError && (
           <div className="ml-auto flex items-center gap-2 rounded-[8px] border border-danger/20 bg-danger/5 px-3 py-1.5">
@@ -358,7 +347,7 @@ export default function PipelinePage() {
               <DrawerHeader>
                 <DrawerTitle>{selected.title}</DrawerTitle>
                 <DrawerDescription>
-                  {STATUS_LABEL[selected.status] ?? selected.status}
+                  {contentStatusLabel(selected.status)}
                 </DrawerDescription>
               </DrawerHeader>
 
@@ -371,7 +360,7 @@ export default function PipelinePage() {
                     Owner: {selected.ownerName ?? "Unassigned"}
                   </p>
                   <p className="text-ink-secondary">
-                    Reviewer: {selected.reviewerName ?? "None"}
+                    Reviewer: {selected.reviewerName ?? "Unassigned"}
                   </p>
                 </div>
 
@@ -380,8 +369,11 @@ export default function PipelinePage() {
                     Production
                   </p>
                   <p className="mt-1 text-ink-secondary">
-                    Brief: {selected.briefStatus ?? "none"} · Master:{" "}
-                    {selected.hasMaster ? "created" : "none"}
+                    Brief:{" "}
+                    {selected.briefStatus
+                      ? briefStatusLabel(selected.briefStatus)
+                      : "Not started"}{" "}
+                    · Master: {selected.hasMaster ? "Created" : "Not started"}
                   </p>
                   <div className="mt-1.5">
                     <PlatformChips platforms={selected.platforms} />
@@ -405,8 +397,10 @@ export default function PipelinePage() {
                           className="flex items-center justify-between text-xs"
                         >
                           <span className="text-ink-secondary">
-                            {PLATFORM_SHORT[p.platform] ?? p.platform}{" "}
-                            <span className="text-ink-muted">{p.status}</span>
+                            {platformLabel(p.platform)}{" "}
+                            <span className="text-ink-muted">
+                              {versionStatusLabel(p.status)}
+                            </span>
                           </span>
                           {p.status === "approved" &&
                             selected.status === "scheduled" && (
@@ -436,7 +430,7 @@ export default function PipelinePage() {
                                     className="flex items-center justify-between text-xs"
                                   >
                                     <span className="text-ink-secondary">
-                                      {PLATFORM_SHORT[p.platform] ?? p.platform} {c}{" "}
+                                      {platformLabel(p.platform)} {c}{" "}
                                       <span className="text-ink-muted">
                                         {st === "submitted"
                                           ? "Submitted"
@@ -461,7 +455,7 @@ export default function PipelinePage() {
                                           })
                                         }
                                       >
-                                        {st === "submitted" ? "Edit" : `Enter ${c}`}
+                                        {st === "submitted" ? "Edit" : `Enter ${c} Metrics`}
                                       </button>
                                     )}
                                   </div>
@@ -529,7 +523,7 @@ export default function PipelinePage() {
           onOpenChange={(o) => !o && setPubTarget(null)}
           contentId={pubTarget.item.id}
           platform={pubTarget.platform}
-          platformLabel={PLATFORM_SHORT[pubTarget.platform] ?? pubTarget.platform}
+          platformLabel={platformLabel(pubTarget.platform)}
           versionData={null}
           contentTitle={pubTarget.item.title}
           onDone={() => {

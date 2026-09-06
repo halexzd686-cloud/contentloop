@@ -210,6 +210,10 @@ export default function RadarPage() {
           <p className="mt-0.5 text-sm text-ink-muted">
             What&apos;s worth creating?
           </p>
+          <p className="mt-0.5 text-xs text-ink-faint">
+            Signals are leads worth evaluating as future content — a URL or an
+            idea.
+          </p>
         </div>
         <AddSignalDialog onCreated={() => fetchRef.current()} />
       </div>
@@ -254,7 +258,7 @@ export default function RadarPage() {
             ) : signals.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-16 text-center">
                 <p className="text-sm text-ink-secondary">
-                  Add your first signal to start deciding what to create.
+                  Add your first Signal to start deciding what to create.
                 </p>
                 <div className="mt-4">
                   <AddSignalDialog onCreated={() => fetchRef.current()} />

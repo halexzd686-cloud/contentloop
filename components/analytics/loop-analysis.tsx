@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Sparkles, RefreshCw, X } from "lucide-react";
 import type { ResolvedEvidence } from "@/lib/validation/diagnosis";
+import { confidenceLabel } from "@/lib/labels";
 
 /**
  * Loop Analysis — M2.6 Structured Diagnosis panel.
@@ -14,13 +15,6 @@ import type { ResolvedEvidence } from "@/lib/validation/diagnosis";
  * server-owned and read-only; humans edit text fields only. Stale
  * saved diagnoses stay visible with an explicit banner.
  */
-
-const CONFIDENCE_LABEL: Record<string, string> = {
-  high: "High",
-  medium: "Medium",
-  low: "Low",
-  insufficient_evidence: "Insufficient evidence",
-};
 
 export interface DiagnosisRecord {
   id: string;
@@ -275,14 +269,14 @@ export function LoopAnalysis({
               {proposal.whatHappened}
             </p>
             <p className="mt-1 text-[11px] text-ink-faint">
-              Canonical summary built from the evidence below — always
+              Built from the evidence below — always
               consistent with the numbers.
             </p>
           </section>
 
           <section>
             <p className="text-xs font-semibold text-ink-secondary">
-              Evidence (server values — read-only)
+              Evidence (measured values — read-only)
             </p>
             <div className="mt-1">
               {renderEvidenceRows(
@@ -330,9 +324,9 @@ export function LoopAnalysis({
               value={editConfidence}
               onChange={(e) => setEditConfidence(e.target.value)}
             >
-              {Object.entries(CONFIDENCE_LABEL).map(([v, l]) => (
+              {["high", "medium", "low", "insufficient_evidence"].map((v) => (
                 <option key={v} value={v}>
-                  {l}
+                  {confidenceLabel(v)}
                 </option>
               ))}
             </select>
@@ -451,11 +445,14 @@ function DiagnosisView({
             ))}
           </ul>
         )}
+        <p className="mt-1 text-[11px] text-ink-faint">
+          Possible reasons are hypotheses, not confirmed causes.
+        </p>
       </section>
       <section>
         <p className="text-xs font-semibold text-ink-secondary">Confidence</p>
         <Badge variant={diagnosis.confidence === "high" ? "mint" : "default"}>
-          {CONFIDENCE_LABEL[diagnosis.confidence] ?? diagnosis.confidence}
+          {confidenceLabel(diagnosis.confidence)}
         </Badge>
       </section>
       <section>

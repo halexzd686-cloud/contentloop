@@ -13,6 +13,7 @@ import {
   type PlatformData,
 } from "@/lib/validation/platform-version";
 import { createSaveQueue, type SaveQueueState } from "@/lib/save-queue";
+import { platformLabel, versionStatusLabel } from "@/lib/labels";
 
 /**
  * Platforms tab — M1.5 Platform Versions.
@@ -52,12 +53,6 @@ interface PlatformsPanelInput {
   enabledPlatforms: string[];
   playbookPlatforms: string[];
 }
-
-const PLATFORM_LABEL: Record<Platform, string> = {
-  xiaohongshu: "Xiaohongshu",
-  bilibili: "Bilibili",
-  douyin: "Douyin",
-};
 
 type FieldKind = "input" | "textarea" | "list";
 
@@ -575,12 +570,12 @@ export function usePlatformsPanel({
               >
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium text-ink-primary">
-                    {PLATFORM_LABEL[p]}
+                    {platformLabel(p)}
                   </span>
                   {isPrimary && <Badge variant="mint">Primary</Badge>}
                 </div>
                 <p className="mt-1 text-xs text-ink-muted">
-                  {v ? v.status : "Not created"}
+                  {v ? versionStatusLabel(v.status) : "Not created"}
                 </p>
               </button>
             );
@@ -607,7 +602,7 @@ export function usePlatformsPanel({
           <div className="flex flex-col items-center justify-center py-12 text-center">
             <FileText className="h-5 w-5 text-ink-faint" />
             <p className="mt-3 text-sm text-ink-secondary">
-              No {PLATFORM_LABEL[selected]} version yet.
+              No {platformLabel(selected)} version yet.
             </p>
             {!locked && (
               <div className="mt-4 flex gap-2">
@@ -618,7 +613,7 @@ export function usePlatformsPanel({
                   disabled={adapting}
                 >
                   <Sparkles className="mr-1 h-3 w-3" />
-                  {adapting ? "Adapting…" : "Adapt with AI"}
+                  {adapting ? "Adapting…" : "Adapt from Master with AI"}
                 </Button>
                 <Button
                   variant="secondary"
@@ -677,7 +672,7 @@ export function usePlatformsPanel({
           <div>
             <div className="mb-4 flex items-center justify-between">
               <Badge variant={version.status === "published" ? "mint" : "default"}>
-                {version.status.toUpperCase()}
+                {versionStatusLabel(version.status)}
               </Badge>
               {editable && (
                 <span
@@ -709,8 +704,8 @@ export function usePlatformsPanel({
             )}
             {(version.status === "review" || version.status === "approved") && (
               <p className="mb-4 rounded-[8px] border border-warning/30 bg-warning/5 px-3 py-2 text-xs text-ink-secondary">
-                This version is {version.status}. Read-only — use Return to
-                Draft in the Review tab to edit it.
+                This version is currently {versionStatusLabel(version.status)}.
+                Read-only — use Return to Draft in the Review tab to edit it.
               </p>
             )}
             {renderEditor(draft, locked || !editable)}
@@ -740,14 +735,14 @@ export function usePlatformsPanel({
           {adapting
             ? "Adapting…"
             : version
-              ? "Re-adapt from Master"
-              : "Adapt from Master"}
+              ? "Re-adapt from Master with AI"
+              : "Adapt from Master with AI"}
         </Button>
       ) : (
         <p className="rounded-[8px] border border-border bg-workspace p-3 text-xs text-ink-muted">
           {version?.status === "published"
             ? "Published version is read-only. AI adaptation is unavailable after publication."
-            : `This version is ${version?.status}. AI adaptation is only available for drafts.`}
+            : `This version is currently ${versionStatusLabel(version?.status)}. AI adaptation is only available for drafts.`}
         </p>
       )}
       {adaptError && (
@@ -769,7 +764,7 @@ export function usePlatformsPanel({
       </p>
       <p className="text-xs text-ink-faint">
         AI adapts the approved Content Master into a structured{" "}
-        {PLATFORM_LABEL[selected]} version. Nothing is saved until you Apply
+        {platformLabel(selected)} version. Nothing is saved until you Apply
         or Accept.
       </p>
     </div>

@@ -40,6 +40,7 @@ import {
   type MasterModule,
 } from "@/lib/validation/master";
 import { createSaveQueue, type SaveQueueState } from "@/lib/save-queue";
+import { briefStatusLabel, contentStatusLabel } from "@/lib/labels";
 import { ArrowLeft, Sparkles, RefreshCw, Check, Lock } from "lucide-react";
 
 /**
@@ -98,14 +99,6 @@ const EMPTY_FIELDS: BriefFieldValues = {
   keyEvidence: "",
   differentiation: "",
   cta: "",
-};
-
-const STATUS_LABEL: Record<string, string> = {
-  planning: "Planning",
-  in_progress: "In Progress",
-  review: "Review",
-  scheduled: "Scheduled",
-  published: "Published",
 };
 
 const PLATFORM_LABEL: Record<string, string> = {
@@ -564,7 +557,7 @@ export default function StudioContentPage({
             {content.title}
           </h1>
           <Badge variant={content.status === "in_progress" ? "warning" : "default"}>
-            {STATUS_LABEL[content.status] || content.status}
+            {contentStatusLabel(content.status)}
           </Badge>
           {content.primaryPlatform && (
             <span className="text-xs text-ink-muted">
@@ -573,7 +566,7 @@ export default function StudioContentPage({
           )}
           <div className="ml-auto flex items-center gap-4 text-xs text-ink-muted">
             {content.owner && <span>Owner: {content.owner.name}</span>}
-            {approverName && <span>Approver: {approverName}</span>}
+            {approverName && <span>Reviewer: {approverName}</span>}
             <span
               className={
                 saveState === "failed"
@@ -599,9 +592,8 @@ export default function StudioContentPage({
         {/* Tabs — all four active (M1.6) */}
         <div className="mt-3 flex gap-1">
           {TABS.map((tab) => {
-            const enabled = true;
             const active = activeTab === tab;
-            return enabled ? (
+            return (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
@@ -613,14 +605,6 @@ export default function StudioContentPage({
               >
                 {tab}
               </button>
-            ) : (
-              <span
-                key={tab}
-                className="cursor-not-allowed rounded-md px-3 py-1.5 text-sm text-ink-faint"
-                title="Coming later"
-              >
-                {tab}
-              </span>
             );
           })}
         </div>
@@ -642,7 +626,7 @@ export default function StudioContentPage({
               <h2 className="text-sm font-semibold text-ink-primary">Brief</h2>
               {brief && (
                 <Badge variant={approved ? "mint" : "default"}>
-                  {approved ? "APPROVED" : "DRAFT"}
+                  {briefStatusLabel(brief.status)}
                 </Badge>
               )}
             </div>
@@ -650,7 +634,7 @@ export default function StudioContentPage({
               hasPublications ? (
                 <span
                   className="text-xs text-ink-faint"
-                  title="This content already has a published platform version. Brief and Master can no longer be globally edited."
+                  title="This content already has a published platform version. Brief and Master can no longer be edited."
                 >
                   Published — Brief locked
                 </span>
@@ -677,6 +661,11 @@ export default function StudioContentPage({
               </Button>
             )}
           </div>
+
+          <p className="-mt-2 mb-4 text-xs text-ink-faint">
+            Why this content should exist: who it&apos;s for, the problem it
+            addresses, and the angle.
+          </p>
 
           {approved && brief?.approvedAt && (
             <p className="mb-4 text-xs text-ink-muted">
@@ -804,14 +793,14 @@ export default function StudioContentPage({
           ) : activeTab === "Review" ? (
             <div className="mt-3">
               <p className="text-xs text-ink-faint">
-                Review is human-only in V1. AI never checks items or approves
+                Review is human-only. AI never checks items or approves
                 content.
               </p>
             </div>
           ) : activeTab === "Master" ? (
             <div className="mt-3">
               <p className="text-xs text-ink-faint">
-                Master AI actions are planned for Studio Advanced.
+                Master AI actions aren&apos;t available yet.
               </p>
             </div>
           ) : (
@@ -928,7 +917,7 @@ function MasterWorkspace({
         <div className="mb-4 rounded-[8px] border border-warning/30 bg-warning/5 p-3">
           <p className="text-xs text-ink-secondary">
             {hasPublications
-              ? "This content already has a published platform version. Brief and Master can no longer be globally edited."
+              ? "This content already has a published platform version. Brief and Master can no longer be edited."
               : `Content is ${contentStatus === "scheduled" ? "approved for publishing" : "in review"}. The Master is read-only. Returning to editing will invalidate the current review and move the content back to production.`}
           </p>
           {!hasPublications && (
@@ -984,6 +973,9 @@ function MasterWorkspace({
         <p className="text-sm text-ink-secondary">
           No Content Master yet. Create one to start structured production.
         </p>
+        <p className="mt-1 text-xs text-ink-faint">
+          The master draft used to create platform-specific versions.
+        </p>
         <Button
           variant="primary"
           size="sm"
@@ -1000,13 +992,18 @@ function MasterWorkspace({
 
   // Editable
   return (
-    <MasterEditor
-      modules={modules}
-      readOnly={false}
-      saveState={saveState}
-      onTextChange={onTextChange}
-      onStructuralChange={onStructuralChange}
-      onRetrySave={onRetrySave}
-    />
+    <div>
+      <p className="mb-4 text-xs text-ink-faint">
+        The master draft used to create platform-specific versions.
+      </p>
+      <MasterEditor
+        modules={modules}
+        readOnly={false}
+        saveState={saveState}
+        onTextChange={onTextChange}
+        onStructuralChange={onStructuralChange}
+        onRetrySave={onRetrySave}
+      />
+    </div>
   );
 }

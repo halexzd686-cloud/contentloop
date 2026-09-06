@@ -15,6 +15,7 @@ export type AIErrorKind =
   | "unavailable" // network error / 5xx / provider down
   | "timeout"
   | "rate_limited" // 429
+  | "not_configured" // missing key / auth rejected (M4.3)
   | "empty_response"; // provider returned no content
 
 export class AIProviderError extends Error {
@@ -46,9 +47,11 @@ const REQUEST_TIMEOUT_MS = 60_000;
 export function createDeepSeekProvider(): AIProvider {
   const apiKey = process.env.AI_API_KEY;
   if (!apiKey) {
+    // Internal diagnostics keep the config detail (server logs);
+    // routes sanitize via aiUserMessage before reaching the client.
     throw new AIProviderError(
-      "unavailable",
-      "AI_API_KEY is not configured. Add it to .env (see .env.example)."
+      "not_configured",
+      "AI_API_KEY is not configured (workspace AI configuration missing)."
     );
   }
 
@@ -82,8 +85,8 @@ export function createDeepSeekProvider(): AIProvider {
           if (err.status === 401 || err.status === 403) {
             // Do not pass through vendor auth errors — they may contain key fragments.
             throw new AIProviderError(
-              "unavailable",
-              "AI provider authentication failed. Check AI_API_KEY."
+              "not_configured",
+              "AI provider authentication failed (key rejected)."
             );
           }
           if (err.name === "APIConnectionTimeoutError" || err.code === "ETIMEDOUT") {

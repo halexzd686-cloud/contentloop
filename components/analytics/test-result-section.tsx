@@ -5,6 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Check } from "lucide-react";
 import { formatMetricValue } from "@/lib/metrics/engine";
 import type { ResultRow, BaselineCell } from "@/lib/tests-result";
+import {
+  testOutcomeLabel,
+  testRoleLabel,
+  TEST_OUTCOME_HELPERS,
+} from "@/lib/labels";
 
 /**
  * M3.2 Observed Results + Complete Test panel.
@@ -15,12 +20,7 @@ import type { ResultRow, BaselineCell } from "@/lib/tests-result";
  * conclusion time") with a stale banner when the subject changed.
  */
 
-const OUTCOME_LABEL: Record<string, string> = {
-  win: "Win — observed evidence supports the hypothesis",
-  loss: "Loss — observed evidence goes against the hypothesis",
-  trade_off: "Trade-off — meaningfully mixed signals",
-  no_clear_result: "No Clear Result — evidence insufficient or inconclusive",
-};
+const OUTCOME_KEYS = ["win", "loss", "trade_off", "no_clear_result"] as const;
 
 export interface ResultData {
   test: { checkpoint: string };
@@ -65,7 +65,7 @@ function BaselineText({
       {/* Same shared formatter as the primary value — one format per
           MetricDefinition, presentation-only. */}
       {formatMetricValue(format, cell.median)}
-      <span className="ml-1 text-ink-faint">n={cell.sampleCount}</span>
+      <span className="ml-1 text-ink-faint">(n={cell.sampleCount})</span>
     </span>
   );
 }
@@ -156,11 +156,11 @@ export function ResultSection({
               <span className="text-xs font-medium text-ink-primary">
                 {r.finalTitle}
               </span>
-              <span className="text-[11px] text-ink-faint">{r.role}</span>
+              <span className="text-[11px] text-ink-faint">{testRoleLabel(r.role)}</span>
             </div>
             {r.availability === "awaiting" ? (
               <p className="mt-0.5 text-[11px] text-ink-muted">
-                Awaiting {result.test.checkpoint} data
+                No {result.test.checkpoint} data yet
               </p>
             ) : r.availability === "metric_unavailable" ? (
               <p className="mt-0.5 text-[11px] text-ink-muted">
@@ -171,9 +171,9 @@ export function ResultSection({
                 <span className="font-medium text-ink-primary">
                   {pm ? formatMetricValue(pm.format, r.value) : "N/A"}
                 </span>
-                {" · "}Account{" "}
+                {" · "}Account median{" "}
                 <BaselineText cell={r.accountBaseline} format={pm?.format ?? "count"} />
-                {" · "}Pillar{" "}
+                {" · "}Pillar median{" "}
                 <BaselineText cell={r.pillarBaseline} format={pm?.format ?? "count"} />
                 {r.captureDeltaMinutes !== null && (
                   <span className="ml-1 text-ink-faint">
@@ -201,9 +201,7 @@ export function ResultSection({
           <div className="flex items-center gap-2 text-xs font-semibold text-ink-secondary">
             <span>Outcome:</span>
             <Badge variant={result.outcome === "win" ? "mint" : "default"}>
-              {result.outcome
-                ? (OUTCOME_LABEL[result.outcome]?.split(" — ")[0] ?? result.outcome)
-                : "—"}
+              {result.outcome ? testOutcomeLabel(result.outcome) : "—"}
             </Badge>
           </div>
           <p className="mt-1 text-xs text-ink-primary">{result.conclusion}</p>
@@ -239,12 +237,12 @@ export function ResultSection({
       {running && concludeOpen && (
         <div className="mt-3 space-y-3 rounded-[8px] border border-mint-600/30 bg-mint-100/40 p-3">
           <p className="text-xs font-medium text-ink-primary">
-            Review the observed results above. The evidence will be
-            revalidated and frozen when you confirm.
+            Review the observed results above. The evidence is saved with your
+            conclusion when you confirm.
           </p>
           {result.readiness.forcedOutcome === "no_clear_result" && (
             <p className="rounded-[8px] border border-warning/30 bg-warning/5 p-2 text-[11px] text-ink-secondary">
-              {result.readiness.reasons.join(" ")} Only No Clear Result is
+              {result.readiness.reasons.join(" ")} Only No clear result is
               available.
             </p>
           )}
@@ -257,7 +255,7 @@ export function ResultSection({
               value={outcome}
               onChange={(e) => setOutcome(e.target.value)}
             >
-              {Object.entries(OUTCOME_LABEL).map(([k, l]) => (
+              {OUTCOME_KEYS.map((k) => (
                 <option
                   key={k}
                   value={k}
@@ -266,7 +264,8 @@ export function ResultSection({
                     k !== "no_clear_result"
                   }
                 >
-                  {l}
+                  {testOutcomeLabel(k)}
+                  {TEST_OUTCOME_HELPERS[k] ? ` — ${TEST_OUTCOME_HELPERS[k]}` : ""}
                 </option>
               ))}
             </select>

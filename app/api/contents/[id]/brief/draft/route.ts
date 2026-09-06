@@ -12,6 +12,7 @@ import {
 import { requireSingleBrand } from "@/lib/brand";
 import { createDeepSeekProvider } from "@/lib/ai/provider";
 import { draftBrief } from "@/lib/ai/draft-brief";
+import { aiUserMessage } from "@/lib/ai/user-error";
 
 /**
  * POST /api/contents/[id]/brief/draft
@@ -100,8 +101,13 @@ export async function POST(
     try {
       provider = createDeepSeekProvider();
     } catch (err) {
+      console.error("brief draft provider init failed:", err);
       return NextResponse.json(
-        { error: err instanceof Error ? err.message : "AI not configured" },
+        {
+          error: aiUserMessage(
+            err instanceof Error ? err.message : "AI not configured"
+          ),
+        },
         { status: 503 }
       );
     }
@@ -139,8 +145,9 @@ export async function POST(
     );
 
     if (!result.ok) {
+      console.error("brief draft failed:", result.error);
       return NextResponse.json(
-        { error: `Draft generation failed: ${result.error}. Please retry.` },
+        { error: aiUserMessage(result.error) },
         { status: 502 }
       );
     }

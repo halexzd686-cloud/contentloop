@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { contents, publications, teamMembers } from "@/lib/db/schema";
 import { requireSingleBrand } from "@/lib/brand";
 import { ReviewError } from "@/lib/review";
+import { contentStatusLabel } from "@/lib/labels";
 import type { Platform } from "@/lib/validation/platform-version";
 
 /**
@@ -84,7 +85,7 @@ export async function setPrimaryPlatform(contentId: string, platform: Platform) 
   }
   if (content.primaryPlatform !== null) {
     throw new ReviewError(
-      "Primary platform is already set and cannot be changed in V1.",
+      "Primary platform is already set and cannot be changed.",
       409
     );
   }
@@ -96,7 +97,7 @@ export async function setPrimaryPlatform(contentId: string, platform: Platform) 
   }
   if (!(CORRECTABLE_STATUSES as readonly string[]).includes(content.status)) {
     throw new ReviewError(
-      `Content in status "${content.status}" cannot be corrected this way.`,
+      `This content's current state (${contentStatusLabel(content.status)}) doesn't allow setting a platform.`,
       409
     );
   }

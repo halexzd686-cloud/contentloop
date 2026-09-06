@@ -12,8 +12,6 @@ import {
   Settings,
   ChevronsLeft,
   ChevronsRight,
-  Plus,
-  MessageCircle,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -101,30 +99,6 @@ export function Sidebar() {
 
       {/* Bottom section */}
       <div className="border-t border-border p-2">
-        {/* Quick actions */}
-        <div className={cn("mb-2 space-y-1", collapsed && "space-y-0")}>
-          <button
-            className={cn(
-              "flex w-full items-center gap-3 rounded-[8px] px-3 py-2 text-sm text-ink-secondary hover:bg-surface-subtle hover:text-ink-primary transition-colors duration-150",
-              collapsed && "justify-center px-2"
-            )}
-            title="+ New"
-          >
-            <Plus className="h-5 w-5 shrink-0 text-ink-muted" />
-            {!collapsed && <span>+ New</span>}
-          </button>
-          <button
-            className={cn(
-              "flex w-full items-center gap-3 rounded-[8px] px-3 py-2 text-sm text-ink-secondary hover:bg-surface-subtle hover:text-ink-primary transition-colors duration-150",
-              collapsed && "justify-center px-2"
-            )}
-            title="Ask Loop"
-          >
-            <MessageCircle className="h-5 w-5 shrink-0 text-ink-muted" />
-            {!collapsed && <span>Ask Loop</span>}
-          </button>
-        </div>
-
         {/* Collapse toggle */}
         <button
           onClick={() => setCollapsed(!collapsed)}

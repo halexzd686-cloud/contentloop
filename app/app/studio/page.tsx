@@ -14,13 +14,14 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Plus, RefreshCw } from "lucide-react";
+import { contentStatusLabel, platformLabel } from "@/lib/labels";
 
 /**
  * Studio index — content list for the current Brand.
  * Detail workspace lives at /app/studio/[contentId].
  *
  * M4.1: manual New Content, Active/Archived views, Archive/Restore,
- * and legacy "Platform not set" correction.
+ * and legacy "No platform set" correction.
  */
 
 interface ContentListItem {
@@ -35,14 +36,6 @@ interface ContentListItem {
   updatedAt: string;
 }
 
-const STATUS_LABEL: Record<string, string> = {
-  planning: "Planning",
-  in_progress: "In Progress",
-  review: "Review",
-  scheduled: "Scheduled",
-  published: "Published",
-};
-
 const STATUS_VARIANT: Record<string, "default" | "mint" | "warning" | "danger"> = {
   planning: "default",
   in_progress: "warning",
@@ -51,11 +44,7 @@ const STATUS_VARIANT: Record<string, "default" | "mint" | "warning" | "danger"> 
   published: "mint",
 };
 
-const PLATFORM_LABEL: Record<string, string> = {
-  xiaohongshu: "Xiaohongshu",
-  bilibili: "Bilibili",
-  douyin: "Douyin",
-};
+const PLATFORM_KEYS = ["xiaohongshu", "bilibili", "douyin"];
 
 const CORRECTABLE_STATUSES = ["planning", "in_progress", "review", "scheduled"];
 
@@ -134,7 +123,7 @@ export default function StudioPage() {
           <div>
             <h1 className="text-xl font-semibold text-ink-primary">Studio</h1>
             <p className="mt-0.5 text-sm text-ink-muted">
-              Content creation workspace
+              Produce content from Brief to platform versions.
             </p>
           </div>
           <Button variant="primary" size="sm" onClick={() => setCreateOpen(true)}>
@@ -227,7 +216,7 @@ export default function StudioPage() {
                       </div>
                       <div className="flex shrink-0 items-center gap-2">
                         <Badge variant={STATUS_VARIANT[c.status] || "default"}>
-                          {STATUS_LABEL[c.status] || c.status}
+                          {contentStatusLabel(c.status)}
                         </Badge>
                         {archived ? (
                           <Button
@@ -265,7 +254,7 @@ export default function StudioPage() {
                     <div className="flex items-center gap-3 text-xs text-ink-muted">
                       {c.ownerName && <span>Owner: {c.ownerName}</span>}
                       {c.primaryPlatform ? (
-                        <span>{PLATFORM_LABEL[c.primaryPlatform] ?? c.primaryPlatform}</span>
+                        <span>{platformLabel(c.primaryPlatform)}</span>
                       ) : archived ? null : CORRECTABLE_STATUSES.includes(c.status) ? (
                         <button
                           className="font-medium text-warning hover:underline"
@@ -275,10 +264,10 @@ export default function StudioPage() {
                             setPlatformTarget(c);
                           }}
                         >
-                          Platform not set — Set
+                          No platform — Set one
                         </button>
                       ) : (
-                        <span className="text-ink-faint">Platform not set</span>
+                        <span className="text-ink-faint">No platform set</span>
                       )}
                       <span>
                         Brief:{" "}
@@ -444,9 +433,9 @@ function NewContentDialog({
                 value={primaryPlatform}
                 onChange={(e) => setPrimaryPlatform(e.target.value)}
               >
-                {Object.entries(PLATFORM_LABEL).map(([k, l]) => (
+                {PLATFORM_KEYS.map((k) => (
                   <option key={k} value={k}>
-                    {l}
+                    {platformLabel(k)}
                   </option>
                 ))}
               </select>
@@ -550,7 +539,7 @@ function SetPlatformDialog({
           <DialogDescription>
             &ldquo;{content.title}&rdquo; has no primary platform. Set it once
             so platform-scoped learnings can match this content. It cannot be
-            changed afterwards in V1.
+            changed afterwards.
           </DialogDescription>
         </DialogHeader>
 
@@ -563,9 +552,9 @@ function SetPlatformDialog({
             value={platform}
             onChange={(e) => setPlatform(e.target.value)}
           >
-            {Object.entries(PLATFORM_LABEL).map(([k, l]) => (
+            {PLATFORM_KEYS.map((k) => (
               <option key={k} value={k}>
-                {l}
+                {platformLabel(k)}
               </option>
             ))}
           </select>

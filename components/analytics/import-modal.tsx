@@ -16,6 +16,7 @@ import { validateImportFile, buildCsvTemplate } from "@/lib/import/template";
 import type { PreviewRow, ImportConfig } from "@/lib/import/service";
 import { EMPTY_MAPPING } from "@/lib/import/mapping";
 import type { Platform } from "@/lib/validation/platform-version";
+import { platformLabel, METRIC_NA_HELPER } from "@/lib/labels";
 
 /**
  * Import Metrics modal — M2.7. Upload → Map → Preview → Confirm.
@@ -46,11 +47,7 @@ interface ImportModalProps {
   onDone: () => void;
 }
 
-const PLATFORMS: { key: Platform; label: string }[] = [
-  { key: "xiaohongshu", label: "Xiaohongshu" },
-  { key: "bilibili", label: "Bilibili" },
-  { key: "douyin", label: "Douyin" },
-];
+const PLATFORM_KEYS: Platform[] = ["xiaohongshu", "bilibili", "douyin"];
 
 const STATUS_LABEL: Record<string, string> = {
   ready_create: "Create",
@@ -308,8 +305,8 @@ export function ImportMetricsModal({
                 value={platform}
                 onChange={(e) => setPlatform(e.target.value as Platform)}
               >
-                {PLATFORMS.map((p) => (
-                  <option key={p.key} value={p.key}>{p.label}</option>
+                {PLATFORM_KEYS.map((k) => (
+                  <option key={k} value={k}>{platformLabel(k)}</option>
                 ))}
               </select>
             </div>
@@ -335,10 +332,10 @@ export function ImportMetricsModal({
                 >
                   <FileUp className="h-6 w-6 text-ink-faint" />
                   <span className="text-sm font-medium text-ink-primary">
-                    拖拽文件到这里，或点击选择
+                    Drag a file here, or click to choose
                   </span>
                   <span className="text-xs text-ink-muted">
-                    .csv / .xlsx · 最大 2MB · 最多 200 行
+                    .csv / .xlsx · max 2MB · up to 200 rows
                   </span>
                 </label>
               ) : (
@@ -382,7 +379,7 @@ export function ImportMetricsModal({
                 value={timezone}
                 onChange={(e) => setTimezone(e.target.value)}
               />
-              <p className="mt-1 text-[11px] text-ink-faint">IANA timezone, e.g. Asia/Shanghai. Shown again in the preview.</p>
+              <p className="mt-1 text-[11px] text-ink-faint">Timezone, e.g. Asia/Shanghai. Shown again in the preview.</p>
             </div>
             <p className="text-[11px] text-ink-faint">
               Example row values: publication_url https://… · checkpoint 24h ·
@@ -420,7 +417,7 @@ export function ImportMetricsModal({
             )}
 
             <div>
-              <p className="mb-2 text-xs font-semibold text-ink-secondary">Identity fields</p>
+              <p className="mb-2 text-xs font-semibold text-ink-secondary">Publication matching</p>
               <div className="space-y-2">
                 {IDENTITY_FIELDS.map((f) => (
                   <div key={f.key} className="flex items-center gap-2">
@@ -444,7 +441,7 @@ export function ImportMetricsModal({
 
             <div>
               <p className="mb-2 text-xs font-semibold text-ink-secondary">
-                Metrics ({PLATFORMS.find((p) => p.key === platform)?.label} — active raw only)
+                Metrics ({platformLabel(platform)})
               </p>
               <div className="space-y-2">
                 {metricDefs.map((d) => {
@@ -482,6 +479,7 @@ export function ImportMetricsModal({
                   );
                 })}
               </div>
+              <p className="mt-2 text-xs text-ink-faint">{METRIC_NA_HELPER}</p>
               {!mapping.capturedAt && (
                 <div className="mt-3">
                   <label className="mb-1 block text-xs font-medium text-ink-secondary">

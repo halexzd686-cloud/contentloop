@@ -16,6 +16,7 @@ import {
   buildFormulaPreview,
   type MetricFormat,
 } from "@/lib/metrics/engine";
+import { platformLabel } from "@/lib/labels";
 
 /**
  * Settings → Metrics — M2.2 Metric Definition Engine.
@@ -122,8 +123,8 @@ export default function SettingsPage() {
           Metrics
         </h2>
         <p className="mt-1 text-xs text-ink-faint">
-          Metric definitions are authoritative configuration. Derived metrics
-          always show their calculation direction.
+          These definitions control how each metric is calculated and
+          displayed. Derived metrics always show their formula.
         </p>
       </div>
 
@@ -156,7 +157,7 @@ export default function SettingsPage() {
             <div key={p.key}>
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-medium text-ink-primary">
-                  {p.label}
+                  {platformLabel(p.key)}
                 </h3>
                 <button
                   className="inline-flex items-center gap-1 text-xs text-mint-600 hover:underline"
@@ -167,7 +168,12 @@ export default function SettingsPage() {
                 </button>
               </div>
               <div className="mt-2 divide-y divide-border rounded-[8px] border border-border bg-workspace">
-                {(byPlatform.get(p.key) ?? []).map((d) => (
+                {(byPlatform.get(p.key) ?? []).length === 0 ? (
+                  <p className="px-3 py-2.5 text-xs text-ink-faint">
+                    No metrics defined for this platform.
+                  </p>
+                ) : (
+                  (byPlatform.get(p.key) ?? []).map((d) => (
                   <div
                     key={d.id}
                     className={`flex items-center gap-3 px-3 py-2.5 ${d.isActive ? "" : "opacity-60"}`}
@@ -178,7 +184,7 @@ export default function SettingsPage() {
                           {d.alias ?? d.displayName}
                         </span>
                         <Badge variant={d.type === "derived" ? "mint" : "default"}>
-                          {d.type}
+                          {d.type === "derived" ? "Derived" : "Raw"}
                         </Badge>
                         {!d.isActive && <Badge variant="default">disabled</Badge>}
                       </div>
@@ -212,7 +218,8 @@ export default function SettingsPage() {
                       {d.isActive ? "Disable" : "Enable"}
                     </button>
                   </div>
-                ))}
+                  ))
+                )}
               </div>
             </div>
           ))}
@@ -321,8 +328,8 @@ function EditMetricDialog({
             Edit: {def.alias ?? def.displayName}
           </DialogTitle>
           <DialogDescription>
-            <code>{def.key}</code> · {def.platform} · {def.type} — key, platform
-            and type are immutable.
+            <code>{def.key}</code> · {platformLabel(def.platform)} · {def.type}{" "}
+            — key, platform and type can&apos;t be changed.
           </DialogDescription>
         </DialogHeader>
 
@@ -509,8 +516,9 @@ function CreateDerivedDialog({
         <DialogHeader>
           <DialogTitle>New Derived Metric</DialogTitle>
           <DialogDescription>
-            Platform: {platform}. Dependencies are raw metrics only. The machine
-            key is generated once and stays stable.
+            Platform: {platformLabel(platform)}. A derived metric can only
+            reference directly entered metrics. Its key is generated once and
+            stays stable.
           </DialogDescription>
         </DialogHeader>
 

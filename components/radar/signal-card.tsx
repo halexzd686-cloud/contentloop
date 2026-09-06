@@ -19,6 +19,7 @@ import {
   HelpCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { signalStatusLabel } from "@/lib/labels";
 
 /**
  * Signal Card — design.md §33.2
@@ -63,19 +64,12 @@ const SOURCE_TYPE_CONFIG: Record<
 
 const STATUS_VARIANT: Record<
   string,
-  "default" | "mint" | "warning" | "danger"
+  "default" | "mint"
 > = {
   new: "default",
-  reviewing: "warning",
+  reviewing: "default",
   selected: "mint",
-  skipped: "danger",
-};
-
-const STATUS_LABEL: Record<string, string> = {
-  new: "NEW",
-  reviewing: "REVIEWING",
-  selected: "SELECTED",
-  skipped: "SKIPPED",
+  skipped: "default",
 };
 
 // ─── Status Menu (M1.1: new ↔ reviewing only) ─────────
@@ -187,7 +181,7 @@ export function SignalCard({
             </CardTitle>
           </div>
           <Badge variant={STATUS_VARIANT[signal.status] || "default"}>
-            {STATUS_LABEL[signal.status] || signal.status}
+            {signalStatusLabel(signal.status)}
           </Badge>
         </div>
       </CardHeader>

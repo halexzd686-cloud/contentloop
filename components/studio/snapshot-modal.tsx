@@ -21,6 +21,11 @@ import {
   type Checkpoint,
 } from "@/lib/validation/snapshot";
 import { initSnapshotInputs } from "@/lib/snapshot-entry";
+import {
+  platformLabel,
+  METRIC_NA_HELPER,
+  METRIC_BLANK_HELPER,
+} from "@/lib/labels";
 
 /**
  * MetricSnapshotModal — M2.3 shared Quick Update form.
@@ -30,10 +35,10 @@ import { initSnapshotInputs } from "@/lib/snapshot-entry";
  *
  * Semantics (frozen):
  * - Opening the form NEVER creates a row. No auto-save. Explicit
- *   "Save Snapshot" (create) / "Save Changes" (edit) only.
+ *   "Save Metrics" (create) / "Save Changes" (edit) only.
  * - Every active raw metric must resolve to a number OR explicit N/A
  *   before submit. Blank is neither.
- * - Derived preview is computed locally by the frozen engine — no
+ * - Calculated preview is computed locally by the frozen engine — no
  *   server/AI call for ratios.
  */
 
@@ -205,6 +210,16 @@ export function MetricSnapshotModal({
     return true;
   }, [rawKeys, inputs, capturedAt]);
 
+  /** Blank (unresolved, not N/A) inputs — drives helper copy only. */
+  const hasBlankInputs = useMemo(
+    () =>
+      rawKeys.some((k) => {
+        const i = inputs[k];
+        return !!i && !i.isNA && i.value.trim() === "";
+      }),
+    [rawKeys, inputs]
+  );
+
   async function submit() {
     if (!formComplete || submitting) return;
     setSubmitting(true);
@@ -260,10 +275,14 @@ export function MetricSnapshotModal({
             {isEdit ? "Edit" : "Enter"} {checkpoint} Metrics
           </DialogTitle>
           <DialogDescription>
-            {publication.finalTitle} · {publication.platform} · Published{" "}
+            {publication.finalTitle} · {platformLabel(publication.platform)} · Published{" "}
             {new Date(publication.publishedAt).toLocaleString()} · {checkpoint}{" "}
             target {dueAt.toLocaleString()}
           </DialogDescription>
+          <p className="text-xs text-ink-faint">
+            Data read about {checkpoint === "24h" ? "24" : "72"} hours after
+            publishing.
+          </p>
         </DialogHeader>
 
         {editMissing ? (
@@ -325,12 +344,13 @@ export function MetricSnapshotModal({
                   </div>
                 );
               })}
+              <p className="text-xs text-ink-faint">{METRIC_NA_HELPER}</p>
             </div>
 
             {derivedDefs.length > 0 && (
               <div className="rounded-[8px] border border-border bg-canvas p-3">
                 <p className="text-xs font-semibold uppercase tracking-wide text-ink-muted">
-                  Derived Preview
+                  Calculated preview
                 </p>
                 <div className="mt-2 space-y-1.5">
                   {derivedDefs.map((d) => {
@@ -382,6 +402,10 @@ export function MetricSnapshotModal({
           </div>
         )}
 
+        {hasBlankInputs && (
+          <p className="text-xs text-ink-faint">{METRIC_BLANK_HELPER}</p>
+        )}
+
         <DialogFooter>
           <Button variant="ghost" onClick={requestClose}>
             Cancel
@@ -391,7 +415,7 @@ export function MetricSnapshotModal({
             onClick={submit}
             disabled={!formComplete || submitting || !defs}
           >
-            {submitting ? "Saving…" : isEdit ? "Save Changes" : "Save Snapshot"}
+            {submitting ? "Saving…" : isEdit ? "Save Changes" : "Save Metrics"}
           </Button>
         </DialogFooter>
       </DialogContent>

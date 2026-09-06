@@ -18,6 +18,7 @@ import {
   Sparkles,
   RefreshCw,
 } from "lucide-react";
+import { signalStatusLabel, confidenceLabel } from "@/lib/labels";
 
 /**
  * Quick Review Panel — design.md §33.3
@@ -75,13 +76,6 @@ const SOURCE_TYPE_CONFIG: Record<
   other: { label: "Other", icon: HelpCircle },
 };
 
-const STATUS_LABEL: Record<string, string> = {
-  new: "NEW",
-  reviewing: "REVIEWING",
-  selected: "SELECTED",
-  skipped: "SKIPPED",
-};
-
 const SKIP_REASON_LABELS: Record<string, string> = {
   too_late: "Too Late",
   saturated: "Saturated",
@@ -100,21 +94,18 @@ const PLATFORM_LABELS: Record<string, string> = {
 
 const CONFIDENCE_CONFIG: Record<
   string,
-  { label: string; variant: "mint" | "default" | "warning" | "danger" }
+  { variant: "mint" | "default" | "warning" | "danger" }
 > = {
-  high: { label: "HIGH CONFIDENCE", variant: "mint" },
-  medium: { label: "MEDIUM CONFIDENCE", variant: "default" },
-  low: { label: "LOW CONFIDENCE", variant: "warning" },
-  insufficient_evidence: {
-    label: "EVIDENCE INSUFFICIENT",
-    variant: "default",
-  },
+  high: { variant: "mint" },
+  medium: { variant: "default" },
+  low: { variant: "warning" },
+  insufficient_evidence: { variant: "default" },
 };
 
 const EVIDENCE_SOURCE_LABELS: Record<string, string> = {
   signal_input: "Signal input",
   brand_context: "Brand context",
-  model_inference: "Inference",
+  model_inference: "AI inference",
 };
 
 // ─── Small pieces ──────────────────────────────────────
@@ -266,16 +257,10 @@ export function QuickReview({
             )}
             <Badge
               variant={
-                signal.status === "selected"
-                  ? "mint"
-                  : signal.status === "skipped"
-                    ? "danger"
-                    : signal.status === "reviewing"
-                      ? "warning"
-                      : "default"
+                signal.status === "selected" ? "mint" : "default"
               }
             >
-              {STATUS_LABEL[signal.status]}
+              {signalStatusLabel(signal.status)}
             </Badge>
           </div>
           <h3 className="text-base font-semibold text-ink-primary leading-snug">
@@ -319,8 +304,9 @@ export function QuickReview({
                   "default"
                 }
               >
-                {CONFIDENCE_CONFIG[signal.analysisConfidence]?.label ||
-                  signal.analysisConfidence}
+                {signal.analysisConfidence === "insufficient_evidence"
+                  ? confidenceLabel(signal.analysisConfidence)
+                  : `${confidenceLabel(signal.analysisConfidence)} confidence`}
               </Badge>
             )}
           </div>
@@ -356,7 +342,7 @@ export function QuickReview({
                 <p className="text-xs font-medium text-ink-muted">Topic Score</p>
                 {insufficient ? (
                   <p className="mt-1 text-sm text-ink-faint">
-                    Evidence insufficient — scores not available.
+                    Not enough verified information to score this signal.
                   </p>
                 ) : (
                   <div className="mt-1.5 space-y-1">

@@ -114,7 +114,10 @@ function assertConcluded(test: TestRow) {
     !test.conclusion ||
     !test.concludedAt
   ) {
-    throw new ReviewError("Test is missing its frozen result evidence.", 409);
+    throw new ReviewError(
+      "This test's concluded result is incomplete — its saved evidence is missing.",
+      409
+    );
   }
 }
 
@@ -197,7 +200,8 @@ export async function createLearning(testId: string, input: LearningSaveInput) {
             eq(contentPillars.brandId, brand.id)
           )
         );
-      if (!pillar) throw new ReviewError("Pillar not found for this brand.", 400);
+      if (!pillar)
+        throw new ReviewError("This pillar doesn't exist in your workspace.", 400);
       pillarId = pillar.id;
     }
 
@@ -235,7 +239,8 @@ export async function patchLearning(id: string, input: LearningPatchInput) {
           eq(contentPillars.brandId, brand.id)
         )
       );
-    if (!pillar) throw new ReviewError("Pillar not found for this brand.", 400);
+    if (!pillar)
+      throw new ReviewError("This pillar doesn't exist in your workspace.", 400);
   }
 
   const [updated] = await db

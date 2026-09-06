@@ -14,6 +14,7 @@ import { requireSingleBrand } from "@/lib/brand";
 import { isPlatform, normalizePlatformData } from "@/lib/validation/platform-version";
 import { adaptPlatform } from "@/lib/ai/adapt-platform";
 import { createDeepSeekProvider, AIProviderError } from "@/lib/ai/provider";
+import { aiUserMessage } from "@/lib/ai/user-error";
 
 /**
  * POST /api/contents/[id]/versions/[platform]/adapt — M1.5
@@ -171,8 +172,9 @@ export async function POST(
     );
 
     if (!result.ok) {
+      console.error("platform adaptation failed:", result.error);
       return NextResponse.json(
-        { error: `Adaptation failed: ${result.error}` },
+        { error: aiUserMessage(result.error) },
         { status: 502 }
       );
     }
@@ -184,7 +186,12 @@ export async function POST(
     });
   } catch (error) {
     if (error instanceof AIProviderError) {
-      return NextResponse.json({ error: error.message }, { status: 502 });
+      // kind + technical message stay server-side; client gets sanitized copy.
+      console.error("adapt provider error:", error.kind, error.message);
+      return NextResponse.json(
+        { error: aiUserMessage(error.message) },
+        { status: 502 }
+      );
     }
     console.error("POST /api/contents/[id]/versions/[platform]/adapt error:", error);
     return NextResponse.json(

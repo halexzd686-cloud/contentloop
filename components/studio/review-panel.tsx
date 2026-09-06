@@ -27,6 +27,7 @@ import {
   checkpointStatus,
   type Checkpoint,
 } from "@/lib/validation/snapshot";
+import { platformLabel, versionStatusLabel } from "@/lib/labels";
 
 /**
  * Studio Review tab — M1.6.
@@ -51,12 +52,6 @@ export interface ReviewVersion {
 }
 
 export type ReviewRow = WorkflowSnapshot["reviews"][number];
-
-const PLATFORM_LABEL: Record<string, string> = {
-  xiaohongshu: "Xiaohongshu",
-  bilibili: "Bilibili",
-  douyin: "Douyin",
-};
 
 const CHECKLIST_ITEMS: { key: keyof ReviewChecklist; label: string }[] = [
   { key: "factsConfirmed", label: "Facts confirmed" },
@@ -256,10 +251,10 @@ export function ReviewPanel({
           <h2 className="text-sm font-semibold text-ink-primary">Review</h2>
           <Badge variant={contentStatus === "scheduled" ? "mint" : "default"}>
             {contentStatus === "review"
-              ? "IN REVIEW"
+              ? "In review"
               : contentStatus === "scheduled"
-                ? "APPROVED FOR PUBLISHING"
-                : "NOT IN REVIEW"}
+                ? "Approved for publishing"
+                : "Not in review"}
           </Badge>
         </div>
         {approverName && (
@@ -305,10 +300,10 @@ export function ReviewPanel({
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-medium text-ink-primary">
-                      {PLATFORM_LABEL[v.platform] ?? v.platform}
+                      {platformLabel(v.platform)}
                     </span>
                     <Badge variant={v.status === "approved" ? "mint" : "default"}>
-                      {v.status}
+                      {versionStatusLabel(v.status)}
                     </Badge>
                     {v.status === "review" && (
                       <span
@@ -364,7 +359,7 @@ export function ReviewPanel({
                           )
                         }
                       >
-                        Submit to review
+                        Send to Review
                       </Button>
                     )}
                 </div>
@@ -399,7 +394,9 @@ export function ReviewPanel({
                     if (!pub) {
                       return (
                         <p className="mt-2 text-xs text-ink-faint">
-                          Published — publication record unavailable.
+                          Published — the publication record couldn&apos;t be
+                          loaded. Reload this page; if it persists, check the
+                          Pipeline page.
                         </p>
                       );
                     }
@@ -446,10 +443,10 @@ export function ReviewPanel({
                                   {c}{" "}
                                   <span className="text-ink-muted">
                                     {st === "submitted"
-                                      ? `Submitted · captured ${new Date(snap!.capturedAt).toLocaleString()}`
+                                      ? `Submitted · recorded ${new Date(snap!.capturedAt).toLocaleString()}`
                                       : st === "due"
                                         ? `Due since ${checkpointDueAt(pub.publishedAt, c).toLocaleString()}`
-                                        : `Not due · target ${checkpointDueAt(pub.publishedAt, c).toLocaleString()}`}
+                                        : `Not due yet — come back after ${checkpointDueAt(pub.publishedAt, c).toLocaleString()}`}
                                   </span>
                                 </span>
                                 {st === "due" && (
@@ -469,7 +466,7 @@ export function ReviewPanel({
                                       setSnapModal({ publication: pub, checkpoint: c })
                                     }
                                   >
-                                    Edit
+                                    Edit Metrics
                                   </button>
                                 )}
                               </div>
@@ -603,7 +600,7 @@ export function ReviewPanel({
                 }
               >
                 <RefreshCw className="mr-1 h-3 w-3" />
-                Withdraw
+                Withdraw from Review
               </Button>
             </div>
           </div>
@@ -663,7 +660,7 @@ export function ReviewPanel({
           onOpenChange={(o) => !o && setPubModal(null)}
           contentId={contentId}
           platform={pubModal.platform}
-          platformLabel={PLATFORM_LABEL[pubModal.platform] ?? pubModal.platform}
+          platformLabel={platformLabel(pubModal.platform)}
           versionData={versionData[pubModal.platform] ?? null}
           contentTitle={contentTitle}
           existing={

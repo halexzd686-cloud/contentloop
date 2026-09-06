@@ -100,7 +100,7 @@ export async function applyAction(
 
     if (!isScopeEligible(learning, content)) {
       throw new ReviewError(
-        "This learning does not match the content's current scope.",
+        "This learning's platform or pillar doesn't match this content.",
         409
       );
     }
@@ -116,7 +116,7 @@ export async function applyAction(
       );
     if (existing) {
       throw new ReviewError(
-        "A relation already exists for this learning and content — update its action instead.",
+        "You've already applied or dismissed this learning for this content — change that choice instead.",
         409
       );
     }
@@ -157,7 +157,7 @@ export async function transitionAction(
     }
     if (content.status === "published") {
       throw new ReviewError(
-        "Published content applications are read-only.",
+        "This content is published — its learning choices are kept as a record and can't be changed.",
         409
       );
     }
@@ -167,7 +167,7 @@ export async function transitionAction(
       const learning = await loadLearningScope(tx, app.learningId, brand.id);
       if (!isScopeEligible(learning, content)) {
         throw new ReviewError(
-          "This learning no longer matches the content's current scope.",
+          "This learning's platform or pillar no longer matches this content.",
           409
         );
       }

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { BookOpen } from "lucide-react";
+import { platformLabel, testOutcomeLabel } from "@/lib/labels";
 
 /**
  * Learnings list — M3.3, inside Analytics below Tests.
@@ -22,12 +23,6 @@ interface LearningRow {
   appliedCount: number;
   createdAt: string;
 }
-
-const PLATFORM_LABEL: Record<string, string> = {
-  xiaohongshu: "Xiaohongshu",
-  bilibili: "Bilibili",
-  douyin: "Douyin",
-};
 
 export function LearningsSection() {
   const [learnings, setLearnings] = useState<LearningRow[]>([]);
@@ -65,7 +60,8 @@ export function LearningsSection() {
 
       {loaded && learnings.length === 0 ? (
         <p className="px-4 py-4 text-xs text-ink-faint">
-          No learnings yet. Conclude a test, then save what should be reused.
+          No Learnings yet. Learnings are reusable lessons you save from
+          concluded Tests.
         </p>
       ) : (
         <div className="divide-y divide-border">
@@ -74,20 +70,20 @@ export function LearningsSection() {
               <p className="text-sm text-ink-primary">{l.text}</p>
               <div className="mt-1 flex items-center gap-2 text-xs text-ink-muted">
                 {l.platform && (
-                  <span>{PLATFORM_LABEL[l.platform] ?? l.platform}</span>
+                  <span>{platformLabel(l.platform)}</span>
                 )}
                 {l.pillarName && <span>· {l.pillarName}</span>}
                 {l.sourceTestTitle && (
                   <span>
                     · from test: {l.sourceTestTitle}
-                    {l.sourceTestOutcome ? ` (${l.sourceTestOutcome})` : ""}
+                    {l.sourceTestOutcome ? ` (${testOutcomeLabel(l.sourceTestOutcome)})` : ""}
                   </span>
                 )}
                 {l.sourceStale && (
                   <Badge variant="warning">source test data changed</Badge>
                 )}
                 {l.appliedCount > 0 && (
-                  <span>· currently applied to {l.appliedCount} content{l.appliedCount === 1 ? "" : "s"}</span>
+                  <span>· currently applied to {l.appliedCount} {l.appliedCount === 1 ? "content" : "contents"}</span>
                 )}
               </div>
               {/* M4.2: navigation only — Studio (Brief tab) remains the

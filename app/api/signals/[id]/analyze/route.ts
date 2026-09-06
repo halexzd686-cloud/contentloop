@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { signals, contentPillars } from "@/lib/db/schema";
 import { requireSingleBrand } from "@/lib/brand";
 import { createDeepSeekProvider } from "@/lib/ai/provider";
+import { aiUserMessage } from "@/lib/ai/user-error";
 import {
   analyzeSignal,
   buildAnalysisUpdate,
@@ -106,8 +107,10 @@ export async function POST(
 
     if (!result.ok) {
       // Failure: previous valid analysis remains unchanged.
+      // Internal detail goes to logs; client gets sanitized copy (M4.3).
+      console.error("signal analysis failed:", result.error);
       return NextResponse.json(
-        { error: `Analysis failed: ${result.error}. Please retry.` },
+        { error: aiUserMessage(result.error) },
         { status: 502 }
       );
     }

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Sparkles, RefreshCw } from "lucide-react";
+import { AI_PROPOSAL_APPLY_HELPER } from "@/lib/labels";
 
 /**
  * Learning section — M3.3, inside the concluded Test drawer.
@@ -135,11 +136,14 @@ export function LearningSection({ testId }: { testId: string }) {
       <p className="text-xs font-semibold uppercase tracking-wide text-ink-muted">
         Learning
       </p>
+      <p className="mt-1 text-xs text-ink-faint">
+        A reusable operating lesson you chose to save from a concluded Test.
+      </p>
 
       {ctx.sourceStale && (
         <p className="mt-2 rounded-[8px] border border-warning/30 bg-warning/5 p-2 text-xs text-ink-secondary">
           This Test&apos;s underlying source data has changed. This Learning is
-          based on the frozen evidence captured at conclusion time.
+          based on the evidence captured at conclusion time.
         </p>
       )}
 
@@ -210,7 +214,8 @@ export function LearningSection({ testId }: { testId: string }) {
             <Button variant="ghost" size="sm" onClick={() => setEditingSaved(false)}>Cancel</Button>
           </div>
           <p className="text-[11px] text-ink-faint">
-            Evidence summary is frozen and never rewritten by edits.
+            Evidence summary was recorded at conclusion and is never rewritten
+            by edits.
           </p>
         </div>
       )}
@@ -225,7 +230,7 @@ export function LearningSection({ testId }: { testId: string }) {
       {!ctx.learning && creating && (
         <div className="mt-2 space-y-2">
           <details className="text-xs text-ink-muted" open>
-            <summary className="cursor-pointer">Evidence summary (server)</summary>
+            <summary className="cursor-pointer">Evidence summary (recorded at conclusion)</summary>
             <pre className="mt-1 whitespace-pre-wrap rounded-[8px] border border-border bg-workspace p-2 font-sans">
               {ctx.evidenceSummaryPreview}
             </pre>
@@ -271,6 +276,9 @@ export function LearningSection({ testId }: { testId: string }) {
                     Discard
                   </button>
                 </div>
+                <p className="mt-1.5 text-[11px] text-ink-faint">
+                  {AI_PROPOSAL_APPLY_HELPER}
+                </p>
               </div>
             )}
             <textarea
