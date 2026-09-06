@@ -427,7 +427,13 @@ function DiagnosisView({
         <p className="text-xs font-semibold text-ink-secondary">Evidence</p>
         <div className="mt-1">{renderEvidence(diagnosis.evidence, false)}</div>
         {diagnosis.evidence.length === 0 && (
-          <p className="text-xs text-ink-faint">No metric evidence recorded.</p>
+          // M5.3A D02: a saved diagnosis always sits on a real snapshot —
+          // current metrics ARE recorded. An empty evidence list means no
+          // comparable baseline evidence, not missing metrics.
+          <p className="text-xs text-ink-secondary">
+            Current metrics are recorded, but no comparable baseline evidence
+            is available yet.
+          </p>
         )}
       </section>
       <section>

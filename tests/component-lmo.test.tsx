@@ -15,10 +15,10 @@ import { MetricSnapshotModal } from "@/components/studio/snapshot-modal";
 (globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 const RAW_DEFS = [
-  { key: "views", type: "raw", isActive: true, platform: "xiaohongshu", alias: null, displayName: "Views" },
-  { key: "likes", type: "raw", isActive: true, platform: "xiaohongshu", alias: null, displayName: "Likes" },
-  { key: "saves", type: "raw", isActive: true, platform: "xiaohongshu", alias: null, displayName: "Saves" },
-  { key: "comments", type: "raw", isActive: true, platform: "xiaohongshu", alias: null, displayName: "Comments" },
+  { key: "views", type: "raw", isActive: true, platform: "xiaohongshu", alias: null, displayName: "Views", numeratorKey: null, denominatorKey: null, format: "count" },
+  { key: "likes", type: "raw", isActive: true, platform: "xiaohongshu", alias: null, displayName: "Likes", numeratorKey: null, denominatorKey: null, format: "count" },
+  { key: "saves", type: "raw", isActive: true, platform: "xiaohongshu", alias: null, displayName: "Saves", numeratorKey: null, denominatorKey: null, format: "count" },
+  { key: "comments", type: "raw", isActive: true, platform: "xiaohongshu", alias: null, displayName: "Comments", numeratorKey: null, denominatorKey: null, format: "count" },
 ];
 
 let container: HTMLDivElement;
@@ -199,5 +199,105 @@ describe("O — manual metric entry blank / N/A / 0", () => {
     for (const call of fetchMock.mock.calls) {
       expect(String(call[0])).toBe("/api/settings/metrics");
     }
+  });
+});
+
+// ─── M5.3A D01: thousands separators in manual entry ────
+
+describe("D01 — manual entry accepts thousands separators", () => {
+  const publication = {
+    id: "pub-d01",
+    platform: "xiaohongshu",
+    finalTitle: "D01 pub",
+    publishedAt: new Date(Date.now() - 86400000 * 2).toISOString(),
+  };
+  const DERIVED = {
+    key: "like_rate", type: "derived", isActive: true, platform: "xiaohongshu",
+    alias: null, displayName: "Like Rate", numeratorKey: "likes", denominatorKey: "views", format: "percentage",
+  };
+
+  it("dogfood matrix: 18,600 / 980 / 1,230 / 91 → Save enabled, derived computed", async () => {
+    fetchMock.mockImplementation(() =>
+      okJson({ definitions: [...RAW_DEFS, DERIVED] })
+    );
+    await render(
+      React.createElement(MetricSnapshotModal, {
+        open: true, onOpenChange: () => {}, publication,
+        checkpoint: "24h", mode: "create", existing: null, onDone: () => {},
+      })
+    );
+    const inputs = [...document.body.querySelectorAll('input[inputmode="numeric"]')] as HTMLInputElement[];
+    const setValue = async (el: HTMLInputElement, v: string) => {
+      await act(async () => {
+        Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(el, v);
+        el.dispatchEvent(new Event("input", { bubbles: true }));
+      });
+    };
+    await setValue(inputs[0], "18,600");
+    await setValue(inputs[1], "980");
+    await setValue(inputs[2], "1,230");
+    await setValue(inputs[3], "91");
+    expect(button("Save Metrics").disabled).toBe(false);
+    // derived preview computed (like_rate = 980/18600 ≈ 5.27%, not N/A)
+    const preview = document.body.textContent ?? "";
+    // like_rate = 980/18600 ≈ 5.27% → displayed rounded (5.3%), not N/A
+    expect(preview).toContain("5.3%");
+    // zero writes — no snapshot POST was ever attempted
+    for (const call of fetchMock.mock.calls) {
+      expect(String(call[0])).toBe("/api/settings/metrics");
+    }
+  });
+
+  it("malformed grouping is rejected with a field-level hint naming the fix", async () => {
+    fetchMock.mockImplementation(() => okJson({ definitions: RAW_DEFS }));
+    await render(
+      React.createElement(MetricSnapshotModal, {
+        open: true, onOpenChange: () => {}, publication,
+        checkpoint: "24h", mode: "create", existing: null, onDone: () => {},
+      })
+    );
+    const inputs = [...document.body.querySelectorAll('input[inputmode="numeric"]')] as HTMLInputElement[];
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(inputs[0], "1,2,3");
+      inputs[0].dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    expect(button("Save Metrics").disabled).toBe(true);
+    expect(document.body.textContent).toContain("Enter a whole number — commas are OK (e.g. 18,600).");
+  });
+});
+
+// ─── M5.3A D02: diagnosis cold-start evidence copy ────
+
+describe("D02 — cold-start comparison evidence copy", () => {
+  it("saved diagnosis with current metrics but no comparable evidence states it precisely", async () => {
+    const { LoopAnalysis } = await import("@/components/analytics/loop-analysis");
+    await render(
+      React.createElement(LoopAnalysis, {
+        publicationId: "p1",
+        checkpoint: "24h",
+        hasSnapshot: true,
+        diagnosis: {
+          id: "d1",
+          whatHappened: "指标已记录。",
+          evidence: [],
+          possibleReasons: [],
+          confidence: "insufficient_evidence",
+          nextActions: ["fixture action"],
+          createdAt: new Date().toISOString(),
+        },
+        diagnosisStale: false,
+        onSaved: () => {},
+      })
+    );
+    const t = document.body.textContent ?? "";
+    expect(t).toContain(
+      "Current metrics are recorded, but no comparable baseline evidence is available yet."
+    );
+    expect(t).not.toContain("No metric evidence recorded.");
+    // no baseline/fingerprint jargon, no industry implication
+    expect(t).not.toContain("fingerprint");
+    expect(t.toLowerCase()).not.toContain("industry");
+    // insufficient evidence ≠ no clear result vocabulary stays distinct
+    expect(t).toContain("Insufficient evidence");
   });
 });

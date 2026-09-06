@@ -100,3 +100,27 @@ export function isCaptureOnTime(
     new Date(capturedAt).getTime() >= due - CHECKPOINT_TOLERANCE_MS
   );
 }
+
+/**
+ * M5.3A D01 — manual metric entry count parser.
+ *
+ * Accepts standard comma thousands separators ("18,600" → 18600) with
+ * strict grouping; malformed grouping ("1,2,3", "12,34", ",123",
+ * "123,"), negatives, decimals and non-numeric text stay invalid.
+ * Same grouping semantics as the CSV/XLSX import normalizer. Blank is
+ * NOT invalid here — blank means unresolved (handled by the caller).
+ */
+export type CountText =
+  | { kind: "blank" }
+  | { kind: "invalid" }
+  | { kind: "number"; value: number };
+
+export function parseCountText(raw: string): CountText {
+  const text = raw.trim();
+  if (text === "") return { kind: "blank" };
+  const normalized = /^\d{1,3}(,\d{3})+$/.test(text)
+    ? text.replace(/,/g, "")
+    : text;
+  if (!/^\d+$/.test(normalized)) return { kind: "invalid" };
+  return { kind: "number", value: Number(normalized) };
+}

@@ -6,6 +6,7 @@ import {
   checkpointDueAt,
   checkpointStatus,
   isCaptureOnTime,
+  parseCountText,
 } from "@/lib/validation/snapshot";
 
 /**
@@ -100,5 +101,32 @@ describe("checkpoint model", () => {
     expect(
       isCaptureOnTime(PUBLISHED, "72h", "2026-08-23T10:30:00.000Z")
     ).toBe(true);
+  });
+});
+
+// ─── M5.3A D01: thousands separators in manual entry ────
+
+describe("parseCountText (M5.3A D01)", () => {
+  it("accepts standard thousands separators", () => {
+    expect(parseCountText("18,600")).toEqual({ kind: "number", value: 18600 });
+    expect(parseCountText("1,230")).toEqual({ kind: "number", value: 1230 });
+    expect(parseCountText("1,234,567")).toEqual({ kind: "number", value: 1234567 });
+  });
+
+  it("plain integers and real zero unchanged", () => {
+    expect(parseCountText("980")).toEqual({ kind: "number", value: 980 });
+    expect(parseCountText("0")).toEqual({ kind: "number", value: 0 });
+    expect(parseCountText("  91  ")).toEqual({ kind: "number", value: 91 });
+  });
+
+  it("blank is unresolved, not invalid", () => {
+    expect(parseCountText("")).toEqual({ kind: "blank" });
+    expect(parseCountText("   ")).toEqual({ kind: "blank" });
+  });
+
+  it("malformed grouping / negatives / decimals rejected", () => {
+    for (const bad of ["1,2,3", "12,34", ",123", "123,", "-1", "1.5", "abc", "1,2a3"]) {
+      expect(parseCountText(bad)).toEqual({ kind: "invalid" });
+    }
   });
 });

@@ -18,6 +18,7 @@ import {
 } from "@/lib/metrics/engine";
 import {
   checkpointDueAt,
+  parseCountText,
   type Checkpoint,
 } from "@/lib/validation/snapshot";
 import { initSnapshotInputs } from "@/lib/snapshot-entry";
@@ -191,12 +192,18 @@ export function MetricSnapshotModal({
   const parsedValues = useMemo(() => {
     const out: Record<string, number | null> = {};
     for (const [k, i] of Object.entries(inputs)) {
-      out[k] = i.isNA ? null : i.value.trim() === "" ? null : Number(i.value);
+      if (i.isNA || i.value.trim() === "") {
+        out[k] = null;
+      } else {
+        // D01: thousands separators normalized before parse ("18,600").
+        const p = parseCountText(i.value);
+        out[k] = p.kind === "number" ? p.value : null;
+      }
     }
     return out;
   }, [inputs]);
 
-  /** Every active raw must be resolved: number (valid integer ≥0) or N/A. */
+  /** Every active raw must be resolved: number (valid integer ≥0, commas OK) or N/A. */
   const formComplete = useMemo(() => {
     if (rawKeys.length === 0) return false;
     if (capturedAt.trim() === "") return false;
@@ -204,11 +211,21 @@ export function MetricSnapshotModal({
       const i = inputs[k];
       if (!i) return false;
       if (i.isNA) continue;
-      const v = i.value.trim();
-      if (v === "" || !/^\d+$/.test(v)) return false;
+      if (parseCountText(i.value).kind !== "number") return false;
     }
     return true;
   }, [rawKeys, inputs, capturedAt]);
+
+  /** D01: fields with malformed (non-blank, non-N/A) numeric input —
+   *  drives a field-level hint so the user knows WHICH field blocks Save. */
+  const invalidKeys = useMemo(
+    () =>
+      rawKeys.filter((k) => {
+        const i = inputs[k];
+        return !!i && !i.isNA && parseCountText(i.value).kind === "invalid";
+      }),
+    [rawKeys, inputs]
+  );
 
   /** Blank (unresolved, not N/A) inputs — drives helper copy only. */
   const hasBlankInputs = useMemo(
@@ -318,17 +335,28 @@ export function MetricSnapshotModal({
                         N/A
                       </span>
                     ) : (
-                      <input
-                        inputMode="numeric"
-                        className="flex-1 rounded-[8px] border border-border bg-workspace px-3 py-2 text-sm text-ink-primary outline-none focus:border-mint-600"
-                        value={input.value}
-                        onChange={(e) =>
-                          setInputs((prev) => ({
-                            ...prev,
-                            [k]: { ...input, value: e.target.value },
-                          }))
-                        }
-                      />
+                      <span className="flex-1">
+                        <input
+                          inputMode="numeric"
+                          className={`w-full rounded-[8px] border bg-workspace px-3 py-2 text-sm text-ink-primary outline-none focus:border-mint-600 ${
+                            invalidKeys.includes(k)
+                              ? "border-danger"
+                              : "border-border"
+                          }`}
+                          value={input.value}
+                          onChange={(e) =>
+                            setInputs((prev) => ({
+                              ...prev,
+                              [k]: { ...input, value: e.target.value },
+                            }))
+                          }
+                        />
+                        {invalidKeys.includes(k) && (
+                          <span className="mt-1 block text-[11px] text-danger">
+                            Enter a whole number — commas are OK (e.g. 18,600).
+                          </span>
+                        )}
+                      </span>
                     )}
                     <button
                       className="shrink-0 text-xs text-ink-muted hover:text-ink-primary"
