@@ -1,10 +1,46 @@
 # M4 Summary — Productization（进行中）
 
-> Status: M4.0 Audit **Complete**；M4.1 **Frozen**；M4.2 **Frozen**（人工浏览器验收 A–V 通过 + Method explicit-choice regression）。下一步 M4.3 — Language & Comprehension（未开始）。
+> Status: M4.0 Audit **Complete**；M4.1 / M4.2 / M4.3 **Frozen**（M4.3 浏览器验收 A–T 通过）。下一步 M4.4 — Demo / Live Visual Trust & Final Product Polish（未开始）。
 >
 > 前置：M3 Frozen（见 `M3-summary.md`）。
 
 ## Completed
+
+### M4.3 — Language & Comprehension（Frozen，浏览器验收 A–T 通过）
+
+**Language policy**：system chrome 全英文；team-owned 内容（标题、metric alias、Human/AI 文本）保持原文；无全局中文化、无 i18n 框架。同 component 语言一致（import-modal 中文拖放区已英文化）。
+
+**Shared labels 层（`lib/labels.ts`，presentation only）**
+
+- platform 全名（Xiaohongshu/Bilibili/Douyin，废 XHS/Bili）；content/version/signal/brief/test status、method、role、outcome、confidence 统一映射；unknown fallback humanize，正常用户面不再裸漏 snake_case
+- 12+ 组件接入，本地重复 map 全删
+
+**Baseline / n（含验收修正）**
+
+- helper 完整承载 M2.4 cohort 语义：**workspace history + up to 20 prior publications + same platform and checkpoint；Pillar median additionally requires the same Pillar；not industry benchmarks**；n = prior publications with a value for that metric（per-metric sampleCount，非 candidateCount）
+- `BASELINE_COHORT_HELPER` 常量 + 语义测试
+
+**Metric 语义**：Blank=unresolved / N/A=explicitly unavailable for this snapshot / 0=real zero；N/A 不归因平台；blank 未决时 Save 上方显式提示。snapshot-modal "Save Metrics"。
+
+**Test**：subtitle（human-defined operational comparison）；method/checkpoint/primary-metric/role 各一句 helper；"does not calculate statistical significance" footnote；method 必须显式选择（M4.2 regression 保持）；Primary Metric 不自动判胜负；roles 不影响 evidence/readiness。
+
+**Outcome**：Win/Loss/Trade-off/No clear result 全域经 labels（含 Learnings 列表与 LearningsPanel 原 raw enum 泄漏点）；No clear result ≠ Insufficient evidence（不同 helper，测试断言）。
+
+**Learning / Apply 边界**：LearningsPanel Available 常驻 "Reference only — this does not change the Brief, Master or platform versions."；AI proposal Apply 旁 "…Nothing is saved until you save."；Studio 仍唯一 Apply/Dismiss mutation surface（M3.4 不变）。
+
+**Stale / error copy**：Diagnosis stale / Test result changed / Learning source stale 三种语义分别表达；无 fingerprint/hash/canonical 字样的用户可见文本；lib 错误文案去 jargon（scope/relation/brand/capturedAt/"in V1"/frozen evidence）。
+
+**AI 错误脱敏**：5 个 AI 路由统一经 `aiUserMessage` → 三类 mandated 文案（unavailable / not_configured / unusable_result）；用户永不见 AI_API_KEY/.env/429/502/vendor message/Zod path；`AIProviderError.kind`（新增 not_configured）+ 技术 message + console.error 保留内部诊断；HTTP 状态码语义不变。
+
+**Status/action 一致性**：Reviewer 统一、Send to Review 统一、Adapt from Master with AI 统一、sentence-case badges、Skipped/Reviewing 不再 danger/warning、Edit Metrics vs Edit Publication 区分、Unassigned/Not started 语义区分。
+
+**Empty states**：Radar Signal 定义 + Add Signal；Tests/Learnings/LearningsPanel/Settings 平台空块均回答"是什么+下一步"。
+
+**Dead affordance 清理**：Sidebar + New / Ask Loop 删除；Pipeline Calendar Coming later 删除；Studio 死 disabled-tab 分支删除；"in V1"/"Studio Advanced"/roadmap 话术全清。
+
+**验收与清理**：浏览器验收 A–T 全部通过（L 为 controlled bad-key smoke）；fixtures 单事务清理（M Apply 边界 + K stale-confirm 边界事务前断言）；DB 精确回 M4.2 baseline。
+
+**M2.6 canonical What Happened 有意未改语言**——它是 frozen deterministic evidence representation，非 chrome copy。
 
 ### M4.2 — Loop Continuity & Entry UX（Frozen，浏览器验收 A–V 通过）
 
@@ -109,6 +145,13 @@
 - `components/analytics/tests-section.tsx` — Discard Test
 - `tests/correction.test.ts`（10）— 累计 325 tests
 
+### M4.3 Important Files
+
+- `lib/labels.ts` — 共享 presentation 标签 + baseline/n/N-A/Apply 边界 helper 常量
+- `lib/ai/user-error.ts` — AI 错误脱敏（三类 mandated copy）；`lib/ai/provider.ts` + not_configured kind
+- 5 个 AI 路由 sanitize 边界；lib 错误文案（learning-applications/learnings/contents/snapshots/review/validation/review）
+- 12+ 组件接入 labels；`tests/labels.test.ts`（19）+ `tests/error-copy.test.ts`（7）— 累计 366 tests
+
 ## Known Issues / Limitations
 
 1. Legacy manual Content 在 Human correction 前 primaryPlatform 可为 null（仅匹配 platform=null Learning）
@@ -121,6 +164,9 @@
 8. ~~P2 backlog：Manual Content 的 Loop AI helper linked-signal copy~~ → M4.2 已解决（条件化文案）
 9. Manual Content without linked Signal 的 platform authority 已由 M4.1 解决；M3-summary 中 M3.4 "Signal 派生" 描述被本条取代
 10. M4.2 backlog：Home due metric 链到 Analytics 列表而非深链具体 publication/checkpoint；running tests 无 demo 过滤；Home 不算 Test readiness；Master→Platforms CTA、LearningsPanel placement 留 P3
+11. M4.3 P3 backlog：Test 列表行 raw primaryMetricKey（无 definition lookup）；Settings edit dialog 部分位置仍显示 raw def.type；Topic Score 无分制说明；Radar 无 Reviewing tab
+12. 部分通用 "X failed" fallback 未逐一重写（当前 surfaced 错误已 sanitized/contextual）
+13. 无 full localization / i18n framework；无 onboarding wizard / Help Center
 
 ## Frozen Constraints（M4.1 新增）
 
@@ -137,6 +183,16 @@
 - Diagnosis→Test：CTA 仅 saved && !stale；prefill 仅 platform/checkpoint；Test method 必须 Human 显式选择（无 UI 默认值）
 - Learning Application mutation 唯一 surface 仍为 Studio（Analytics/Home 仅导航）
 
+## Frozen Constraints（M4.3 新增）
+
+- System chrome 英文；team-owned 内容保持原文；无 i18n 框架
+- 所有共享 presentation 标签经 `lib/labels.ts`；正常用户面不裸漏 snake_case enum
+- Baseline helper 必须完整表述 cohort 语义（workspace history / up to 20 / same platform+checkpoint / Pillar median 加 same Pillar / not industry benchmark）；n = per-metric sampleCount
+- Blank / N/A / 0 语义固定（unresolved / explicitly unavailable / real zero），N/A 不归因平台
+- 用户可见 AI 错误仅三类 sanitized 文案；技术诊断仅内部（kind + log）；HTTP 语义不变
+- M2.6 canonical What Happened 语言不动
+- 无 roadmap/版本话术（"in V1" 等）、无 dead affordance
+
 ## Next
 
-- M4.3 — Language & Comprehension（规划门未开）
+- M4.4 — Demo / Live Visual Trust & Final Product Polish（规划门未开）
