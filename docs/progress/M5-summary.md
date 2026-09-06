@@ -1,10 +1,23 @@
 # M5 Summary — Dogfood & Release（进行中）
 
-> Status: M5.1 Audit **Complete**；M5.2 **Frozen**（浏览器验收 A–O 通过）。M4.4 aesthetic acceptance 仍 deferred to M5.6。下一步 M5.3 — Real Dogfood（未开始）。
+> Status: M5.1 Audit **Complete**；M5.2 **Frozen**；M5.3A **Complete**；M5.3B Real Dogfood **⏳ PENDING**（真实 WorkBuddy Content 存在且未动，真实 Publication + 24h/72h 观测未完成）。M4.4 aesthetic acceptance 仍 deferred to M5.6。下一步 M5.4 — Release Readiness（规划门未开）。
 >
 > 前置：M4 系列见 `M4-summary.md`。
 
 ## Completed
+
+### M5.3A — External Proxy Functional Test（Complete）
+
+- 用外部真实视频（Bilibili BV1Px3D6mECS）作 proxy 源 + 全 DEMO 隔离链（isDemo=true，仅 Content 级权威，无 title heuristic），验证完整产品闭环：Scheduled → Publication → 24h/72h Metrics → Analytics → Diagnosis → Test → Human Conclusion (win) → Learning → Next Content → Apply Learning
+- Proxy A/B/C 全程经真实产品 API 路径（create→Brief→Approve→Master→Version→Review→Checklist→Approve for Publishing→Mark as Published→Enter Metrics）；isDemo 为唯一 DB 内部供应字段
+- **Apply Learning 权威边界实测**：LearningApplication 0→1 为唯一业务 mutation；Content status / Brief 八字段与状态 / Master / PlatformVersion / Review / Publication / Snapshot 零变更（持久层逐字段比对）
+- Proxy 数据不进 operational baseline cohort（real-only，M4.1 路径不变）
+- 结束后 Proxy A/B/C + Test/Learning 链单事务精确清理（preflight 身份 + 独占归属断言 + 15 项 post-count 断言）；真实 WorkBuddy Content 清理前后状态逐字段一致；DB 回到 frozen baseline（7/2/5/6/2/4/4/9/7，loop 表全零）
+
+### M5.3A Dogfood hotfixes（真实浏览器 dogfood 发现）
+
+- **D01 ✅ FIXED**：手动指标录入接受严格逗号千分位（"18,600"→18600；乱分组 "1,2,3"/"12,34"/",123"/"123,"/负数保持 invalid）；新增共享 `parseCountText`（与 import 同分组语义）；畸形输入有字段级提示；blank/N/A/0 语义与存储形状不变
+- **D02 ✅ FIXED**：冷启动 Diagnosis（当前指标已记录但无可比 baseline 证据）不再误报 "No metric evidence recorded."，改为明确区分"当前指标已记录 vs 比较证据不可用"。M2.6 canonical What Happened / evidence 权威 / confidence 语义 / fingerprint / baseline service 未动
 
 ### M5.1 — Full Journey Functional Audit（Complete）
 
@@ -27,7 +40,7 @@
 
 ## Schema Changes
 
-- 无（M5.1/M5.2 均无）
+- 无（M5.1/M5.2/M5.3A 均无）
 
 ## Important Files
 
@@ -35,12 +48,14 @@
 - `app/app/analytics/page.tsx` / `app/app/page.tsx` — query 选择 + Home 深链
 - `components/radar/signal-filters.tsx` — Reviewing tab
 - `components/analytics/import-modal.tsx` + `lib/import/normalize.ts` — G-52/53/54
-- `tests/component-lmo.test.tsx` — jsdom 组件集成测试设施（**永久保留**）
+- `lib/validation/snapshot.ts` + `components/studio/snapshot-modal.tsx` — D01 `parseCountText` + 字段级提示
+- `components/analytics/loop-analysis.tsx` — D02 冷启动 evidence 文案
+- `tests/component-lmo.test.tsx` — jsdom 组件集成测试设施（**永久保留**，含 D01/D02 组件证据）
 - `vitest.config.ts` — include `.tsx`；`jsdom` dev-only 依赖（**永久保留**）
 
 ## Known Issues / Limitations
 
-1. G-56 保持开放：Brief/Master 等编辑面刷新可能丢失 debounce 窗口/失败队列输入（P2 候选，M5.3 评估）
+1. G-56 保持开放：P2 候选，M5.3A Proxy 旅程中**未自然复现**（无保存焦虑/文本丢失/导航丢失报告）；留 M5.3B 真实写作或发布前评审最终决策
 2. M5.4 待办：README setup、seed 幂等、DIRECT_URL 注释、部署配置
 3. M4.4 美学验收仍 deferred 至 M5.6 Final Visual Pass
 4. M4 系列既有 P3 backlog 不变（见 M4-summary.md）
@@ -53,4 +68,5 @@
 
 ## Next
 
-- M5.3 — Real Dogfood（按 M5.1 推荐序列执行真实内容闭环）
+- M5.3B — Real Dogfood（真实 WorkBuddy：真实发布 + 真实 24h/72h 观测）
+- M5.4 — Release Readiness（规划门未开）
