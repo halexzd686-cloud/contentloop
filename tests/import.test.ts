@@ -9,6 +9,8 @@ import {
   parseCapturedAtCell,
   normalizePublicationUrl,
   wallToIso,
+  isoToLocalInput,
+  localInputToIso,
 } from "@/lib/import/normalize";
 import { validateImportFile, buildCsvTemplate } from "@/lib/import/template";
 import {
@@ -261,5 +263,29 @@ describe("buildCsvTemplate", () => {
     const csv = buildCsvTemplate("douyin", ["views", "likes"]);
     expect(csv).toContain("views,likes");
     expect(csv).not.toContain("impressions");
+  });
+});
+
+// ─── M5.2 G-53: row-level capturedAt override conversions ──
+
+describe("capturedAt override input conversions (M5.2)", () => {
+  it("round-trips ISO → datetime-local → ISO", () => {
+    const iso = "2026-08-29T16:30:00+08:00";
+    const local = isoToLocalInput(iso);
+    expect(local).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/);
+    expect(localInputToIso(local)).toBe(new Date(iso).toISOString());
+  });
+
+  it("invalid/empty values are safe", () => {
+    expect(isoToLocalInput("not-a-date")).toBe("");
+    expect(localInputToIso("")).toBeNull();
+    expect(localInputToIso("garbage")).toBeNull();
+  });
+
+  it("clearing an override means undefined (parsed value wins again)", () => {
+    // UI contract: Clear → capturedAt: undefined → server falls back to
+    // the parsed file value / batch fallback, and the preview fingerprint
+    // changes because rowOverrides changed.
+    expect(localInputToIso("") ?? undefined).toBeUndefined();
   });
 });

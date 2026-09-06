@@ -168,7 +168,7 @@ export default function HomePage() {
                 {model.dueMetrics.map((d) => (
                   <Link
                     key={`${d.publicationId}:${d.checkpoint}`}
-                    href="/app/analytics"
+                    href={`/app/analytics?publication=${d.publicationId}&checkpoint=${d.checkpoint}`}
                     className="flex items-center justify-between px-4 py-2.5 hover:bg-canvas"
                   >
                     <div className="min-w-0">

@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 const FILTER_TABS = [
   { key: "", label: "All" },
   { key: "new", label: "New" },
+  { key: "reviewing", label: "Reviewing" },
   { key: "selected", label: "Selected" },
   { key: "skipped", label: "Skipped" },
 ] as const;

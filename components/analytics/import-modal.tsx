@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -14,6 +14,7 @@ import { Upload, RefreshCw, FileUp, X } from "lucide-react";
 import type { ColumnMapping } from "@/lib/import/mapping";
 import { validateImportFile, buildCsvTemplate } from "@/lib/import/template";
 import type { PreviewRow, ImportConfig } from "@/lib/import/service";
+import { isoToLocalInput, localInputToIso } from "@/lib/import/normalize";
 import { EMPTY_MAPPING } from "@/lib/import/mapping";
 import type { Platform } from "@/lib/validation/platform-version";
 import { platformLabel, METRIC_NA_HELPER } from "@/lib/labels";
@@ -100,15 +101,21 @@ export function ImportMetricsModal({
   const [error, setError] = useState<string | null>(null);
   const [fileError, setFileError] = useState<string | null>(null);
   const [confirmResult, setConfirmResult] = useState<string | null>(null);
+  // M5.2 (G-54): explicit definitions state — a load failure must never
+  // look like "this platform has no metrics".
+  const [defsStatus, setDefsStatus] = useState<"loading" | "loaded" | "error">("loading");
 
   // Load the selected platform's active raw definitions as soon as the
   // modal opens / platform changes — the CSV template and mapping both
   // depend on them (fixes the empty-template blocker).
-  useEffect(() => {
+  const loadDefs = useCallback(() => {
     if (!open) return;
     let cancelled = false;
     fetch("/api/settings/metrics")
-      .then((r) => r.json())
+      .then((r) => {
+        if (!r.ok) throw new Error("load failed");
+        return r.json();
+      })
       .then((data) => {
         if (cancelled) return;
         const raws = (data.definitions as { platform: string; type: string; isActive: boolean; key: string; alias: string | null; displayName: string }[])
@@ -121,12 +128,17 @@ export function ImportMetricsModal({
             displayName: d.displayName,
           }))
         );
+        setDefsStatus("loaded");
       })
-      .catch(() => {});
+      .catch(() => {
+        if (!cancelled) setDefsStatus("error");
+      });
     return () => {
       cancelled = true;
     };
   }, [open, platform]);
+
+  useEffect(() => loadDefs(), [loadDefs]);
 
   const headers = useMemo(() => {
     if (!fileMeta) return [];
@@ -150,6 +162,7 @@ export function ImportMetricsModal({
     setError(null);
     setConfirmResult(null);
     setFallbackCapturedAt("");
+    setDefsStatus("loading");
   }
 
   function acceptFile(f: File | null) {
@@ -303,7 +316,10 @@ export function ImportMetricsModal({
               <select
                 className="w-full rounded-[8px] border border-border bg-workspace px-3 py-2 text-sm outline-none focus:border-mint-600"
                 value={platform}
-                onChange={(e) => setPlatform(e.target.value as Platform)}
+                onChange={(e) => {
+                  setPlatform(e.target.value as Platform);
+                  setDefsStatus("loading");
+                }}
               >
                 {PLATFORM_KEYS.map((k) => (
                   <option key={k} value={k}>{platformLabel(k)}</option>
@@ -386,11 +402,31 @@ export function ImportMetricsModal({
               captured_at 2026-08-29T16:30:00+08:00. The template contains
               headers only — add one data row per publication.
             </p>
+            {/* G-54: definitions failure is an explicit error state with
+                Retry — never an empty template/mapping. File/mapping
+                state is untouched by a retry. */}
+            {defsStatus === "error" && (
+              <div className="mt-2 rounded-[8px] border border-danger/20 bg-danger/5 p-3 text-xs text-danger">
+                Metric definitions could not be loaded. Mapping and the CSV
+                template need them.
+                <button
+                  className="ml-2 font-medium underline"
+                  onClick={loadDefs}
+                >
+                  Retry
+                </button>
+              </div>
+            )}
             <div className="flex gap-2">
-              <Button variant="ghost" size="sm" onClick={downloadTemplate}>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={downloadTemplate}
+                disabled={defsStatus !== "loaded"}
+              >
                 Download CSV Template
               </Button>
-              <Button variant="primary" size="sm" onClick={upload} disabled={!file || busy}>
+              <Button variant="primary" size="sm" onClick={upload} disabled={!file || busy || defsStatus !== "loaded"}>
                 <Upload className="mr-1 h-3 w-3" />
                 {busy ? "Parsing…" : "Upload & Continue"}
               </Button>
@@ -401,6 +437,15 @@ export function ImportMetricsModal({
         {/* Step 2: Map */}
         {step === 2 && mapping && fileMeta && (
           <div className="space-y-4">
+            {defsStatus === "error" && (
+              <div className="rounded-[8px] border border-danger/20 bg-danger/5 p-3 text-xs text-danger">
+                Metric definitions could not be loaded — metric mapping needs
+                them. Your file and mapping choices are kept.
+                <button className="ml-2 font-medium underline" onClick={loadDefs}>
+                  Retry
+                </button>
+              </div>
+            )}
             {fileMeta.sheets.length > 1 && (
               <div>
                 <label className="mb-1 block text-xs font-medium text-ink-secondary">Worksheet</label>
@@ -535,8 +580,14 @@ export function ImportMetricsModal({
                 variant="primary"
                 size="sm"
                 onClick={confirm}
-                disabled={busy || readyCount === 0 || hasBlockers}
-                title={hasBlockers ? "Resolve all rows first" : undefined}
+                disabled={busy || readyCount === 0 || hasBlockers || defsStatus !== "loaded"}
+                title={
+                  defsStatus !== "loaded"
+                    ? "Metric definitions are unavailable — retry loading them first"
+                    : hasBlockers
+                      ? "Resolve all rows first"
+                      : undefined
+                }
               >
                 {busy ? "Importing…" : `Confirm Import (${readyCount})`}
               </Button>
@@ -565,6 +616,13 @@ function PreviewRowCard({
   const unresolvedKeys = needsResolution && row.reason
     ? (row.reason.match(/Unresolved metrics: (.+?) —/)?.[1].split(", ") ?? [])
     : [];
+  // G-53: show the capture-time override when the blocker is about
+  // captured_at (missing / invalid / future / before reading point).
+  const showCapturedAtOverride =
+    row.status !== "ready_create" &&
+    row.status !== "ready_update" &&
+    row.status !== "no_change" &&
+    (row.reason ?? "").includes("captured_at");
 
   return (
     <div className="rounded-[8px] border border-border bg-workspace p-3">
@@ -595,9 +653,16 @@ function PreviewRowCard({
         </p>
       )}
 
-      {/* Human resolution: unmatched publication */}
-      {row.status === "unmatched" && (
+      {/* Human resolution: unmatched OR ambiguous publication (M5.2
+          G-52). True identity conflicts (id and URL resolving to
+          different publications) stay blocked — no picker. */}
+      {(row.status === "unmatched" || row.status === "ambiguous") && (
         <div className="mt-2">
+          {row.status === "ambiguous" && (
+            <p className="mb-1 text-[11px] text-ink-secondary">
+              Multiple publications match this URL — choose the right one:
+            </p>
+          )}
           <select
             className="w-full rounded-[8px] border border-border bg-canvas px-2 py-1.5 text-xs outline-none focus:border-mint-600"
             value={override?.publicationId ?? ""}
@@ -610,6 +675,44 @@ function PreviewRowCard({
               <option key={p.publicationId} value={p.publicationId}>{p.finalTitle}</option>
             ))}
           </select>
+        </div>
+      )}
+
+      {/* M5.2 G-53: row-level capture-time override. Default stays the
+          parsed file value; an override is visibly marked and clearable.
+          Server re-validates it (future / checkpoint timing) on preview
+          and confirm; the override participates in the preview
+          fingerprint, so an old preview cannot be confirmed. */}
+      {showCapturedAtOverride && (
+        <div className="mt-2 rounded-[8px] border border-border bg-canvas p-2">
+          <p className="text-[11px] text-ink-secondary">
+            Capture time override
+            {override?.capturedAt && (
+              <span className="ml-1 font-medium text-mint-600">— overridden</span>
+            )}
+          </p>
+          <div className="mt-1 flex items-center gap-2">
+            <input
+              type="datetime-local"
+              className="flex-1 rounded border border-border bg-workspace px-2 py-1 text-xs outline-none focus:border-mint-600"
+              value={override?.capturedAt ? isoToLocalInput(override.capturedAt) : ""}
+              onChange={(e) => {
+                const iso = localInputToIso(e.target.value);
+                onOverride({ ...override, capturedAt: iso ?? undefined });
+              }}
+            />
+            {override?.capturedAt && (
+              <button
+                className="text-[11px] text-ink-muted hover:text-ink-primary"
+                onClick={() => onOverride({ ...override, capturedAt: undefined })}
+              >
+                Clear
+              </button>
+            )}
+          </div>
+          <p className="mt-1 text-[11px] text-ink-muted">
+            Parsed from file: {row.capturedAt ? new Date(row.capturedAt).toLocaleString() : "none"}
+          </p>
         </div>
       )}
 

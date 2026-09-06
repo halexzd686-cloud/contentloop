@@ -79,6 +79,30 @@ export interface IndexPublication {
 }
 
 /**
+ * M5.2 (G-51) — query-driven Analytics deep-link target.
+ *
+ * "?publication=<id>&checkpoint=24h|72h". Query selection takes
+ * precedence over the default; a snapshot is NOT required (due cards
+ * usually mean a missing snapshot). Any invalid/unknown piece falls
+ * back to null → caller uses the normal default. No internal DB
+ * structure leaks: only the two public identity params are read.
+ */
+export function parseAnalyticsTarget(
+  search: string,
+  publications: IndexPublication[]
+): { publicationId: string; checkpoint: "24h" | "72h" } | null {
+  const params = new URLSearchParams(search);
+  const publicationId = params.get("publication");
+  const checkpoint = params.get("checkpoint");
+  if (!publicationId) return null;
+  if (checkpoint !== "24h" && checkpoint !== "72h") return null;
+  if (!publications.some((p) => p.publicationId === publicationId)) {
+    return null;
+  }
+  return { publicationId, checkpoint };
+}
+
+/**
  * Default selection (frozen):
  * 1. Latest-published publication that has at least one submitted
  *    snapshot.

@@ -177,3 +177,23 @@ export function normalizePublicationUrl(raw: string): string | null {
     return null;
   }
 }
+
+/**
+ * M5.2 (G-53) — row-level capturedAt override input conversions.
+ * datetime-local inputs carry wall time in the operator's local zone
+ * (same semantics as the batch fallback input); conversion is exact
+ * both ways. Server confirm re-parses the file and re-validates the
+ * override against all snapshot rules — these helpers are UI-only.
+ */
+export function isoToLocalInput(iso: string): string {
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return "";
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+export function localInputToIso(value: string): string | null {
+  if (!value) return null;
+  const d = new Date(value);
+  return isNaN(d.getTime()) ? null : d.toISOString();
+}

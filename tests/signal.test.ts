@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { createSignalSchema, updateSignalStatusSchema, skipSignalSchema, createContentFromSignalSchema, SKIP_REASONS } from "@/lib/validation/signal";
+import { createSignalSchema, updateSignalStatusSchema, skipSignalSchema, createContentFromSignalSchema, signalQuerySchema, SKIP_REASONS } from "@/lib/validation/signal";
 
 /**
  * M1.1 Tests — Signal validation and business rules
@@ -321,5 +321,21 @@ describe("Signal → Content business invariants", () => {
 
   it("reviewing signal with existing content → rejected (duplicate)", () => {
     expect(canCreateContent("reviewing", true)).toContain("already has a linked content");
+  });
+});
+
+// ─── M5.2 G-55: Reviewing is a first-class filter value ──
+
+describe("signalQuerySchema — Reviewing filter (M5.2)", () => {
+  it("accepts reviewing as a filter status", () => {
+    expect(signalQuerySchema.safeParse({ status: "reviewing" }).success).toBe(true);
+  });
+
+  it("existing statuses unchanged; unknown rejected", () => {
+    for (const s of ["new", "selected", "skipped"]) {
+      expect(signalQuerySchema.safeParse({ status: s }).success).toBe(true);
+    }
+    expect(signalQuerySchema.safeParse({ status: "archived" }).success).toBe(false);
+    expect(signalQuerySchema.safeParse({}).success).toBe(true); // All
   });
 });

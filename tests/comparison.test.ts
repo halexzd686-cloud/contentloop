@@ -4,6 +4,7 @@ import {
   calculateComparison,
   formatDelta,
   selectDefaultTarget,
+  parseAnalyticsTarget,
 } from "@/lib/metrics/comparison";
 import { tryBaseline } from "@/lib/metrics/analytics";
 
@@ -122,6 +123,61 @@ describe("selectDefaultTarget", () => {
       selectDefaultTarget([P("x", "2026-08-30T00:00:00Z", false, false)])
     ).toBeNull();
     expect(selectDefaultTarget([])).toBeNull();
+  });
+});
+
+// ─── M5.2 G-51: query-driven deep-link target ──────────
+
+describe("parseAnalyticsTarget", () => {
+  const P = (
+    publicationId: string,
+    publishedAt: string,
+    has24h: boolean,
+    has72h: boolean
+  ) => ({ publicationId, publishedAt, has24h, has72h });
+  const pubs = [
+    P("pub-a", "2026-08-30T00:00:00Z", true, false),
+    P("pub-b", "2026-08-28T00:00:00Z", false, false), // no snapshots at all
+  ];
+
+  it("valid publication + 24h", () => {
+    expect(
+      parseAnalyticsTarget("?publication=pub-a&checkpoint=24h", pubs)
+    ).toEqual({ publicationId: "pub-a", checkpoint: "24h" });
+  });
+
+  it("valid publication + 72h", () => {
+    expect(
+      parseAnalyticsTarget("?publication=pub-a&checkpoint=72h", pubs)
+    ).toEqual({ publicationId: "pub-a", checkpoint: "72h" });
+  });
+
+  it("selects even when the requested checkpoint has NO snapshot", () => {
+    // due cards usually mean the snapshot is missing — the target must
+    // still resolve so the user lands on the exact publication/checkpoint.
+    expect(
+      parseAnalyticsTarget("?publication=pub-b&checkpoint=24h", pubs)
+    ).toEqual({ publicationId: "pub-b", checkpoint: "24h" });
+    expect(
+      parseAnalyticsTarget("?publication=pub-a&checkpoint=72h", pubs)
+    ).toEqual({ publicationId: "pub-a", checkpoint: "72h" }); // pub-a lacks 72h
+  });
+
+  it("unknown publication → null (caller falls back to default)", () => {
+    expect(
+      parseAnalyticsTarget("?publication=deleted&checkpoint=24h", pubs)
+    ).toBeNull();
+  });
+
+  it("invalid checkpoint → null", () => {
+    expect(
+      parseAnalyticsTarget("?publication=pub-a&checkpoint=manual", pubs)
+    ).toBeNull();
+    expect(parseAnalyticsTarget("?publication=pub-a", pubs)).toBeNull();
+  });
+
+  it("no query → null (default behavior unchanged)", () => {
+    expect(parseAnalyticsTarget("", pubs)).toBeNull();
   });
 });
 

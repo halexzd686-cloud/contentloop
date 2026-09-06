@@ -12,6 +12,7 @@ import {
   calculateComparison,
   formatDelta,
   selectDefaultTarget,
+  parseAnalyticsTarget,
 } from "@/lib/metrics/comparison";
 import {
   MetricSnapshotModal,
@@ -260,8 +261,11 @@ export default function AnalyticsPage() {
   useEffect(() => {
     const t = setTimeout(async () => {
       const pubs = await loadIndex();
-      const def = selectDefaultTarget(pubs);
-      if (def) select(def.publicationId, def.checkpoint);
+      // M5.2 (G-51): query deep-link beats the default target; invalid
+      // or stale query silently falls back to the default selection.
+      const viaQuery = parseAnalyticsTarget(window.location.search, pubs);
+      const target = viaQuery ?? selectDefaultTarget(pubs);
+      if (target) select(target.publicationId, target.checkpoint);
     }, 0);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
