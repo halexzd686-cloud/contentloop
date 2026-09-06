@@ -136,7 +136,7 @@ export function LearningSection({ testId }: { testId: string }) {
       <p className="text-xs font-semibold uppercase tracking-wide text-ink-muted">
         Learning
       </p>
-      <p className="mt-1 text-xs text-ink-faint">
+      <p className="mt-1 text-xs text-ink-secondary">
         A reusable operating lesson you chose to save from a concluded Test.
       </p>
 
@@ -276,7 +276,7 @@ export function LearningSection({ testId }: { testId: string }) {
                     Discard
                   </button>
                 </div>
-                <p className="mt-1.5 text-[11px] text-ink-faint">
+                <p className="mt-1.5 text-[11px] text-ink-secondary">
                   {AI_PROPOSAL_APPLY_HELPER}
                 </p>
               </div>

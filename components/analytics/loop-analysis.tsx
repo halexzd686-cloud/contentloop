@@ -268,7 +268,7 @@ export function LoopAnalysis({
             <p className="mt-1 rounded-[8px] border border-border bg-canvas px-3 py-2 text-sm text-ink-primary">
               {proposal.whatHappened}
             </p>
-            <p className="mt-1 text-[11px] text-ink-faint">
+            <p className="mt-1 text-[11px] text-ink-secondary">
               Built from the evidence below — always
               consistent with the numbers.
             </p>
@@ -445,7 +445,7 @@ function DiagnosisView({
             ))}
           </ul>
         )}
-        <p className="mt-1 text-[11px] text-ink-faint">
+        <p className="mt-1 text-[11px] text-ink-secondary">
           Possible reasons are hypotheses, not confirmed causes.
         </p>
       </section>

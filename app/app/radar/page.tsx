@@ -6,6 +6,7 @@ import { AddSignalDialog } from "@/components/radar/add-signal-dialog";
 import { SignalFilters } from "@/components/radar/signal-filters";
 import { QuickReview } from "@/components/radar/quick-review";
 import { Button } from "@/components/ui/button";
+import { HalftoneReveal } from "@/components/reactbits/halftone-reveal";
 import { RefreshCw } from "lucide-react";
 
 /**
@@ -210,7 +211,7 @@ export default function RadarPage() {
           <p className="mt-0.5 text-sm text-ink-muted">
             What&apos;s worth creating?
           </p>
-          <p className="mt-0.5 text-xs text-ink-faint">
+          <p className="mt-0.5 text-xs text-ink-secondary">
             Signals are leads worth evaluating as future content — a URL or an
             idea.
           </p>
@@ -256,11 +257,15 @@ export default function RadarPage() {
                 </Button>
               </div>
             ) : signals.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-16 text-center">
-                <p className="text-sm text-ink-secondary">
+              <div className="relative flex flex-col items-center justify-center overflow-hidden py-16 text-center">
+                {/* M4.4: single restrained HalftoneReveal placement —
+                    editorial accent for the discovery surface. Static
+                    under prefers-reduced-motion. */}
+                <HalftoneReveal className="pointer-events-none absolute inset-x-8 top-2 h-24" />
+                <p className="relative text-sm text-ink-secondary">
                   Add your first Signal to start deciding what to create.
                 </p>
-                <div className="mt-4">
+                <div className="relative mt-4">
                   <AddSignalDialog onCreated={() => fetchRef.current()} />
                 </div>
               </div>

@@ -14,6 +14,7 @@ import {
   type DragStartEvent,
 } from "@dnd-kit/core";
 import { Button } from "@/components/ui/button";
+import { DemoBadge } from "@/components/ui/demo-badge";
 import {
   Drawer,
   DrawerContent,
@@ -66,6 +67,7 @@ interface PipelineItem {
   id: string;
   title: string;
   status: string;
+  isDemo: boolean;
   ownerName: string | null;
   reviewerName: string | null;
   deadlineAt: string | null;
@@ -114,7 +116,10 @@ function PlatformChips({ platforms }: { platforms: PlatformState[] }) {
 function CardContent({ item }: { item: PipelineItem }) {
   return (
     <>
-      <p className="text-sm font-medium text-ink-primary">{item.title}</p>
+      <div className="flex items-start justify-between gap-2">
+        <p className="text-sm font-medium text-ink-primary">{item.title}</p>
+        <DemoBadge isDemo={item.isDemo} />
+      </div>
       <div className="mt-1.5">
         <PlatformChips platforms={item.platforms} />
       </div>
@@ -168,7 +173,7 @@ function Column({
   return (
     <div
       ref={setNodeRef}
-      className={`flex w-[220px] shrink-0 flex-col rounded-[8px] border p-2 ${
+      className={`flex w-full min-w-[220px] max-w-[320px] flex-1 shrink flex-col rounded-[8px] border p-2 ${
         isOver ? "border-mint-600 bg-mint-100/40" : "border-border bg-canvas"
       }`}
     >

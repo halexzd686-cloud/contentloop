@@ -93,7 +93,7 @@ export function LearningsPanel({ contentId }: { contentId: string }) {
       </div>
 
       {total === 0 && (
-        <p className="mt-2 text-xs text-ink-faint">
+        <p className="mt-2 text-xs text-ink-secondary">
           No Learnings match this Content yet. Learnings come from concluded
           Tests and match by platform and Pillar.
         </p>
@@ -119,7 +119,7 @@ export function LearningsPanel({ contentId }: { contentId: string }) {
           <p className="text-[11px] font-semibold uppercase tracking-wide text-ink-faint">
             Available
           </p>
-          <p className="mt-1 text-[11px] text-ink-faint">
+          <p className="mt-1 text-[11px] text-ink-secondary">
             {LEARNING_APPLY_HELPER}
           </p>
           <div className="mt-1.5 space-y-2">

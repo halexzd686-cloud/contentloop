@@ -340,6 +340,10 @@ export function QuickReview({
               {/* Topic Score */}
               <div>
                 <p className="text-xs font-medium text-ink-muted">Topic Score</p>
+                <p className="mt-0.5 text-[11px] text-ink-secondary">
+                  Topic Score summarizes Audience Fit, Timing and Content
+                  Potential.
+                </p>
                 {insufficient ? (
                   <p className="mt-1 text-sm text-ink-faint">
                     Not enough verified information to score this signal.

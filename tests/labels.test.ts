@@ -25,6 +25,8 @@ import {
   METRIC_NA_HELPER,
   METRIC_BLANK_HELPER,
   LEARNING_APPLY_HELPER,
+  DEMO_NOTICE,
+  DEMO_BADGE_LABEL,
 } from "@/lib/labels";
 import { TEST_METHODS, TEST_ROLES } from "@/lib/validation/test";
 
@@ -146,6 +148,13 @@ describe("semantic boundaries", () => {
 
   it("Learning Apply never implies content mutation", () => {
     expect(LEARNING_APPLY_HELPER).toContain("does not change");
+  });
+
+  it("demo notice matches M4.1 behavior — no 'excluded from all analytics'", () => {
+    expect(DEMO_NOTICE).toContain("product exploration");
+    expect(DEMO_NOTICE).toContain("excluded from baseline cohorts");
+    expect(DEMO_NOTICE.toLowerCase()).not.toContain("excluded from all");
+    expect(DEMO_BADGE_LABEL).toBe("DEMO"); // textual, never color-only
   });
 
   it("checkpoint / primary metric helpers match frozen semantics", () => {

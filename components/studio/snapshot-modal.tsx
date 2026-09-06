@@ -344,7 +344,7 @@ export function MetricSnapshotModal({
                   </div>
                 );
               })}
-              <p className="text-xs text-ink-faint">{METRIC_NA_HELPER}</p>
+              <p className="text-xs text-ink-secondary">{METRIC_NA_HELPER}</p>
             </div>
 
             {derivedDefs.length > 0 && (
@@ -403,7 +403,7 @@ export function MetricSnapshotModal({
         )}
 
         {hasBlankInputs && (
-          <p className="text-xs text-ink-faint">{METRIC_BLANK_HELPER}</p>
+          <p className="text-xs text-ink-secondary">{METRIC_BLANK_HELPER}</p>
         )}
 
         <DialogFooter>

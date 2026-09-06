@@ -104,6 +104,7 @@ export async function GET() {
       id: c.id,
       title: c.title,
       status: c.status,
+      isDemo: c.isDemo, // M4.4: demo provenance badge (read-model only)
       ownerName: c.ownerId ? (memberName.get(c.ownerId) ?? null) : null,
       reviewerName: c.reviewerId ? (memberName.get(c.reviewerId) ?? null) : null,
       deadlineAt: c.deadlineAt,

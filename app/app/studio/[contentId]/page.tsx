@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
+import { DemoBadge } from "@/components/ui/demo-badge";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -40,7 +41,7 @@ import {
   type MasterModule,
 } from "@/lib/validation/master";
 import { createSaveQueue, type SaveQueueState } from "@/lib/save-queue";
-import { briefStatusLabel, contentStatusLabel } from "@/lib/labels";
+import { briefStatusLabel, contentStatusLabel, platformLabel } from "@/lib/labels";
 import { ArrowLeft, Sparkles, RefreshCw, Check, Lock } from "lucide-react";
 
 /**
@@ -86,6 +87,7 @@ interface ContentData {
   ownerId: string | null;
   reviewerId: string | null;
   primaryPlatform: string | null;
+  isDemo: boolean;
   owner: { id: string; name: string } | null;
   reviewer: { id: string; name: string } | null;
 }
@@ -99,12 +101,6 @@ const EMPTY_FIELDS: BriefFieldValues = {
   keyEvidence: "",
   differentiation: "",
   cta: "",
-};
-
-const PLATFORM_LABEL: Record<string, string> = {
-  xiaohongshu: "Xiaohongshu",
-  bilibili: "Bilibili",
-  douyin: "Douyin",
 };
 
 const TABS = ["Brief", "Master", "Platforms", "Review"] as const;
@@ -559,9 +555,10 @@ export default function StudioContentPage({
           <Badge variant={content.status === "in_progress" ? "warning" : "default"}>
             {contentStatusLabel(content.status)}
           </Badge>
+          <DemoBadge isDemo={content.isDemo} />
           {content.primaryPlatform && (
             <span className="text-xs text-ink-muted">
-              {PLATFORM_LABEL[content.primaryPlatform] ?? content.primaryPlatform}
+              {platformLabel(content.primaryPlatform)}
             </span>
           )}
           <div className="ml-auto flex items-center gap-4 text-xs text-ink-muted">
@@ -662,7 +659,7 @@ export default function StudioContentPage({
             )}
           </div>
 
-          <p className="-mt-2 mb-4 text-xs text-ink-faint">
+          <p className="-mt-2 mb-4 text-xs text-ink-secondary">
             Why this content should exist: who it&apos;s for, the problem it
             addresses, and the angle.
           </p>
@@ -784,9 +781,12 @@ export default function StudioContentPage({
         </div>
 
         {/* Loop AI 25% */}
-        <div className="w-[25%] overflow-y-auto border-l border-border bg-canvas p-4">
+        <div className="w-[25%] overflow-y-auto border-l border-l-mint-300/60 border-border bg-canvas p-4">
           <p className="text-xs font-semibold uppercase tracking-wide text-ink-muted">
             Loop AI
+          </p>
+          <p className="mt-1 text-xs text-ink-secondary">
+            AI proposes · You review and confirm
           </p>
           {activeTab === "Platforms" ? (
             <div className="mt-3">{platformsPanel.aiPanel}</div>
@@ -973,7 +973,7 @@ function MasterWorkspace({
         <p className="text-sm text-ink-secondary">
           No Content Master yet. Create one to start structured production.
         </p>
-        <p className="mt-1 text-xs text-ink-faint">
+        <p className="mt-1 text-xs text-ink-secondary">
           The master draft used to create platform-specific versions.
         </p>
         <Button
@@ -993,7 +993,7 @@ function MasterWorkspace({
   // Editable
   return (
     <div>
-      <p className="mb-4 text-xs text-ink-faint">
+      <p className="mb-4 text-xs text-ink-secondary">
         The master draft used to create platform-specific versions.
       </p>
       <MasterEditor

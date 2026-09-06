@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
+import { DemoBadge } from "@/components/ui/demo-badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import {
@@ -212,7 +213,7 @@ export default function StudioPage() {
                         <p className="truncate text-sm font-medium text-ink-primary">
                           {c.title}
                         </p>
-                        {c.isDemo && <Badge variant="default">DEMO</Badge>}
+                        <DemoBadge isDemo={c.isDemo} />
                       </div>
                       <div className="flex shrink-0 items-center gap-2">
                         <Badge variant={STATUS_VARIANT[c.status] || "default"}>

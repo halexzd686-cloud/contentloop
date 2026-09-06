@@ -162,3 +162,16 @@ export const LEARNING_APPLY_HELPER =
 
 export const AI_PROPOSAL_APPLY_HELPER =
   "Applies this proposal to the editor. Nothing is saved until you save.";
+
+// ─── Demo provenance (M4.4) ────────────────────────────
+
+/**
+ * DEMO visual trust. Authority is contents.isDemo only — never title
+ * or notes heuristics. Demo data keeps normal presentation plus an
+ * explicit textual badge; real data gets no LIVE badge.
+ */
+export const DEMO_BADGE_LABEL = "DEMO";
+
+/** Matches M4.1 behavior exactly: demo targets stay readable; cohorts are real-only. */
+export const DEMO_NOTICE =
+  "Demo data — shown for product exploration. Demo publications are excluded from baseline cohorts.";

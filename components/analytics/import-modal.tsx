@@ -479,7 +479,7 @@ export function ImportMetricsModal({
                   );
                 })}
               </div>
-              <p className="mt-2 text-xs text-ink-faint">{METRIC_NA_HELPER}</p>
+              <p className="mt-2 text-xs text-ink-secondary">{METRIC_NA_HELPER}</p>
               {!mapping.capturedAt && (
                 <div className="mt-3">
                   <label className="mb-1 block text-xs font-medium text-ink-secondary">

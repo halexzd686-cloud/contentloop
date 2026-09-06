@@ -26,7 +26,8 @@ import {
 import { ImportMetricsModal } from "@/components/analytics/import-modal";
 import { TestsSection, type TestCreateRequest } from "@/components/analytics/tests-section";
 import { LearningsSection } from "@/components/analytics/learnings-section";
-import { platformLabel, BASELINE_COHORT_HELPER } from "@/lib/labels";
+import { platformLabel, BASELINE_COHORT_HELPER, DEMO_NOTICE } from "@/lib/labels";
+import { DemoBadge } from "@/components/ui/demo-badge";
 
 /**
  * Analytics — /app/analytics (M2.5)
@@ -44,6 +45,7 @@ interface IndexPublication {
   platform: string;
   pillarName: string | null;
   publishedAt: string;
+  isDemo: boolean;
   has24h: boolean;
   has72h: boolean;
   checkpoints: { checkpoint: Checkpoint; status: "submitted" | "not_due" | "due" }[];
@@ -74,6 +76,7 @@ interface Detail {
     publicationId: string;
     contentId: string;
     contentTitle: string;
+    isDemo: boolean;
     finalTitle: string;
     platform: string;
     pillarName: string | null;
@@ -393,7 +396,10 @@ export default function AnalyticsPage() {
                     <span className="text-sm font-medium text-ink-primary">
                       {p.finalTitle}
                     </span>
-                    <Badge variant="default">{platformLabel(p.platform)}</Badge>
+                    <span className="flex items-center gap-1.5">
+                      <DemoBadge isDemo={p.isDemo} />
+                      <Badge variant="default">{platformLabel(p.platform)}</Badge>
+                    </span>
                   </div>
                   <div className="mt-1 flex items-center gap-3 text-xs text-ink-muted">
                     <span>{p.contentTitle}</span>
@@ -498,12 +504,18 @@ export default function AnalyticsPage() {
                         <span className="text-sm font-medium text-ink-primary">
                           {detail.fact.finalTitle}
                         </span>
+                        <DemoBadge isDemo={detail.fact.isDemo} />
                         <span className="ml-2">
                           {platformLabel(detail.fact.platform)} ·{" "}
                           {detail.fact.pillarName ?? "No pillar"} · Published{" "}
                           {new Date(detail.fact.publishedAt).toLocaleString()}
                         </span>
                       </div>
+                      {detail.fact.isDemo && (
+                        <p className="mt-2 rounded-[8px] border border-border bg-canvas px-3 py-2 text-xs text-ink-secondary">
+                          {DEMO_NOTICE}
+                        </p>
+                      )}
 
                       {!detail.fact.hasSnapshot ? (
                         <div className="mt-6 flex flex-col items-center py-6 text-center">
@@ -585,7 +597,7 @@ export default function AnalyticsPage() {
                               <span>No historical {selected.checkpoint} snapshots yet.</span>
                             )}
                           </div>
-                          <p className="mt-1 text-xs text-ink-faint">
+                          <p className="mt-1 text-xs text-ink-secondary">
                             {BASELINE_COHORT_HELPER}
                           </p>
                         </>

@@ -138,7 +138,7 @@ export function TestsSection({
           <FlaskConical className="h-4 w-4 text-ink-muted" />
           <span className="text-sm font-semibold text-ink-primary">Tests</span>
           <span className="text-xs text-ink-faint">{tests.length}</span>
-          <span className="text-xs text-ink-faint">{TEST_SECTION_HELPER}</span>
+          <span className="text-xs text-ink-secondary">{TEST_SECTION_HELPER}</span>
         </div>
         <Button variant="secondary" size="sm" onClick={() => setCreateOpen(true)}>
           <Plus className="mr-1 h-3 w-3" />
@@ -320,7 +320,7 @@ function CreateTestDialog({
                 <option value="24h">24h</option>
                 <option value="72h">72h</option>
               </select>
-              <p className="mt-1 text-xs text-ink-faint">{CHECKPOINT_HELPER}</p>
+              <p className="mt-1 text-xs text-ink-secondary">{CHECKPOINT_HELPER}</p>
             </div>
             <div>
               <label className="mb-1 block text-xs font-medium text-ink-secondary">Method *</label>
@@ -329,9 +329,9 @@ function CreateTestDialog({
                 {Object.keys(TEST_METHOD_HELPERS).map((k) => <option key={k} value={k}>{testMethodLabel(k)}</option>)}
               </select>
               {method && TEST_METHOD_HELPERS[method] && (
-                <p className="mt-1 text-xs text-ink-faint">{TEST_METHOD_HELPERS[method]}</p>
+                <p className="mt-1 text-xs text-ink-secondary">{TEST_METHOD_HELPERS[method]}</p>
               )}
-              <p className="mt-1 text-xs text-ink-faint">{TEST_METHODS_FOOTNOTE}</p>
+              <p className="mt-1 text-xs text-ink-secondary">{TEST_METHODS_FOOTNOTE}</p>
             </div>
           </div>
 
@@ -353,7 +353,7 @@ function CreateTestDialog({
               <option value="">— select —</option>
               {metricOptions.map((m) => <option key={m.key} value={m.key}>{m.label} ({m.key})</option>)}
             </select>
-            <p className="mt-1 text-xs text-ink-faint">{PRIMARY_METRIC_HELPER}</p>
+            <p className="mt-1 text-xs text-ink-secondary">{PRIMARY_METRIC_HELPER}</p>
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium text-ink-secondary">Keep Consistent</label>
@@ -717,7 +717,7 @@ function TestDetailDrawer({
                         Add
                       </Button>
                     </div>
-                    <p className="text-xs text-ink-faint">{TEST_ROLE_HELPER}</p>
+                    <p className="text-xs text-ink-secondary">{TEST_ROLE_HELPER}</p>
                   </div>
                 )}
               </section>

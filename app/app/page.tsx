@@ -13,6 +13,7 @@ import {
   type HomeModel,
 } from "@/lib/home";
 import { platformLabel } from "@/lib/labels";
+import { EchoText } from "@/components/reactbits/echo-text";
 
 /**
  * Home — M4.2 daily entry surface.
@@ -105,7 +106,12 @@ export default function HomePage() {
 
   return (
     <div className="h-full overflow-y-auto p-8">
-      <h1 className="text-xl font-semibold text-ink-primary">Home</h1>
+      {/* M4.4: one-shot brand moment (EchoText) — semantic phrase, not
+          the IA title. Static under prefers-reduced-motion. */}
+      <p className="font-serif text-sm italic text-ink-muted">
+        <EchoText text="Close the loop." />
+      </p>
+      <h1 className="mt-1 text-xl font-semibold text-ink-primary">Home</h1>
       <p className="mt-0.5 text-sm text-ink-muted">
         What needs attention, and where to continue.
       </p>

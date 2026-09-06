@@ -144,6 +144,7 @@ export async function getAnalyticsDetail(
       url: publications.url,
       contentId: contents.id,
       contentTitle: contents.title,
+      isDemo: contents.isDemo, // M4.4: demo provenance (read-model only)
       pillarId: contents.pillarId,
       pillarName: contentPillars.name,
       snapshotId: metricSnapshots.id,
@@ -213,6 +214,7 @@ export async function getAnalyticsDetail(
     publicationId: target.publicationId,
     contentId: target.contentId,
     contentTitle: target.contentTitle,
+    isDemo: target.isDemo,
     finalTitle: target.finalTitle,
     platform: target.platform,
     pillarName: target.pillarName,
