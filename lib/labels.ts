@@ -137,6 +137,16 @@ export const BASELINE_PILLAR_HELPER =
 export const BASELINE_N_HELPER =
   "n = number of prior publications with an available value for this metric.";
 
+/**
+ * M4.3 acceptance fix — single baseline explainer for the Analytics
+ * comparison table. Must carry the full M2.4 cohort semantics:
+ * workspace history, up to 20 prior publications, same platform +
+ * checkpoint, Pillar median additionally same Pillar, never an
+ * industry benchmark, and the per-metric n meaning.
+ */
+export const BASELINE_COHORT_HELPER =
+  "Medians use up to 20 prior publications from your workspace with the same platform and checkpoint; Pillar median also requires the same Pillar. They are not industry benchmarks. n = prior publications with a value for that metric.";
+
 // ─── Metric input semantics (§6) ───────────────────────
 
 export const METRIC_NA_HELPER =

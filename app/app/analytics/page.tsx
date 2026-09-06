@@ -26,7 +26,7 @@ import {
 import { ImportMetricsModal } from "@/components/analytics/import-modal";
 import { TestsSection, type TestCreateRequest } from "@/components/analytics/tests-section";
 import { LearningsSection } from "@/components/analytics/learnings-section";
-import { platformLabel } from "@/lib/labels";
+import { platformLabel, BASELINE_COHORT_HELPER } from "@/lib/labels";
 
 /**
  * Analytics — /app/analytics (M2.5)
@@ -586,9 +586,7 @@ export default function AnalyticsPage() {
                             )}
                           </div>
                           <p className="mt-1 text-xs text-ink-faint">
-                            Medians come from your own workspace history (up to 20
-                            comparable publications) — not industry benchmarks. n =
-                            prior publications with a value for that metric.
+                            {BASELINE_COHORT_HELPER}
                           </p>
                         </>
                       )}

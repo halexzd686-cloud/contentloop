@@ -21,6 +21,7 @@ import {
   BASELINE_ACCOUNT_HELPER,
   BASELINE_PILLAR_HELPER,
   BASELINE_N_HELPER,
+  BASELINE_COHORT_HELPER,
   METRIC_NA_HELPER,
   METRIC_BLANK_HELPER,
   LEARNING_APPLY_HELPER,
@@ -118,6 +119,17 @@ describe("semantic boundaries", () => {
       expect(h).toContain("Not an industry benchmark");
       expect(h.toLowerCase()).not.toContain("industry average");
     }
+  });
+
+  it("combined cohort helper carries the full M2.4 cohort semantics", () => {
+    const h = BASELINE_COHORT_HELPER;
+    expect(h).toContain("your workspace");
+    expect(h).toContain("up to 20 prior publications");
+    expect(h).toContain("same platform and checkpoint");
+    expect(h).toContain("Pillar median also requires the same Pillar");
+    expect(h).toContain("not industry benchmarks");
+    expect(h).toContain("n = prior publications with a value for that metric");
+    expect(h.toLowerCase()).not.toContain("industry average");
   });
 
   it("n helper is per-metric sample count, not cohort candidateCount", () => {
