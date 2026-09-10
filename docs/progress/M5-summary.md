@@ -1,10 +1,40 @@
 # M5 Summary — Dogfood & Release（进行中）
 
-> Status: M5.1 Audit **Complete**；M5.2 **Frozen**；M5.3A **Complete**；M5.3B Real Dogfood **⏳ PENDING**（真实 WorkBuddy Content 存在且未动，真实 Publication + 24h/72h 观测未完成）。M4.4 aesthetic acceptance 仍 deferred to M5.6。下一步 M5.4 — Release Readiness（规划门未开）。
+> Status: M5.1 **Complete**；M5.2 **Frozen**；M5.3A **Complete**；M5.3B Real Dogfood **⏳ PENDING**；**M5.4 Release Readiness Frozen**。M4.4 aesthetic acceptance 仍 deferred to M5.6。下一步 M5.5 — Product Documentation & Demo Story（未开始）。
 >
 > 前置：M4 系列见 `M4-summary.md`。
 
 ## Completed
+
+### M5.4 — Release Readiness（Frozen，Release Acceptance 通过）
+
+**Release 分类（正式记录）**
+
+- LOCAL / PRIVATE WRITABLE：✅ RELEASE READY
+- PROTECTED ONLINE DEMO：🟡 DEPLOYMENT READY, **PROTECTION VERIFICATION PENDING**——托管层访问保护必须在实际部署上验证通过后才可暴露可写实例
+- PUBLIC WRITABLE：❌ PROHIBITED IN V1（无应用级 Auth/RBAC，全部写 API 无鉴权）
+- PUBLIC READ-ONLY：未实现 / V1 不需要
+
+**交付**
+
+- Seed 拆分：`db:seed` = 仅 bootstrap 配置（Brand/Members/Pillars/Playbooks/MetricDefinitions；已存在 Brand 即 no-op；固定 UUID + 自然键 upsert，零名称启发式）；`db:seed:demo` = 可选幂等 demo（5 signals、3 isDemo contents、2 条已发布 DEMO baseline fixtures 含 24h snapshot；insert-only）
+- `.env.example`：删除未使用的 DIRECT_URL；DATABASE_URL 必需/server-only；AI_* 可选 + 实际默认值
+- README 技术 runbook：安装/环境/迁移/种子/开发/生产/AI/部署/安全警告/demo reset；安全警告明确"Human confirmation 是工作流边界而非身份认证"、"权威库不得复用为公开 demo 库"
+- 5 个 AI 路由 `maxDuration = 60`（与 provider 60s 对齐；托管上限可能更低，部署必须实测，Docker/VPS 为 fallback）
+- 部署目标：Vercel primary / Docker+VPS fallback
+
+**Clean-install 实证（隔离 Docker postgres:16 容器，已销毁）**
+
+空库 → migrate（0000–0011 一次通过）→ db:seed → db:seed 重跑计数逐项不变 → bootstrap-only 六页 + 9 API 冒烟全 200（Settings 27 指标就位、写路径校验在线）→ db:seed:demo → 重跑计数逐项不变 → `db:generate` 零漂移 → 生产 build/start 通过 → demo 库 Analytics 正确载入 2 条 DEMO publication → 容器销毁。权威库零接触（全程指向容器）。
+
+## Known Release Boundaries（非隐藏完成项）
+
+1. 无应用级 Auth/RBAC
+2. Protected online demo 需托管层保护实测后方可暴露
+3. 托管 runtime 可能约束长 AI 请求（60s 边界）
+4. G-56 保持开放 P2 候选
+5. M5.3B 真实 dogfood 未完成
+6. M4.4 美学验收 deferred to M5.6
 
 ### M5.3A — External Proxy Functional Test（Complete）
 
