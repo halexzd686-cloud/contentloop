@@ -122,7 +122,7 @@ export default function SettingsPage() {
         <h2 className="text-sm font-semibold uppercase tracking-wide text-ink-muted">
           Metrics
         </h2>
-        <p className="mt-1 text-xs text-ink-faint">
+        <p className="mt-1 text-xs text-ink-secondary">
           These definitions control how each metric is calculated and
           displayed. Derived metrics always show their formula.
         </p>
@@ -169,7 +169,7 @@ export default function SettingsPage() {
               </div>
               <div className="mt-2 divide-y divide-border rounded-[8px] border border-border bg-workspace">
                 {(byPlatform.get(p.key) ?? []).length === 0 ? (
-                  <p className="px-3 py-2.5 text-xs text-ink-faint">
+                  <p className="px-3 py-2.5 text-xs text-ink-secondary">
                     No metrics defined for this platform.
                   </p>
                 ) : (
@@ -200,7 +200,7 @@ export default function SettingsPage() {
                         )}
                       </p>
                       {d.caution && (
-                        <p className="mt-0.5 text-xs text-ink-faint">
+                        <p className="mt-0.5 text-xs text-ink-secondary">
                           ⚠ {d.caution}
                         </p>
                       )}

@@ -176,7 +176,7 @@ export function LoopAnalysis({
       </p>
 
       {!hasSnapshot && (
-        <p className="text-xs text-ink-faint">
+        <p className="text-xs text-ink-secondary">
           No metric snapshot yet. Diagnosis becomes available after a checkpoint
           snapshot is saved.
         </p>
@@ -235,7 +235,7 @@ export function LoopAnalysis({
       {/* No diagnosis yet */}
       {!diagnosis && !proposal && hasSnapshot && (
         <div className="space-y-3">
-          <p className="text-xs text-ink-faint">
+          <p className="text-xs text-ink-secondary">
             Structured diagnosis: What happened → Evidence → Possible reasons →
             Confidence → Next actions. AI proposes; you confirm.
           </p>
@@ -309,7 +309,7 @@ export function LoopAnalysis({
               />
             ))}
             {editReasons.length === 0 && (
-              <p className="mt-1 text-xs text-ink-faint">
+              <p className="mt-1 text-xs text-ink-secondary">
                 {editConfidence === "insufficient_evidence"
                   ? "Insufficient evidence to infer possible reasons."
                   : "None proposed."}
@@ -439,7 +439,7 @@ function DiagnosisView({
       <section>
         <p className="text-xs font-semibold text-ink-secondary">Possible reasons</p>
         {diagnosis.possibleReasons.length === 0 ? (
-          <p className="mt-1 text-xs text-ink-faint">
+          <p className="mt-1 text-xs text-ink-secondary">
             {diagnosis.confidence === "insufficient_evidence"
               ? "Insufficient evidence to infer possible reasons."
               : "None."}

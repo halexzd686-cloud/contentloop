@@ -19,6 +19,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { signalStatusLabel, confidenceLabel } from "@/lib/labels";
+import { DotTexture } from "@/components/reactbits/dot-texture";
 
 /**
  * Quick Review Panel — design.md §33.3
@@ -159,10 +160,15 @@ export function QuickReview({
 
   if (!signal) {
     return (
-      <div className="flex h-full items-center justify-center bg-canvas p-8">
-        <div className="max-w-[240px] text-center">
-          <p className="text-sm font-medium text-ink-secondary">Quick Review</p>
-          <p className="mt-2 text-xs leading-relaxed text-ink-muted">
+      <div className="flex h-full items-center justify-center">
+        <div className="relative max-w-[260px] px-6 py-10 text-center">
+          {/* M5.6: compact intentional empty state — the pane itself
+              stays a normal surface; restrained editorial texture only. */}
+          <DotTexture className="pointer-events-none absolute inset-x-0 top-0 h-16 opacity-60" />
+          <p className="relative text-sm font-medium text-ink-secondary">
+            Quick Review
+          </p>
+          <p className="relative mt-2 text-xs leading-relaxed text-ink-muted">
             Select a signal on the left to review its analysis, score and
             possible angles — then decide: skip it, or turn it into content.
           </p>
