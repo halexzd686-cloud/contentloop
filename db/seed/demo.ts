@@ -55,6 +55,18 @@ const DEMO = {
     publication: "00000000-0000-4000-8000-000000000f2b",
     snapshot: "00000000-0000-4000-8000-000000000f3b",
   },
+  // M5.5: exactly one coherent published DEMO journey (Publication +
+  // 24h + 72h). For demonstrating metrics/Analytics/cold-start
+  // Diagnosis — never an operational baseline provider (isDemo).
+  journey: {
+    content: "00000000-0000-4000-8000-000000000a01",
+    brief: "00000000-0000-4000-8000-000000000a02",
+    master: "00000000-0000-4000-8000-000000000a03",
+    version: "00000000-0000-4000-8000-000000000a04",
+    publication: "00000000-0000-4000-8000-000000000a05",
+    snapshot24: "00000000-0000-4000-8000-000000000a06",
+    snapshot72: "00000000-0000-4000-8000-000000000a07",
+  },
 } as const;
 
 export async function seedDemo() {
@@ -204,6 +216,103 @@ export async function seedDemo() {
     ])
     .onConflictDoNothing();
   console.log("  ✓ 2 DEMO baseline fixtures (published + 24h metrics)");
+
+  // ── One coherent published DEMO journey (M5.5) ─────────
+  // Demonstrates Publication → 24h/72h metrics → derived metrics →
+  // Analytics → cold-start Diagnosis readiness. Never an operational
+  // baseline provider. Diagnosis/Test/Learning intentionally NOT
+  // preseeded — they are live demo actions.
+  const jPubAt = new Date(Date.now() - 5 * 86400000);
+  const j24 = new Date(jPubAt.getTime() + 25 * 3600000);
+  const j72 = new Date(jPubAt.getTime() + 74 * 3600000);
+
+  await db
+    .insert(schema.contents)
+    .values({
+      id: DEMO.journey.content, brandId, pillarId: pillarTutorial,
+      title: "[DEMO] Claude Agent 实测（完整旅程示例）",
+      status: "published" as const, ownerId: alex, reviewerId: sarah,
+      priority: "normal" as const, isDemo: true,
+      primaryPlatform: "xiaohongshu" as const,
+    })
+    .onConflictDoNothing();
+
+  await db
+    .insert(schema.contentBriefs)
+    .values({
+      id: DEMO.journey.brief, contentId: DEMO.journey.content,
+      targetAudience: "想用 AI 提效的内容创作者（DEMO 示例）",
+      userProblem: "听说 AI Agent 很强但不知道实际能做什么（DEMO 示例）",
+      coreQuestion: "Claude Agent 在真实内容工作中到底能替代多少重复劳动（DEMO 示例）",
+      mainAngle: "一周真实场景实测（DEMO 示例）",
+      contentPromise: "看完知道它适合/不适合什么工作（DEMO 示例）",
+      keyEvidence: "DEMO 示例文案，非真实测评证据",
+      differentiation: "真实工作流实测而非功能罗列（DEMO 示例）",
+      cta: "收藏备用，评论区交流你的场景（DEMO 示例）",
+      status: "approved" as const, approvedAt: new Date(), approvedBy: alex,
+    })
+    .onConflictDoNothing();
+
+  await db
+    .insert(schema.contentMasters)
+    .values({
+      id: DEMO.journey.master, contentId: DEMO.journey.content,
+      modules: [
+        { id: "jm-1", type: "hook", order: 0, content: "我把一整周的内容杂活都丢给了 Claude Agent（DEMO 示例）" },
+        { id: "jm-2", type: "core_message", order: 1, content: "它能做的是可拆解的重复步骤，不是替你判断（DEMO 示例）" },
+        { id: "jm-3", type: "section", order: 2, content: "场景一：资料整理与初稿框架（DEMO 示例）" },
+        { id: "jm-4", type: "section", order: 3, content: "场景二：多平台改写与校对（DEMO 示例）" },
+        { id: "jm-5", type: "demo", order: 4, content: "屏幕实录：一次完整任务的过程（DEMO 示例）" },
+        { id: "jm-6", type: "evidence", order: 5, content: "DEMO 示例，非真实测评数据" },
+        { id: "jm-7", type: "conclusion", order: 6, content: "适合：流程化杂活；不适合：需要品味与判断的部分（DEMO 示例）" },
+        { id: "jm-8", type: "cta", order: 7, content: "收藏 + 评论区说说你的场景（DEMO 示例）" },
+      ],
+    })
+    .onConflictDoNothing();
+
+  await db
+    .insert(schema.platformVersions)
+    .values({
+      id: DEMO.journey.version, contentId: DEMO.journey.content,
+      platform: "xiaohongshu" as const, status: "published" as const,
+      data: {
+        title: "[DEMO] Claude Agent 实测：一周内容杂活交给它",
+        coverCopy: "AI Agent 到底能替我省多少事（DEMO）",
+        openingHook: "我把一整周的内容杂活都丢给了 Claude Agent（DEMO 示例）",
+        body: "DEMO 示例正文。",
+        tags: ["AI", "效率工具", "Claude"],
+        cta: "收藏备用（DEMO）",
+      },
+    })
+    .onConflictDoNothing();
+
+  await db
+    .insert(schema.publications)
+    .values({
+      id: DEMO.journey.publication, platformVersionId: DEMO.journey.version,
+      contentId: DEMO.journey.content, platform: "xiaohongshu" as const,
+      finalTitle: "[DEMO] Claude Agent 实测：一周内容杂活交给它",
+      publishedAt: jPubAt, url: "https://example.com/demo-journey-claude-agent",
+      notes: "DEMO journey fixture — synthetic metrics for product exploration, not real performance.",
+    })
+    .onConflictDoNothing();
+
+  await db
+    .insert(schema.metricSnapshots)
+    .values([
+      {
+        id: DEMO.journey.snapshot24, publicationId: DEMO.journey.publication,
+        checkpoint: "24h" as const, capturedAt: j24,
+        metrics: { views: 3200, likes: 180, saves: 210, comments: 42 }, source: "manual" as const,
+      },
+      {
+        id: DEMO.journey.snapshot72, publicationId: DEMO.journey.publication,
+        checkpoint: "72h" as const, capturedAt: j72,
+        metrics: { views: 8600, likes: 460, saves: 590, comments: 118 }, source: "manual" as const,
+      },
+    ])
+    .onConflictDoNothing();
+  console.log("  ✓ 1 DEMO journey content (published + 24h/72h metrics)");
 
   console.log("\n✅ Demo seed complete. Demo metrics are preset exploration values, never real performance.");
 }
