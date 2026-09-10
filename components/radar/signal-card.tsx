@@ -160,7 +160,7 @@ export function SignalCard({
     <Card
       className={cn(
         "cursor-pointer transition-colors duration-150 hover:border-border-strong",
-        selected && "border-mint-600 ring-1 ring-mint-600/20"
+        selected && "border-mint-600 border-l-2 border-l-mint-600 bg-mint-100/30"
       )}
       onClick={() => onSelect(signal.id)}
     >

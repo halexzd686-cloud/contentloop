@@ -43,7 +43,6 @@ import {
 import { createSaveQueue, type SaveQueueState } from "@/lib/save-queue";
 import { briefStatusLabel, contentStatusLabel, platformLabel } from "@/lib/labels";
 import { ShinyText } from "@/components/reactbits/shiny-text";
-import { BlurText } from "@/components/reactbits/blur-text";
 import { studioAIVisual, shinyTextActive } from "@/lib/ai-visual";
 import { ArrowLeft, Sparkles, RefreshCw, Check, Lock } from "lucide-react";
 
@@ -541,55 +540,58 @@ export default function StudioContentPage({
 
   const approverName = content.reviewer?.name ?? content.owner?.name ?? null;
 
-  // M4.4: Studio AI visual lifecycle — total mapping, ShinyText and
-  // BlurText can never be active at the same time.
+  // M4.4/M5.6: Studio AI visual lifecycle — ShinyText only,
+  // active during genuine generation; proposals render statically.
   const aiVisual = studioAIVisual({ generating, proposalPending });
 
   return (
     <div className="flex h-full flex-col">
-      {/* Header */}
-      <div className="border-b border-border bg-workspace px-6 py-3">
-        <div className="flex items-center gap-3">
+      {/* Header — M5.6: title is primary object identity (up to 2 lines);
+          owner/reviewer/save state demoted to a secondary metadata row. */}
+      <div className="border-b border-border bg-workspace px-8 pb-0 pt-4">
+        <div className="flex items-start gap-3">
           <Link
             href="/app/studio"
-            className="text-ink-muted hover:text-ink-primary"
+            className="mt-1.5 text-ink-muted hover:text-ink-primary"
           >
             <ArrowLeft className="h-4 w-4" />
           </Link>
-          <h1 className="text-base font-semibold text-ink-primary">
-            {content.title}
-          </h1>
-          <Badge variant={content.status === "in_progress" ? "warning" : "default"}>
-            {contentStatusLabel(content.status)}
-          </Badge>
-          <DemoBadge isDemo={content.isDemo} />
-          {content.primaryPlatform && (
-            <span className="text-xs text-ink-muted">
-              {platformLabel(content.primaryPlatform)}
-            </span>
-          )}
-          <div className="ml-auto flex items-center gap-4 text-xs text-ink-muted">
-            {content.owner && <span>Owner: {content.owner.name}</span>}
-            {approverName && <span>Reviewer: {approverName}</span>}
-            <span
-              className={
-                saveState === "failed"
-                  ? "text-danger"
-                  : saveState === "saved"
-                    ? "text-mint-600"
-                    : ""
-              }
-            >
-              {SAVE_LABEL[saveState]}
-              {saveState === "failed" && (
-                <button
-                  className="ml-1 underline"
-                  onClick={() => persistBrief(fields)}
-                >
-                  Retry
-                </button>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-start justify-between gap-4">
+              <h1 className="text-lg font-semibold leading-snug text-ink-primary [display:-webkit-box] [-webkit-line-clamp:2] [-webkit-box-orient:vertical] overflow-hidden">
+                {content.title}
+              </h1>
+              <span
+                className={`shrink-0 pt-1 text-xs ${
+                  saveState === "failed"
+                    ? "text-danger"
+                    : saveState === "saved"
+                      ? "text-mint-600"
+                      : "text-ink-muted"
+                }`}
+              >
+                {SAVE_LABEL[saveState]}
+                {saveState === "failed" && (
+                  <button
+                    className="ml-1 underline"
+                    onClick={() => persistBrief(fields)}
+                  >
+                    Retry
+                  </button>
+                )}
+              </span>
+            </div>
+            <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-ink-secondary">
+              <Badge variant={content.status === "in_progress" ? "warning" : "default"}>
+                {contentStatusLabel(content.status)}
+              </Badge>
+              <DemoBadge isDemo={content.isDemo} />
+              {content.primaryPlatform && (
+                <span>{platformLabel(content.primaryPlatform)}</span>
               )}
-            </span>
+              {content.owner && <span>Owner: {content.owner.name}</span>}
+              {approverName && <span>Reviewer: {approverName}</span>}
+            </div>
           </div>
         </div>
 
@@ -614,15 +616,15 @@ export default function StudioContentPage({
         </div>
       </div>
 
-      {/* Three columns */}
+      {/* Three columns — M5.6: 20 / 56 / 24 */}
       <div className="flex flex-1 overflow-hidden">
-        {/* Sources 22% */}
-        <div className="w-[22%] overflow-y-auto border-r border-border bg-canvas">
+        {/* Sources 20% */}
+        <div className="w-[20%] overflow-y-auto border-r border-border bg-canvas">
           <SourcesPanel signal={signal} />
         </div>
 
-        {/* Workspace 53% */}
-        <div className="w-[53%] overflow-y-auto bg-workspace p-6">
+        {/* Workspace 56% */}
+        <div className="w-[56%] overflow-y-auto bg-workspace p-8">
           {activeTab === "Brief" ? (
           <>
           <div className="mb-4 flex items-center justify-between">
@@ -705,16 +707,12 @@ export default function StudioContentPage({
 
           {proposalPending && (
             <div className="mb-4 rounded-[8px] border border-mint-600/30 bg-mint-100 p-3">
-              {/* M4.4: BlurText one-shot reveal on proposal arrival
-                  (mount-triggered; static under reduced motion). */}
-              <BlurText
-                text="AI Draft proposal — auto-save is paused. Review below, then Apply or Discard."
-                className="text-xs font-medium text-ink-primary"
-                animateBy="words"
-                direction="top"
-                delay={60}
-                stepDuration={0.22}
-              />
+              {/* M5.6: proposal arrival is static text — BlurText was
+                  removed from the V1 React Bits set. */}
+              <p className="text-xs font-medium text-ink-primary">
+                AI Draft proposal — auto-save is paused. Review below, then
+                Apply or Discard.
+              </p>
               <div className="mt-2 flex gap-2">
                 <Button variant="primary" size="sm" onClick={handleApplyDraft}>
                   Apply Draft
@@ -793,27 +791,29 @@ export default function StudioContentPage({
           )}
         </div>
 
-        {/* Loop AI 25% */}
-        <div className="w-[25%] overflow-y-auto border-l border-l-mint-300/60 border-border bg-canvas p-4">
-          <p className="text-xs font-semibold uppercase tracking-wide text-ink-muted">
-            Loop AI
-          </p>
-          {/* M4.4: ShinyText identity — shimmer active ONLY during a
-              genuine AI request; static at all other times. */}
-          <p className="mt-1 text-xs text-ink-secondary">
-            <ShinyText
-              text="AI proposes · You review and confirm"
-              disabled={!shinyTextActive(aiVisual)}
-              speed={1.6}
-              color="#5F625D"
-              shineColor="#4E9F84"
-            />
-          </p>
+        {/* Loop AI 24% — supportive mint-inset, quieter than the editor */}
+        <div className="w-[24%] overflow-y-auto border-l border-border bg-canvas p-5">
+          <div className="rounded-[10px] border border-mint-600/25 bg-mint-100/40 p-4">
+            <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-ink-muted">
+              Loop AI
+            </p>
+            {/* M4.4: ShinyText identity — shimmer active ONLY during a
+                genuine AI request; static at all other times. */}
+            <p className="mt-1.5 text-xs text-ink-secondary">
+              <ShinyText
+                text="AI proposes · You review and confirm"
+                disabled={!shinyTextActive(aiVisual)}
+                speed={1.6}
+                color="#5F625D"
+                shineColor="#4E9F84"
+              />
+            </p>
+          </div>
           {activeTab === "Platforms" ? (
-            <div className="mt-3">{platformsPanel.aiPanel}</div>
+            <div className="mt-4">{platformsPanel.aiPanel}</div>
           ) : activeTab === "Review" ? (
-            <div className="mt-3">
-              <p className="text-xs text-ink-faint">
+            <div className="mt-4">
+              <p className="text-xs text-ink-secondary">
                 Review is human-only. AI never checks items or approves
                 content.
               </p>

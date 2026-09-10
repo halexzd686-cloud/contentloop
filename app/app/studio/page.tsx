@@ -122,7 +122,7 @@ export default function StudioPage() {
       <div className="border-b border-border bg-workspace px-6 py-4">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h1 className="text-xl font-semibold text-ink-primary">Studio</h1>
+            <h1 className="text-[24px] font-semibold leading-tight text-ink-primary">Studio</h1>
             <p className="mt-0.5 text-sm text-ink-muted">
               Produce content from Brief to platform versions.
             </p>

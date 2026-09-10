@@ -733,28 +733,26 @@ Avoid nested card stacks.
 > driven by official-source dependency reality (HalftoneReveal and Prism
 > require OGL/WebGL) and visual-impact requirements.
 
-V1 only allows these React Bits components (vendored from the official
+V1 allows exactly one React Bits component (vendored from the official
 React Bits source, `components/reactbits/`):
 
 ```text
-EchoText
-BlurText
 ShinyText
 ```
 
 Usage:
 
-## EchoText
-Home editorial brand strip ("Close the loop."), entrance-only, one-shot,
-mint tint. No pointer interaction.
-
-## BlurText
-Two placements only: Radar tagline page entry; Studio AI proposal
-arrival reveal. One-shot each.
-
 ## ShinyText
 Studio Loop AI identity line; shimmer active ONLY during a genuine AI
 request. Static at all other times.
+
+Removed after the M5.6 visual review (text effects showed no settled
+value over static editorial typography; not backlog):
+
+```text
+EchoText  — removed from Home
+BlurText  — removed from Radar tagline / Studio proposal
+```
 
 Custom (NOT React Bits):
 

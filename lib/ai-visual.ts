@@ -3,10 +3,11 @@
  *
  * IDLE           → everything static
  * GENERATING     → ShinyText active only
- * PROPOSAL_READY → ShinyText stopped, BlurText revealed the proposal once
+ * PROPOSAL_READY → static (proposal banner renders as plain text)
  *
- * The mapping is total and priority-ordered: ShinyText and BlurText
- * can never be active simultaneously, even if the input flags race.
+ * M5.6: BlurText was removed from the V1 React Bits set; the proposal
+ * arrival state is intentionally static. ShinyText remains the only
+ * AI-generating indicator.
  */
 
 export type StudioAIVisual = "idle" | "generating" | "proposal_ready";
@@ -24,6 +25,3 @@ export function shinyTextActive(state: StudioAIVisual): boolean {
   return state === "generating";
 }
 
-export function proposalReveal(state: StudioAIVisual): boolean {
-  return state === "proposal_ready";
-}

@@ -12,9 +12,9 @@
 
 :root {
   /* ── Background System ────────────────────────────── */
-  --canvas: #F5F4EF;           /* App global bg, editorial areas, Home, Radar feed */
+  --canvas: #F1EFE8;           /* M5.6: warm paper with presence — white workspace visibly sits on it */
   --workspace: #FFFFFF;        /* Studio center, Analytics data, Settings forms, Modals */
-  --surface-subtle: #EFEEE9;   /* Sources panel, Ask Loop panel, filters, secondary */
+  --surface-subtle: #ECEAE2;   /* M5.6: inset/supporting surfaces read clearly */
 
   /* ── Ink Palette ──────────────────────────────────── */
   --ink-primary: #181A18;      /* Page title, body main, core data, active nav */
@@ -35,7 +35,7 @@
   --neutral-status: #858982;   /* Default / inactive status */
 
   /* ── Border ───────────────────────────────────────── */
-  --border: #DADCD6;
+  --border: #D6D8CF;
   --border-strong: #C7CAC3;
 
   /* ── Radius ───────────────────────────────────────── */
@@ -105,12 +105,3 @@ body {
   color: var(--ink-primary);
 }
 
-/* ── M5.6 Phase 1 prototype scope (disposable) ───────
-   Scoped visual-baseline overrides for /dev/design-v2 only.
-   Production tokens unchanged; propagating = promoting these
-   values into :root after Human visual approval. */
-.dv2 {
-  --canvas: #F1EFE8;           /* warmer, more present paper */
-  --surface-subtle: #ECEAE2;   /* inset areas read clearly */
-  --border: #D6D8CF;           /* slightly firmer hairlines */
-}

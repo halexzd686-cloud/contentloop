@@ -7,7 +7,6 @@ import { SignalFilters } from "@/components/radar/signal-filters";
 import { QuickReview } from "@/components/radar/quick-review";
 import { Button } from "@/components/ui/button";
 import { DotTexture } from "@/components/reactbits/dot-texture";
-import { BlurText } from "@/components/reactbits/blur-text";
 import { RefreshCw } from "lucide-react";
 
 /**
@@ -206,19 +205,17 @@ export default function RadarPage() {
   return (
     <div className="flex h-full flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-border bg-workspace px-6 py-4">
+      <div className="flex items-center justify-between border-b border-border bg-workspace px-8 pb-5 pt-6">
         <div>
-          <h1 className="text-xl font-semibold text-ink-primary">Radar</h1>
-          {/* M4.4: official BlurText — one-shot word blur-in on page
-              entry. Static full text under reduced motion. */}
-          <BlurText
-            text="What's worth creating?"
-            className="mt-0.5 text-sm text-ink-muted"
-            animateBy="words"
-            direction="top"
-            delay={120}
-            stepDuration={0.28}
-          />
+          <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-ink-muted">
+            Editorial intelligence
+          </p>
+          <h1 className="mt-1 text-[24px] font-semibold leading-tight text-ink-primary">
+            Radar
+          </h1>
+          <p className="mt-1 text-sm text-ink-secondary">
+            What&apos;s worth creating?
+          </p>
           <p className="mt-0.5 text-xs text-ink-secondary">
             Signals are leads worth evaluating as future content — a URL or an
             idea.

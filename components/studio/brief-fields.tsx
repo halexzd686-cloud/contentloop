@@ -40,10 +40,10 @@ interface BriefFieldsProps {
 
 export function BriefFields({ values, onChange, readOnly }: BriefFieldsProps) {
   return (
-    <div className="space-y-4">
+    <div className="grid grid-cols-1 gap-x-8 gap-y-5">
       {BRIEF_FIELD_META.map(({ key, label, placeholder }) => (
         <div key={key}>
-          <label className="mb-1 block text-xs font-medium text-ink-muted">
+          <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-[0.08em] text-ink-muted">
             {label}
           </label>
           <textarea

@@ -178,17 +178,17 @@ function Column({
       }`}
     >
       <div className="mb-2 flex items-center justify-between px-1">
-        <span className="text-xs font-semibold uppercase tracking-wide text-ink-muted">
+        <span className="text-[11px] font-medium uppercase tracking-[0.14em] text-ink-muted">
           {label}
         </span>
-        <span className="text-xs text-ink-faint">{items.length}</span>
+        <span className="text-xs text-ink-muted">{items.length}</span>
       </div>
       <div className="flex-1 space-y-2 overflow-y-auto">
         {items.map((item) => (
           <DraggableCard key={item.id} item={item} onOpen={onOpen} />
         ))}
         {items.length === 0 && (
-          <p className="px-1 py-4 text-center text-[11px] text-ink-faint">
+          <p className="px-2 py-6 text-center text-[11px] text-ink-muted">
             {colKey === "published"
               ? "Published content appears here after real Publications."
               : "No content"}
@@ -300,7 +300,7 @@ export default function PipelinePage() {
   return (
     <div className="flex h-full flex-col p-6">
       <div className="mb-4 flex items-center gap-3">
-        <h1 className="text-lg font-semibold text-ink-primary">Pipeline</h1>
+        <h1 className="text-[24px] font-semibold leading-tight text-ink-primary">Pipeline</h1>
         <div className="flex gap-1 rounded-[8px] border border-border p-0.5">
           <span className="rounded-md bg-mint-100 px-3 py-1 text-xs font-medium text-ink-primary">
             Pipeline
@@ -358,7 +358,7 @@ export default function PipelinePage() {
 
               <div className="space-y-4 text-sm">
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-ink-muted">
+                  <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-ink-muted">
                     People
                   </p>
                   <p className="mt-1 text-ink-secondary">
@@ -370,7 +370,7 @@ export default function PipelinePage() {
                 </div>
 
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-ink-muted">
+                  <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-ink-muted">
                     Production
                   </p>
                   <p className="mt-1 text-ink-secondary">
@@ -388,7 +388,7 @@ export default function PipelinePage() {
                 {selected.platforms.length > 0 &&
                   (selected.status === "scheduled" || selected.status === "published") && (
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-ink-muted">
+                    <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-ink-muted">
                       Publication
                     </p>
                     <p className="mt-1 text-ink-secondary">
@@ -475,7 +475,7 @@ export default function PipelinePage() {
 
                 {(selected.deadlineAt || selected.scheduledAt) && (
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-ink-muted">
+                    <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-ink-muted">
                       Dates
                     </p>
                     {selected.deadlineAt && (

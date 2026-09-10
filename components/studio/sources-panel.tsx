@@ -47,10 +47,10 @@ export function SourcesPanel({ signal }: { signal: SignalContext | null }) {
   if (!signal) {
     return (
       <div className="p-4">
-        <p className="text-xs font-semibold uppercase tracking-wide text-ink-muted">
+        <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-ink-muted">
           Sources
         </p>
-        <p className="mt-3 text-sm text-ink-faint">
+        <p className="mt-3 text-[13px] text-ink-secondary">
           No linked signal. This content was created manually.
         </p>
       </div>
@@ -62,11 +62,11 @@ export function SourcesPanel({ signal }: { signal: SignalContext | null }) {
 
   return (
     <div className="p-4">
-      <p className="text-xs font-semibold uppercase tracking-wide text-ink-muted">
+      <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-ink-muted">
         Sources
       </p>
 
-      <div className="mt-3 rounded-[8px] border border-border bg-canvas p-3">
+      <div className="mt-3 rounded-[10px] border border-border bg-workspace p-3.5">
         <div className="flex items-center gap-1.5 text-xs text-ink-muted">
           <Icon className="h-3 w-3" />
           {config?.label || "Source"}
@@ -91,7 +91,7 @@ export function SourcesPanel({ signal }: { signal: SignalContext | null }) {
             Source link
           </a>
         )}
-        <div className="mt-2 space-y-0.5 border-t border-border pt-2 text-xs text-ink-muted">
+        <div className="mt-2.5 space-y-1 border-t border-border pt-2.5 text-xs text-ink-secondary">
           {signal.selectedAngle && <p>Angle: {signal.selectedAngle}</p>}
           {signal.primaryPlatform && (
             <p>

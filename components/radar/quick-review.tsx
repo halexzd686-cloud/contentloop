@@ -159,11 +159,12 @@ export function QuickReview({
 
   if (!signal) {
     return (
-      <div className="flex h-full items-center justify-center">
-        <div className="text-center">
-          <p className="text-sm text-ink-muted">Select a signal to review</p>
-          <p className="mt-1 text-xs text-ink-faint">
-            Click a signal card on the left
+      <div className="flex h-full items-center justify-center bg-canvas p-8">
+        <div className="max-w-[240px] text-center">
+          <p className="text-sm font-medium text-ink-secondary">Quick Review</p>
+          <p className="mt-2 text-xs leading-relaxed text-ink-muted">
+            Select a signal on the left to review its analysis, score and
+            possible angles — then decide: skip it, or turn it into content.
           </p>
         </div>
       </div>

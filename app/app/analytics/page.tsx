@@ -295,46 +295,47 @@ export default function AnalyticsPage() {
     return (
       <tr key={m.key} className="border-t border-border">
         <td className="px-3 py-2.5">
-          <span className="text-sm text-ink-primary">{m.label}</span>
+          <span className="text-sm text-ink-secondary">{m.label}</span>
           {m.formulaPreview && (
-            <p className="mt-0.5 text-[11px] text-ink-faint">{m.formulaPreview}</p>
+            <p className="mt-0.5 text-[11px] text-ink-muted">{m.formulaPreview}</p>
           )}
         </td>
-        <td className="px-3 py-2.5 text-sm font-medium text-ink-primary">
+        {/* M5.6 evidence hierarchy: Current strongest, medians quiet */}
+        <td className="px-3 py-2.5 text-right text-base font-semibold tabular-nums text-ink-primary">
           {formatMetricValue(m.format, m.value)}
         </td>
-        <td className="px-3 py-2.5">
+        <td className="px-3 py-2.5 text-right">
           {account ? (
             <>
-              <span className="text-sm text-ink-secondary">
+              <span className="text-[13px] tabular-nums text-ink-secondary">
                 {formatMetricValue(m.format, account.median)}
               </span>
-              <span className="ml-2 text-[11px] text-ink-faint">n={account.sampleCount}</span>
+              <span className="ml-2 text-[11px] text-ink-muted">n={account.sampleCount}</span>
               <span className="ml-2 text-xs text-ink-secondary">
                 {formatDelta(m.format, accCmp?.absoluteDelta ?? null)}
               </span>
             </>
           ) : (
-            <span className="text-xs text-ink-faint">N/A</span>
+            <span className="text-xs text-ink-muted">N/A</span>
           )}
         </td>
-        <td className="px-3 py-2.5">
+        <td className="px-3 py-2.5 text-right">
           {detail?.pillarBaseline && "unavailable" in detail.pillarBaseline ? (
-            <span className="text-xs text-ink-faint">
+            <span className="text-xs text-ink-muted">
               Pillar baseline unavailable — no pillar assigned
             </span>
           ) : pillar ? (
             <>
-              <span className="text-sm text-ink-secondary">
+              <span className="text-[13px] tabular-nums text-ink-secondary">
                 {formatMetricValue(m.format, pillar.median)}
               </span>
-              <span className="ml-2 text-[11px] text-ink-faint">n={pillar.sampleCount}</span>
+              <span className="ml-2 text-[11px] text-ink-muted">n={pillar.sampleCount}</span>
               <span className="ml-2 text-xs text-ink-secondary">
                 {formatDelta(m.format, pilCmp?.absoluteDelta ?? null)}
               </span>
             </>
           ) : (
-            <span className="text-xs text-ink-faint">N/A</span>
+            <span className="text-xs text-ink-muted">N/A</span>
           )}
         </td>
       </tr>
@@ -366,7 +367,12 @@ export default function AnalyticsPage() {
       {/* Main: index + fact/baseline/comparison */}
       <div className="flex-1 overflow-y-auto p-6">
         <div className="flex items-center justify-between">
-          <h1 className="text-lg font-semibold text-ink-primary">Analytics</h1>
+          <div>
+            <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-ink-muted">
+              Performance
+            </p>
+            <h1 className="mt-1 text-[24px] font-semibold leading-tight text-ink-primary">Analytics</h1>
+          </div>
           <Button variant="secondary" size="sm" onClick={() => setImportOpen(true)}>
             Import Metrics
           </Button>
@@ -550,7 +556,7 @@ export default function AnalyticsPage() {
                           </p>
 
                           {/* Metrics table */}
-                          <div className="mt-4 overflow-hidden rounded-[8px] border border-border">
+                          <div className="mt-4 max-w-[980px] overflow-hidden rounded-[10px] border border-border bg-workspace">
                             <table className="w-full">
                               <thead>
                                 <tr className="bg-canvas text-left text-[11px] uppercase tracking-wide text-ink-muted">
@@ -562,14 +568,14 @@ export default function AnalyticsPage() {
                               </thead>
                               <tbody>
                                 <tr>
-                                  <td colSpan={4} className="bg-canvas px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-ink-muted">
+                                  <td colSpan={4} className="bg-surface-subtle px-3 py-1.5 text-[11px] font-medium uppercase tracking-[0.08em] text-ink-muted">
                                     Raw Metrics
                                   </td>
                                 </tr>
                                 {raws.map(renderMetricRow)}
                                 {deriveds.length > 0 && (
                                   <tr>
-                                    <td colSpan={4} className="bg-canvas px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-ink-muted">
+                                    <td colSpan={4} className="bg-surface-subtle px-3 py-1.5 text-[11px] font-medium uppercase tracking-[0.08em] text-ink-muted">
                                       Derived Metrics
                                     </td>
                                   </tr>

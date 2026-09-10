@@ -12,16 +12,15 @@ import {
   type HomeTestRow,
   type HomeModel,
 } from "@/lib/home";
-import { platformLabel } from "@/lib/labels";
-import { EchoText } from "@/components/reactbits/echo-text";
+import { platformLabel, contentStatusLabel, testStatusLabel } from "@/lib/labels";
 
 /**
- * Home — M4.2 daily entry surface.
+ * Home — M5.6 visual pass: H2 static composition.
  *
- * Navigation only: every card links to an existing authoritative
- * surface (Analytics / Studio). Zero mutation, zero AI. Sections are
- * derived from the current server state on every load — nothing here
- * depends on transient success state.
+ * Work-first dashboard: Needs Attention / Continue Working /
+ * Monitoring. Static serif thesis (no motion). Mint left edge =
+ * actionable-now (existing due/review semantics only). Navigation
+ * only — every card links to an existing authoritative surface.
  */
 
 export default function HomePage() {
@@ -67,7 +66,7 @@ export default function HomePage() {
 
   if (loading && !model) {
     return (
-      <div className="p-8">
+      <div className="p-10">
         <div className="space-y-3">
           {Array.from({ length: 3 }).map((_, i) => (
             <div
@@ -85,7 +84,7 @@ export default function HomePage() {
 
   if (error && !model) {
     return (
-      <div className="p-8">
+      <div className="p-10">
         <div className="rounded-[10px] border border-danger/20 bg-danger/5 p-6 text-center">
           <p className="text-sm text-danger">{error}</p>
           <Button variant="secondary" size="sm" className="mt-3" onClick={load}>
@@ -106,32 +105,20 @@ export default function HomePage() {
 
   return (
     <div className="h-full overflow-y-auto">
-      {/* M4.4: editorial brand strip — official EchoText (entrance-only,
-          one-shot, mint tint). Static full text under reduced motion.
-          Work sections below remain the primary actionable content. */}
-      <div className="border-b border-border bg-canvas px-8 pb-5 pt-6">
-        <div className="font-serif text-ink-primary" style={{ minHeight: "2.6rem" }}>
-          <EchoText
-            text="Close the loop."
-            mode="entrance"
-            echoes={7}
-            offset={16}
-            duration={800}
-            ease="ease-out"
-            direction="left"
-            tint="#4E9F84"
-            color="#181A18"
-            fontSize="clamp(1.6rem, 2.6vw, 2.3rem)"
-            fontWeight={500}
-          />
-        </div>
-        <p className="mt-1 text-sm text-ink-muted">
-          What needs attention, and where to continue.
+      {/* Header: eyebrow + strong title + static serif thesis in the
+          heading group (product thesis, not a watermark). */}
+      <div className="border-b border-border px-10 pb-6 pt-8">
+        <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-ink-muted">
+          ContentLoop workspace
         </p>
+        <div className="mt-2 flex items-baseline gap-4">
+          <h1 className="text-[26px] font-semibold leading-tight">Home</h1>
+          <span className="hidden h-5 w-px bg-border-strong sm:block" />
+          <p className="font-serif text-lg italic text-ink-secondary">
+            Close the loop.
+          </p>
+        </div>
       </div>
-
-      <div className="p-8">
-      <h1 className="text-xl font-semibold text-ink-primary">Home</h1>
 
       {model.isEmpty ? (
         <div className="py-16 text-center">
@@ -153,143 +140,149 @@ export default function HomePage() {
           </div>
         </div>
       ) : (
-        <div className="mt-6 max-w-3xl space-y-8">
-          {/* Needs Attention */}
-          <section>
-            <h2 className="text-xs font-semibold uppercase tracking-wide text-ink-muted">
+        <div className="grid grid-cols-1 gap-6 px-10 py-8 xl:grid-cols-5">
+          {/* Primary: needs attention */}
+          <section className="xl:col-span-3">
+            <h2 className="text-[11px] font-medium uppercase tracking-[0.14em] text-ink-muted">
               Needs Attention
             </h2>
             {!hasAttention ? (
-              <p className="mt-2 text-sm text-ink-faint">
+              <p className="mt-3 rounded-[10px] border border-border bg-workspace px-5 py-4 text-sm text-ink-secondary">
                 Nothing needs attention right now.
               </p>
             ) : (
-              <div className="mt-2 divide-y divide-border rounded-[8px] border border-border bg-workspace">
+              <div className="mt-3 space-y-3">
                 {model.dueMetrics.map((d) => (
                   <Link
                     key={`${d.publicationId}:${d.checkpoint}`}
                     href={`/app/analytics?publication=${d.publicationId}&checkpoint=${d.checkpoint}`}
-                    className="flex items-center justify-between px-4 py-2.5 hover:bg-canvas"
+                    className="block rounded-[10px] border border-border border-l-2 border-l-mint-600 bg-workspace px-5 py-4 transition-colors hover:border-border-strong"
                   >
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-medium text-ink-primary">
-                        {d.finalTitle}
-                      </p>
-                      <p className="text-xs text-ink-muted">
-                        {platformLabel(d.platform)} · {d.checkpoint}{" "}
-                        metrics due since {new Date(d.dueAt).toLocaleString()}
-                      </p>
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="min-w-0">
+                        <p className="truncate text-[15px] font-medium">
+                          {d.finalTitle}
+                        </p>
+                        <p className="mt-0.5 text-xs text-ink-secondary">
+                          {platformLabel(d.platform)} · {d.checkpoint} metrics
+                          due since {new Date(d.dueAt).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <span className="flex shrink-0 items-center gap-1 text-[13px] font-medium text-mint-600">
+                        Enter metrics <ArrowRight className="h-3.5 w-3.5" />
+                      </span>
                     </div>
-                    <span className="ml-3 flex shrink-0 items-center text-xs font-medium text-mint-600">
-                      Enter metrics
-                      <ArrowRight className="ml-1 h-3 w-3" />
-                    </span>
                   </Link>
                 ))}
                 {model.reviewContents.map((c) => (
                   <Link
                     key={c.id}
                     href={`/app/studio/${c.id}`}
-                    className="flex items-center justify-between px-4 py-2.5 hover:bg-canvas"
+                    className="block rounded-[10px] border border-border border-l-2 border-l-mint-600 bg-workspace px-5 py-4 transition-colors hover:border-border-strong"
                   >
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-medium text-ink-primary">
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="min-w-0">
+                        <p className="truncate text-[15px] font-medium">
+                          {c.title}
+                        </p>
+                        <p className="mt-0.5 text-xs text-ink-secondary">
+                          Waiting for review
+                        </p>
+                      </div>
+                      <span className="flex shrink-0 items-center gap-1 text-[13px] font-medium text-mint-600">
+                        Open Review <ArrowRight className="h-3.5 w-3.5" />
+                      </span>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </section>
+
+          {/* Secondary column */}
+          <div className="space-y-8 xl:col-span-2">
+            <section>
+              <div className="flex items-baseline justify-between">
+                <h2 className="text-[11px] font-medium uppercase tracking-[0.14em] text-ink-muted">
+                  Continue Working
+                </h2>
+                <Link
+                  href="/app/studio"
+                  className="text-xs text-mint-600 hover:underline"
+                >
+                  View all
+                </Link>
+              </div>
+              {model.continueWorking.length === 0 ? (
+                <p className="mt-3 rounded-[10px] border border-border bg-workspace px-4 py-3 text-[13px] text-ink-secondary">
+                  No content in production.{" "}
+                  <Link href="/app/studio" className="text-mint-600 hover:underline">
+                    New Content
+                  </Link>{" "}
+                  or select a signal in Radar.
+                </p>
+              ) : (
+                <div className="mt-3 divide-y divide-border rounded-[10px] border border-border bg-workspace">
+                  {model.continueWorking.map((c) => (
+                    <Link
+                      key={c.id}
+                      href={`/app/studio/${c.id}`}
+                      className="flex items-center justify-between px-4 py-3 hover:bg-canvas"
+                    >
+                      <p className="min-w-0 truncate text-sm font-medium">
                         {c.title}
                       </p>
-                      <p className="text-xs text-ink-muted">Waiting for review</p>
-                    </div>
-                    <span className="ml-3 flex shrink-0 items-center text-xs font-medium text-mint-600">
-                      Open Review
-                      <ArrowRight className="ml-1 h-3 w-3" />
-                    </span>
-                  </Link>
-                ))}
-              </div>
-            )}
-          </section>
+                      <Badge variant={c.status === "in_progress" ? "warning" : "default"}>
+                        {contentStatusLabel(c.status)}
+                      </Badge>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </section>
 
-          {/* Continue Working */}
-          <section>
-            <div className="flex items-center justify-between">
-              <h2 className="text-xs font-semibold uppercase tracking-wide text-ink-muted">
-                Continue Working
+            <section>
+              <h2 className="text-[11px] font-medium uppercase tracking-[0.14em] text-ink-muted">
+                Monitoring
               </h2>
-              <Link
-                href="/app/studio"
-                className="text-xs text-mint-600 hover:underline"
-              >
-                View all
-              </Link>
-            </div>
-            {model.continueWorking.length === 0 ? (
-              <p className="mt-2 text-sm text-ink-faint">
-                No content in production.{" "}
-                <Link href="/app/studio" className="text-mint-600 hover:underline">
-                  New Content
-                </Link>{" "}
-                or select a signal in Radar.
-              </p>
-            ) : (
-              <div className="mt-2 divide-y divide-border rounded-[8px] border border-border bg-workspace">
-                {model.continueWorking.map((c) => (
-                  <Link
-                    key={c.id}
-                    href={`/app/studio/${c.id}`}
-                    className="flex items-center justify-between px-4 py-2.5 hover:bg-canvas"
-                  >
-                    <p className="min-w-0 truncate text-sm font-medium text-ink-primary">
-                      {c.title}
-                    </p>
-                    <Badge variant={c.status === "in_progress" ? "warning" : "default"}>
-                      {c.status === "in_progress" ? "In Progress" : "Planning"}
-                    </Badge>
-                  </Link>
-                ))}
-              </div>
-            )}
-          </section>
-
-          {/* Monitoring */}
-          <section>
-            <h2 className="text-xs font-semibold uppercase tracking-wide text-ink-muted">
-              Monitoring
-            </h2>
-            {!hasMonitoring ? (
-              <p className="mt-2 text-sm text-ink-faint">
-                Nothing scheduled or running.
-              </p>
-            ) : (
-              <div className="mt-2 divide-y divide-border rounded-[8px] border border-border bg-workspace">
-                {model.scheduledContents.map((c) => (
-                  <Link
-                    key={c.id}
-                    href={`/app/studio/${c.id}`}
-                    className="flex items-center justify-between px-4 py-2.5 hover:bg-canvas"
-                  >
-                    <p className="min-w-0 truncate text-sm font-medium text-ink-primary">
-                      {c.title}
-                    </p>
-                    <Badge variant="default">Scheduled</Badge>
-                  </Link>
-                ))}
-                {model.runningTests.map((t) => (
-                  <Link
-                    key={t.id}
-                    href="/app/analytics"
-                    className="flex items-center justify-between px-4 py-2.5 hover:bg-canvas"
-                  >
-                    <p className="min-w-0 truncate text-sm font-medium text-ink-primary">
-                      {t.title}
-                    </p>
-                    <Badge variant="warning">Test running</Badge>
-                  </Link>
-                ))}
-              </div>
-            )}
-          </section>
+              {!hasMonitoring ? (
+                <p className="mt-3 rounded-[10px] border border-border bg-workspace px-4 py-3 text-[13px] text-ink-secondary">
+                  Nothing scheduled or running.
+                </p>
+              ) : (
+                <div className="mt-3 divide-y divide-border rounded-[10px] border border-border bg-workspace">
+                  {model.scheduledContents.map((c) => (
+                    <Link
+                      key={c.id}
+                      href={`/app/studio/${c.id}`}
+                      className="flex items-center justify-between px-4 py-3 hover:bg-canvas"
+                    >
+                      <p className="min-w-0 truncate text-sm font-medium">
+                        {c.title}
+                      </p>
+                      <Badge variant="default">Scheduled</Badge>
+                    </Link>
+                  ))}
+                  {model.runningTests.map((t) => (
+                    <Link
+                      key={t.id}
+                      href="/app/analytics"
+                      className="flex items-center justify-between px-4 py-3 hover:bg-canvas"
+                    >
+                      <p className="min-w-0 truncate text-sm font-medium">
+                        {t.title}
+                      </p>
+                      <Badge variant="warning">
+                        Test {testStatusLabel(t.status)}
+                      </Badge>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </section>
+          </div>
         </div>
       )}
-      </div>
     </div>
   );
 }

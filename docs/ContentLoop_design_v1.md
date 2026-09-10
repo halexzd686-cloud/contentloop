@@ -859,9 +859,12 @@ Active 状态：
 
 V1 正式允许的 React Bits（官方源码 vendored 于 `components/reactbits/`）：
 
-1. **EchoText** — Home 顶部 editorial brand strip（"Close the loop."），entrance-only 一次性，mint tint，无 pointer 交互
-2. **BlurText** — 仅两处：Radar tagline 页面进入；Studio AI proposal 到达时的一次性 reveal
-3. **ShinyText** — Studio Loop AI identity 行；仅在真实 AI 请求进行中激活 shimmer，其余时间完全静态
+1. **ShinyText** — Studio Loop AI identity 行；仅在真实 AI 请求进行中激活 shimmer，其余时间完全静态
+
+M5.6 视觉评审后移除（文字动效在真实渲染中没有超过静态 editorial 排版的 settled 价值；非 backlog）：
+
+- **EchoText** — 已从 Home 移除（品牌陈述改为静态 serif 排版）
+- **BlurText** — 已从 Radar tagline 与 Studio proposal 移除
 
 自定义非 React Bits：
 
