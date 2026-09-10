@@ -4,6 +4,8 @@
 
 An AI-assisted content operations workspace for 3–5 person teams, covering 小红书 / Bilibili / 抖音 workflows.
 
+> Specifications: [PRD](docs/ContentLoop_PRD_v1.md) · [data model](docs/ContentLoop_data-model_v1.md) · [design](docs/ContentLoop_design_v1.md) · [demo script](docs/demo-script.md). Agent operating contract: `AGENTS.md`. Milestone history: `docs/progress/`.
+
 ---
 
 ## Why ContentLoop

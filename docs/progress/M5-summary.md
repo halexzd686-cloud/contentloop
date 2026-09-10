@@ -1,10 +1,17 @@
 # M5 Summary — Dogfood & Release（进行中）
 
-> Status: M5.1 **Complete**；M5.2 **Frozen**；M5.3A **Complete**；M5.3B Real Dogfood **⏳ PENDING**；**M5.4 Release Readiness Frozen**。M4.4 aesthetic acceptance 仍 deferred to M5.6。下一步 M5.5 — Product Documentation & Demo Story（未开始）。
+> Status: M5.1 **Complete**；M5.2 **Frozen**；M5.3A **Complete**；M5.3B Real Dogfood **⏳ PENDING**；M5.4 **Frozen**；M5.5 **Frozen**。M4.4 aesthetic acceptance 仍 deferred to M5.6。下一步 M5.6 — Final Visual Pass（未开始）。
 >
 > 前置：M4 系列见 `M4-summary.md`。
 
 ## Completed
+
+### M5.5 — Product Documentation & Demo Story（Frozen，Documentation Acceptance 通过）
+
+- README 产品+技术双层：定位一句话、Why、Core Loop（frozen 不变）、六页一句话职责、产品原则、demo 旅程、AI/Human 表、Data trust（含 DEMO 不进运营 cohort 与 demo-only 库 median=N/A 的正确性说明）、Test/Learning（明确无统计显著性）、Mermaid 架构+简化领域图、技术栈（带选型理由）、V1 scope 边界、安全边界（M5.4 原话保留且显著）；技术 runbook 完整保留；规格链接到四份 source-of-truth + demo script
+- `docs/demo-script.md`：2–3 分钟面试版 + 5–8 分钟完整版（每步 Screen/Click/Say/Why/Avoid），单一闭环故事线；dogfood 发现（D01/D02）与 M5.3B pending 如实记录；截图槽位预留待 M5.6
+- `db:seed:demo`：恰好一条连贯已发布 DEMO 旅程（approved brief + master + version + publication + 24h/72h snapshots），isDemo=true，固定 UUID 幂等（隔离库双跑实证计数不变）；Diagnosis/Test/Learning 不预造
+- 一致性审计：无 misleading baseline 措辞、无 overclaim、无 autonomous 措辞、无图片资产
 
 ### M5.4 — Release Readiness（Frozen，Release Acceptance 通过）
 
