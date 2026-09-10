@@ -104,3 +104,13 @@ body {
   background: var(--mint-300);
   color: var(--ink-primary);
 }
+
+/* ── M5.6 Phase 1 prototype scope (disposable) ───────
+   Scoped visual-baseline overrides for /dev/design-v2 only.
+   Production tokens unchanged; propagating = promoting these
+   values into :root after Human visual approval. */
+.dv2 {
+  --canvas: #F1EFE8;           /* warmer, more present paper */
+  --surface-subtle: #ECEAE2;   /* inset areas read clearly */
+  --border: #D6D8CF;           /* slightly firmer hairlines */
+}
