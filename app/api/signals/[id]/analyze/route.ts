@@ -13,6 +13,14 @@ import {
 } from "@/lib/ai/analyze-signal";
 
 /**
+ * AI request budgets run up to the 60s provider timeout. Declare the
+ * matching route ceiling so hosts (e.g. Vercel) don't cut earlier.
+ * Requires a plan allowing maxDuration=60; otherwise use the
+ * Docker/VPS fallback documented in README.
+ */
+export const maxDuration = 60;
+
+/**
  * POST /api/signals/[id]/analyze
  *
  * Structured Signal Analysis (M1.2B):

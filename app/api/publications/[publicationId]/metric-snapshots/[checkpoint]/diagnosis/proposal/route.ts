@@ -6,6 +6,14 @@ import { ReviewError } from "@/lib/review";
 import { isCheckpoint } from "@/lib/validation/snapshot";
 
 /**
+ * AI request budgets run up to the 60s provider timeout. Declare the
+ * matching route ceiling so hosts (e.g. Vercel) don't cut earlier.
+ * Requires a plan allowing maxDuration=60; otherwise use the
+ * Docker/VPS fallback documented in README.
+ */
+export const maxDuration = 60;
+
+/**
  * POST .../diagnosis/proposal — M2.6
  * AI structured diagnosis proposal. Zero DB writes — the proposal is
  * persisted only via an explicit human Save (POST/PUT diagnosis).

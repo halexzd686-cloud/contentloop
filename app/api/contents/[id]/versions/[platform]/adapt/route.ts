@@ -17,6 +17,14 @@ import { createDeepSeekProvider, AIProviderError } from "@/lib/ai/provider";
 import { aiUserMessage } from "@/lib/ai/user-error";
 
 /**
+ * AI request budgets run up to the 60s provider timeout. Declare the
+ * matching route ceiling so hosts (e.g. Vercel) don't cut earlier.
+ * Requires a plan allowing maxDuration=60; otherwise use the
+ * Docker/VPS fallback documented in README.
+ */
+export const maxDuration = 60;
+
+/**
  * POST /api/contents/[id]/versions/[platform]/adapt — M1.5
  *
  * AI Adapt / Re-adapt. Returns a structured PROPOSAL only — this
@@ -73,6 +81,7 @@ export async function POST(
         (content.status === "review" || content.status === "scheduled") &&
         version &&
         version.status === "draft";
+
       if (!localReEdit) {
         return NextResponse.json(
           {
