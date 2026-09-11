@@ -1,10 +1,22 @@
 # M5 Summary — Dogfood & Release（进行中）
 
-> Status: M5.1 **Complete**；M5.2 **Frozen**；M5.3A **Complete**；M5.3B Real Dogfood **⏳ PENDING**；M5.4 **Frozen**；M5.5 **Frozen**。M4.4 aesthetic acceptance 仍 deferred to M5.6。下一步 M5.6 — Final Visual Pass（未开始）。
+> Status: M5.1 **Complete**；M5.2 **Frozen**；M5.3A **Complete**；M5.3B Real Dogfood **⏳ PENDING**；M5.4 **Frozen**；M5.5 **Frozen**；M5.6 **Frozen**。下一步 M5.7 — Final Regression & V1 Release（未开始）。
 >
 > 前置：M4 系列见 `M4-summary.md`。
 
 ## Completed
+
+### M5.6 — Final Visual Pass（Frozen，最终 Human 视觉验收通过）
+
+- **真实渲染审计**：六页 headless Chrome 实拍（1440×900），证实初版问题是系统性"全平管理后台"+ EchoText/BlurText 文字动效为负资产
+- **Phase 1**：`/dev/design-v2` 隔离原型（Home/Studio/Analytics，只读、不在导航）→ Human 视觉语言批准
+- **Phase 2 传播**：tokens 提升全局（canvas #F1EFE8、inset #ECEAE2、border #D6D8CF）；排版层级（eyebrow caps / 22–26px 页标题 / 15px 卡题 / tabular 数字 / 12px secondary helper）；Home H2 静态构图（serif 主张在标题组内，3/5+2/5 双列，mint 可行动边）；Studio detail（标题两行可读、metadata 次级、20/56/24 三区、Sources inset、Loop AI mint-inset 次级）；Analytics 证据优先（Current 强、median 弱、N/A 逐行明确、metrics 区 980px 上限）；Radar（静态 tagline、mint selected 边、Quick Review 引导空态）；Pipeline（列头/卡片/空列节奏）；Settings utility-first；modal/drawer 共享 primitives 审计零改动
+- **React Bits 终态冻结**：EchoText/BlurText **移除**（文件删除，非 backlog）；ShinyText 仅 AI GENERATING；DotTexture 保留（Radar empty-state，ContentLoop 自定义非 React Bits）；AGENTS.md §24 + design doc §23 契约已更新
+- **最终 polish**：Approved Brief 读态=结构化权威文档（无 textarea chrome）；Radar 空态=紧凑有意组合；解释性 why 文案=ink-secondary 可读、disabled 控件仍 subdued
+- **验收**：1280（Home/Studio）+ 1440（六页）+ 1920（Pipeline/Analytics）实拍通过；最终四张 polish 截图 Human 验收通过
+- **零** schema/migration/enum/API/AI 行为/workflow/metrics/baseline/Diagnosis/Test/Learning/seed 变更；真实 WorkBuddy 未动
+
+**V1 视觉契约（冻结）**：Warm Canvas + White Human Workspace + subtle inset surfaces + restrained Mint active/selected + static serif 语义陈述 + evidence-first tabular 数字层级。目标气质：calm / credible / structured / editorial / high-information / desktop-first / portfolio-ready。
 
 ### M5.5 — Product Documentation & Demo Story（Frozen，Documentation Acceptance 通过）
 
