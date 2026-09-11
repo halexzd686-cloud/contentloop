@@ -1,12 +1,16 @@
-# M5 Summary — Dogfood & Release（进行中）
+# M5 Summary — Dogfood & Release
 
-> Status: M5.1 **Complete**；M5.2 **Frozen**；M5.3A **Complete**；M5.3B Real Dogfood **⏳ PENDING**；M5.4 **Frozen**；M5.5 **Frozen**；M5.6 **Frozen**。M5.7 — Functional Final Regression & Functional Freeze（进行中）。路线图：M5.7 Functional Freeze → M6 Chinese UX Localization → M7 Visual Redesign V2 → M8 Final Product Regression & V1 Release。
+> Status: M5.1 **Complete**；M5.2 **Frozen**；M5.3A **Complete**；M5.3B Real Dogfood **⏳ PENDING**（非 Functional Freeze 阻塞项）；M5.4 **Frozen**；M5.5 **Frozen**；M5.6 **Frozen**；**M5.7 Functional Final Regression & Functional Freeze ✅ FROZEN**。
+>
+> **M5.7 之后 V1 功能/domain 行为冻结。** M6/M7 仅允许 copy / localization / layout / visual styling / presentation 变更，除非发现真实 P0/P1 缺陷。
+>
+> 路线图：M5.7 Functional Freeze ✅ → M6 Chinese UX Localization → M7 Visual Redesign V2 → M8 Final Product Regression & V1 Release。
 >
 > 前置：M4 系列见 `M4-summary.md`。
 
 ## Completed
 
-### M5.7 — Functional Final Regression & Functional Freeze（待 Freeze 批准）
+### M5.7 — Functional Final Regression & Functional Freeze（✅ FROZEN，Human 批准）
 
 - **自动化基线**：392/392 tests、lint、typecheck、build 全绿
 - **隔离环境终审**（Docker postgres:16，用后销毁）：migrate 0000–0011 一次通过；bootstrap/demo seed 双跑幂等；`db:generate` 零漂移
