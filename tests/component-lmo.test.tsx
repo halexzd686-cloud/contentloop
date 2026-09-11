@@ -88,9 +88,9 @@ describe("L/M — import metric-definitions failure and retry", () => {
     );
 
     // L-1/2/3: error state + product copy + Retry
-    expect(text()).toContain("Metric definitions could not be loaded.");
+    expect(text()).toContain("指标定义加载失败");
     const retry = [...document.body.querySelectorAll("button")].find(
-      (b) => b.textContent === "Retry"
+      (b) => b.textContent === "重试"
     );
     expect(retry).toBeTruthy();
 
@@ -98,8 +98,8 @@ describe("L/M — import metric-definitions failure and retry", () => {
     expect(text()).not.toContain("No metrics defined");
 
     // L-5: template download + upload disabled while definitions unavailable
-    expect(button("Download CSV Template").disabled).toBe(true);
-    expect(button("Upload & Continue").disabled).toBe(true);
+    expect(button("下载 CSV 模板").disabled).toBe(true);
+    expect(button("上传并继续").disabled).toBe(true);
 
     // L-7: no fetch/status/stack/vendor leakage
     expect(text()).not.toContain("500");
@@ -120,9 +120,9 @@ describe("L/M — import metric-definitions failure and retry", () => {
     await click(retry!);
 
     // M: definitions loaded, normal flow restored, file still selected
-    expect(text()).not.toContain("Metric definitions could not be loaded.");
-    expect(button("Download CSV Template").disabled).toBe(false);
-    expect(button("Upload & Continue").disabled).toBe(false); // file preserved → enabled
+    expect(text()).not.toContain("指标定义加载失败");
+    expect(button("下载 CSV 模板").disabled).toBe(false);
+    expect(button("上传并继续").disabled).toBe(false); // file preserved → enabled
     expect((fileInput.files?.length ?? 0)).toBe(1);
 
     // M: exactly two network calls, both definitions — no upload/parse/write
@@ -181,15 +181,15 @@ describe("O — manual metric entry blank / N/A / 0", () => {
     await setValue(inputs[0], "100");
     await setValue(inputs[3], "0");
     const naButtons = [...document.body.querySelectorAll("button")].filter(
-      (b) => b.textContent === "Mark N/A"
+      (b) => b.textContent === "标记 N/A"
     );
     await click(naButtons[2]); // saves
     expect(text()).toContain("N/A");
-    expect(button("Save Metrics").disabled).toBe(true);
+    expect(button("保存数据").disabled).toBe(true);
 
     // likes=5 → Save enabled
     await setValue(inputs[1], "5");
-    expect(button("Save Metrics").disabled).toBe(false);
+    expect(button("保存数据").disabled).toBe(false);
 
     // no import-specific controls inside the manual entry modal
     expect(text()).not.toContain("Import");
@@ -237,7 +237,7 @@ describe("D01 — manual entry accepts thousands separators", () => {
     await setValue(inputs[1], "980");
     await setValue(inputs[2], "1,230");
     await setValue(inputs[3], "91");
-    expect(button("Save Metrics").disabled).toBe(false);
+    expect(button("保存数据").disabled).toBe(false);
     // derived preview computed (like_rate = 980/18600 ≈ 5.27%, not N/A)
     const preview = document.body.textContent ?? "";
     // like_rate = 980/18600 ≈ 5.27% → displayed rounded (5.3%), not N/A
@@ -261,8 +261,8 @@ describe("D01 — manual entry accepts thousands separators", () => {
       Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(inputs[0], "1,2,3");
       inputs[0].dispatchEvent(new Event("input", { bubbles: true }));
     });
-    expect(button("Save Metrics").disabled).toBe(true);
-    expect(document.body.textContent).toContain("Enter a whole number — commas are OK (e.g. 18,600).");
+    expect(button("保存数据").disabled).toBe(true);
+    expect(document.body.textContent).toContain("请输入整数——千位逗号可以（如 18,600）。");
   });
 });
 
@@ -291,13 +291,13 @@ describe("D02 — cold-start comparison evidence copy", () => {
     );
     const t = document.body.textContent ?? "";
     expect(t).toContain(
-      "Current metrics are recorded, but no comparable baseline evidence is available yet."
+      "当前指标已记录，但暂无可比的基线证据。"
     );
     expect(t).not.toContain("No metric evidence recorded.");
     // no baseline/fingerprint jargon, no industry implication
     expect(t).not.toContain("fingerprint");
     expect(t.toLowerCase()).not.toContain("industry");
     // insufficient evidence ≠ no clear result vocabulary stays distinct
-    expect(t).toContain("Insufficient evidence");
+    expect(t).toContain("证据不足");
   });
 });

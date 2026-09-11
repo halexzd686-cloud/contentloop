@@ -8,6 +8,7 @@ import { QuickReview } from "@/components/radar/quick-review";
 import { Button } from "@/components/ui/button";
 import { DotTexture } from "@/components/reactbits/dot-texture";
 import { RefreshCw } from "lucide-react";
+import { NAV_LABELS } from "@/lib/labels";
 
 /**
  * Radar Page — design.md §33
@@ -67,12 +68,12 @@ export default function RadarPage() {
       if (search) params.set("search", search);
 
       const res = await fetch(`/api/signals?${params.toString()}`);
-      if (!res.ok) throw new Error("Failed to fetch signals");
+      if (!res.ok) throw new Error("线索加载失败");
 
       const data = await res.json();
       setSignals(data.signals);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load signals");
+      setError(err instanceof Error ? err.message : "线索加载失败");
     } finally {
       setLoading(false);
     }
@@ -95,7 +96,7 @@ export default function RadarPage() {
         if (search) params.set("search", search);
 
         const res = await fetch(`/api/signals?${params.toString()}`);
-        if (!res.ok) throw new Error("Failed to fetch signals");
+        if (!res.ok) throw new Error("线索加载失败");
         if (cancelled) return;
 
         const data = await res.json();
@@ -103,7 +104,7 @@ export default function RadarPage() {
       } catch (err) {
         if (!cancelled) {
           setError(
-            err instanceof Error ? err.message : "Failed to load signals"
+            err instanceof Error ? err.message : "线索加载失败"
           );
         }
       } finally {
@@ -127,14 +128,14 @@ export default function RadarPage() {
         body: JSON.stringify({ status }),
       });
 
-      if (!res.ok) throw new Error("Failed to update status");
+      if (!res.ok) throw new Error("状态更新失败");
 
       setSignals((prev) =>
         prev.map((s) => (s.id === id ? { ...s, status } : s))
       );
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Failed to update signal status"
+        err instanceof Error ? err.message : "线索状态更新失败"
       );
     } finally {
       setUpdatingId(null);
@@ -150,7 +151,7 @@ export default function RadarPage() {
 
     if (!res.ok) {
       const data = await res.json();
-      throw new Error(data.error || "Failed to skip signal");
+      throw new Error(data.error || "跳过线索失败");
     }
 
     // Refetch to get updated data
@@ -169,7 +170,7 @@ export default function RadarPage() {
 
     if (!res.ok) {
       const errData = await res.json();
-      throw new Error(errData.error || "Failed to create content");
+      throw new Error(errData.error || "创建内容失败");
     }
 
     const result = await res.json();
@@ -187,7 +188,7 @@ export default function RadarPage() {
 
     if (!res.ok) {
       const errData = await res.json();
-      throw new Error(errData.error || "Failed to analyze signal");
+      throw new Error(errData.error || "AI 分析线索失败");
     }
 
     // Refetch to get persisted analysis
@@ -208,17 +209,16 @@ export default function RadarPage() {
       <div className="flex items-center justify-between border-b border-border bg-workspace px-8 pb-5 pt-6">
         <div>
           <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-ink-muted">
-            Editorial intelligence
+            选题情报
           </p>
           <h1 className="mt-1 text-[24px] font-semibold leading-tight text-ink-primary">
-            Radar
+            {NAV_LABELS.radar}
           </h1>
           <p className="mt-1 text-sm text-ink-secondary">
-            What&apos;s worth creating?
+            什么值得做？
           </p>
           <p className="mt-0.5 text-xs text-ink-secondary">
-            Signals are leads worth evaluating as future content — a URL or an
-            idea.
+            线索是值得评估的选题来源——一个链接或一个想法。
           </p>
         </div>
         <AddSignalDialog onCreated={() => fetchRef.current()} />
@@ -258,7 +258,7 @@ export default function RadarPage() {
                   onClick={() => fetchRef.current()}
                 >
                   <RefreshCw className="mr-1 h-3 w-3" />
-                  Retry
+                  重试
                 </Button>
               </div>
             ) : signals.length === 0 ? (
@@ -268,7 +268,7 @@ export default function RadarPage() {
                     under prefers-reduced-motion. */}
                 <DotTexture className="pointer-events-none absolute inset-x-8 top-2 h-24" />
                 <p className="relative text-sm text-ink-secondary">
-                  Add your first Signal to start deciding what to create.
+                  还没有线索。添加第一条线索，开始判断什么值得做。
                 </p>
                 <div className="relative mt-4">
                   <AddSignalDialog onCreated={() => fetchRef.current()} />

@@ -7,6 +7,7 @@ import {
   HelpCircle,
   ExternalLink,
 } from "lucide-react";
+import { platformLabel } from "@/lib/labels";
 
 /**
  * Sources Panel — design §34.3
@@ -29,18 +30,12 @@ const SOURCE_TYPE_CONFIG: Record<
   string,
   { label: string; icon: React.ComponentType<{ className?: string }> }
 > = {
-  official: { label: "Official", icon: Building },
-  community: { label: "Community", icon: Users },
-  competitor: { label: "Competitor", icon: Globe },
-  news: { label: "News", icon: Newspaper },
-  idea: { label: "Idea", icon: Lightbulb },
-  other: { label: "Other", icon: HelpCircle },
-};
-
-const PLATFORM_LABELS: Record<string, string> = {
-  xiaohongshu: "Xiaohongshu",
-  bilibili: "Bilibili",
-  douyin: "Douyin",
+  official: { label: "官方", icon: Building },
+  community: { label: "社区", icon: Users },
+  competitor: { label: "竞品", icon: Globe },
+  news: { label: "新闻", icon: Newspaper },
+  idea: { label: "想法", icon: Lightbulb },
+  other: { label: "其他", icon: HelpCircle },
 };
 
 export function SourcesPanel({ signal }: { signal: SignalContext | null }) {
@@ -48,10 +43,10 @@ export function SourcesPanel({ signal }: { signal: SignalContext | null }) {
     return (
       <div className="p-4">
         <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-ink-muted">
-          Sources
+          来源
         </p>
         <p className="mt-3 text-[13px] text-ink-secondary">
-          No linked signal. This content was created manually.
+          没有关联线索。这条内容是手动创建的。
         </p>
       </div>
     );
@@ -63,14 +58,14 @@ export function SourcesPanel({ signal }: { signal: SignalContext | null }) {
   return (
     <div className="p-4">
       <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-ink-muted">
-        Sources
+        来源
       </p>
 
       <div className="mt-3 rounded-[10px] border border-border bg-workspace p-3.5">
         <div className="flex items-center gap-1.5 text-xs text-ink-muted">
           <Icon className="h-3 w-3" />
-          {config?.label || "Source"}
-          <span className="text-ink-faint">· Signal</span>
+          {config?.label || "来源"}
+          <span className="text-ink-faint">· 线索</span>
         </div>
         <p className="mt-1.5 text-sm font-medium text-ink-primary leading-snug">
           {signal.title}
@@ -88,19 +83,18 @@ export function SourcesPanel({ signal }: { signal: SignalContext | null }) {
             className="mt-1.5 inline-flex items-center gap-1 text-xs text-mint-600 hover:underline"
           >
             <ExternalLink className="h-3 w-3" />
-            Source link
+            来源链接
           </a>
         )}
         <div className="mt-2.5 space-y-1 border-t border-border pt-2.5 text-xs text-ink-secondary">
-          {signal.selectedAngle && <p>Angle: {signal.selectedAngle}</p>}
+          {signal.selectedAngle && <p>角度：{signal.selectedAngle}</p>}
           {signal.primaryPlatform && (
             <p>
-              Platform:{" "}
-              {PLATFORM_LABELS[signal.primaryPlatform] || signal.primaryPlatform}
+              平台：{platformLabel(signal.primaryPlatform)}
             </p>
           )}
           {signal.analyzedAt !== null && signal.topicScore !== null && (
-            <p>Topic Score: {signal.topicScore}</p>
+            <p>选题评分：{signal.topicScore}</p>
           )}
         </div>
       </div>

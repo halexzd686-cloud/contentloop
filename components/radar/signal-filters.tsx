@@ -3,6 +3,7 @@
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { signalStatusLabel } from "@/lib/labels";
 
 /**
  * Signal Filters — simple tabs + search
@@ -10,11 +11,11 @@ import { cn } from "@/lib/utils";
  */
 
 const FILTER_TABS = [
-  { key: "", label: "All" },
-  { key: "new", label: "New" },
-  { key: "reviewing", label: "Reviewing" },
-  { key: "selected", label: "Selected" },
-  { key: "skipped", label: "Skipped" },
+  { key: "", label: "全部" },
+  { key: "new", label: signalStatusLabel("new") },
+  { key: "reviewing", label: signalStatusLabel("reviewing") },
+  { key: "selected", label: signalStatusLabel("selected") },
+  { key: "skipped", label: signalStatusLabel("skipped") },
 ] as const;
 
 interface SignalFiltersProps {
@@ -38,7 +39,7 @@ export function SignalFilters({
       <div className="relative">
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-muted" />
         <Input
-          placeholder="Search signals..."
+          placeholder="搜索线索…"
           value={search}
           onChange={(e) => onSearchChange(e.target.value)}
           className="pl-9"

@@ -11,6 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { platformLabel } from "@/lib/labels";
 
 /**
  * Create Content Dialog — confirm platform, angle, and owner.
@@ -35,11 +36,7 @@ interface CreateContentDialogProps {
   error: string | null;
 }
 
-const PLATFORMS = [
-  { value: "xiaohongshu", label: "Xiaohongshu" },
-  { value: "bilibili", label: "Bilibili" },
-  { value: "douyin", label: "Douyin" },
-] as const;
+const PLATFORMS = ["xiaohongshu", "bilibili", "douyin"] as const;
 
 export function CreateContentDialog({
   open,
@@ -88,9 +85,9 @@ export function CreateContentDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Create Content</DialogTitle>
+          <DialogTitle>创建内容</DialogTitle>
           <DialogDescription>
-            Confirm the platform, angle, and owner for this content.
+            确认这条内容的平台、角度和负责人。
           </DialogDescription>
         </DialogHeader>
 
@@ -98,21 +95,21 @@ export function CreateContentDialog({
           {/* Platform */}
           <div>
             <label className="mb-1.5 block text-sm font-medium text-ink-primary">
-              Primary Platform *
+              主要平台 *
             </label>
             <div className="flex gap-2">
               {PLATFORMS.map((p) => (
                 <button
-                  key={p.value}
-                  onClick={() => setPlatform(p.value)}
+                  key={p}
+                  onClick={() => setPlatform(p)}
                   disabled={loading}
                   className={`flex-1 rounded-[8px] border px-3 py-2 text-sm transition-colors duration-150 ${
-                    platform === p.value
+                    platform === p
                       ? "border-mint-600 bg-mint-100 text-ink-primary font-medium"
                       : "border-border text-ink-secondary hover:border-border-strong"
                   }`}
                 >
-                  {p.label}
+                  {platformLabel(p)}
                 </button>
               ))}
             </div>
@@ -121,10 +118,10 @@ export function CreateContentDialog({
           {/* Angle */}
           <div>
             <label className="mb-1.5 block text-sm font-medium text-ink-primary">
-              Selected Angle *
+              选定角度 *
             </label>
             <Input
-              placeholder="e.g. Hands-on review, Comparison, Tutorial..."
+              placeholder="例如：实测体验、横向对比、教程…"
               value={angle}
               onChange={(e) => setAngle(e.target.value)}
               disabled={loading}
@@ -134,7 +131,7 @@ export function CreateContentDialog({
           {/* Owner */}
           <div>
             <label className="mb-1.5 block text-sm font-medium text-ink-primary">
-              Owner *
+              负责人 *
             </label>
             <select
               className="flex h-9 w-full rounded-[8px] border border-border bg-workspace px-3 py-1 text-sm text-ink-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-mint-500 disabled:opacity-50"
@@ -143,7 +140,7 @@ export function CreateContentDialog({
               disabled={loading || membersLoading}
             >
               <option value="">
-                {membersLoading ? "Loading..." : "Select owner..."}
+                {membersLoading ? "加载中…" : "请选择负责人…"}
               </option>
               {(members ?? []).map((m) => (
                 <option key={m.id} value={m.id}>
@@ -163,14 +160,14 @@ export function CreateContentDialog({
             onClick={() => onOpenChange(false)}
             disabled={loading}
           >
-            Cancel
+            取消
           </Button>
           <Button
             variant="primary"
             onClick={handleConfirm}
             disabled={!isValid || loading}
           >
-            {loading ? "Creating..." : "Create Content"}
+            {loading ? "创建中…" : "创建内容"}
           </Button>
         </DialogFooter>
       </DialogContent>

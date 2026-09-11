@@ -143,7 +143,7 @@ function resolveIdentity(
   if (mapping.platform && cellText(platformCell) !== "") {
     const p = parsePlatformValue(platformCell);
     if (p !== platform) {
-      return { publication: null, status: "invalid", reason: `Row platform "${cellText(platformCell)}" does not match the selected platform.` };
+      return { publication: null, status: "invalid", reason: `该行平台"${cellText(platformCell)}"与所选平台不一致。` };
     }
   }
 
@@ -151,7 +151,7 @@ function resolveIdentity(
   if (override?.publicationId) {
     const pub = pubs.find((p) => p.id === override.publicationId);
     if (!pub) {
-      return { publication: null, status: "invalid", reason: "Manually selected publication is not on this platform/brand." };
+      return { publication: null, status: "invalid", reason: "手动选择的发布记录不属于该平台/工作区。" };
     }
     return { publication: pub, status: null, reason: null };
   }
@@ -160,7 +160,7 @@ function resolveIdentity(
   const urlCell = cellText(getCol(headers, row, mapping.publicationUrl));
   const normUrl = urlCell ? normalizePublicationUrl(urlCell) : null;
   if (urlCell && !normUrl) {
-    return { publication: null, status: "invalid", reason: "Publication URL is not a valid http(s) URL." };
+    return { publication: null, status: "invalid", reason: "发布链接不是有效的 http(s) 链接。" };
   }
 
   const byId = idCell ? pubs.filter((p) => p.id === idCell) : [];
@@ -169,20 +169,20 @@ function resolveIdentity(
     : [];
 
   if (idCell && byId.length === 0) {
-    return { publication: null, status: "unmatched", reason: "No publication with this ID." };
+    return { publication: null, status: "unmatched", reason: "没有与该 ID 匹配的发布记录。" };
   }
   if (normUrl && byUrl.length === 0) {
-    return { publication: null, status: "unmatched", reason: "No publication matches this URL." };
+    return { publication: null, status: "unmatched", reason: "没有与该链接匹配的发布记录。" };
   }
   if (normUrl && byUrl.length > 1) {
-    return { publication: null, status: "ambiguous", reason: "URL matches multiple publications." };
+    return { publication: null, status: "ambiguous", reason: "该链接匹配到多条发布记录。" };
   }
   if (idCell && normUrl && byId[0] && byUrl[0] && byId[0].id !== byUrl[0].id) {
-    return { publication: null, status: "invalid", reason: "publication_id and publication_url resolve to different publications." };
+    return { publication: null, status: "invalid", reason: "publication_id 与发布链接指向了不同的发布记录。" };
   }
   const pub = byId[0] ?? byUrl[0] ?? null;
   if (!pub) {
-    return { publication: null, status: "unmatched", reason: "No publication identity could be resolved." };
+    return { publication: null, status: "unmatched", reason: "无法解析出对应的发布记录。" };
   }
   return { publication: pub, status: null, reason: null };
 }
@@ -242,7 +242,7 @@ export async function buildImportPreview(
     const cpCell = getCol(sheet.headers, raw, config.mapping.checkpoint);
     const checkpoint = parseCheckpointValue(cpCell);
     if (!checkpoint) {
-      rows.push({ ...base, status: "invalid", reason: `Invalid checkpoint "${cellText(cpCell)}" (allowed: 24h / 72h).` });
+      rows.push({ ...base, status: "invalid", reason: `数据点"${cellText(cpCell)}"无效（仅支持 24h / 72h）。` });
       continue;
     }
     base.checkpoint = checkpoint;
@@ -261,20 +261,20 @@ export async function buildImportPreview(
       capturedAtIso = config.fallbackCapturedAt;
     }
     if (capError) {
-      rows.push({ ...base, status: "invalid", reason: `Invalid captured_at: ${capError}.` });
+      rows.push({ ...base, status: "invalid", reason: `采集时间无效：${capError}。` });
       continue;
     }
     if (!capturedAtIso) {
-      rows.push({ ...base, status: "needs_resolution", reason: "Missing captured_at (map a column or set the batch fallback)." });
+      rows.push({ ...base, status: "needs_resolution", reason: "缺少采集时间（请映射一列，或设置统一采集时间）。" });
       continue;
     }
     const capturedAt = new Date(capturedAtIso);
     if (capturedAt.getTime() > Date.now() + CAPTURED_AT_FUTURE_SKEW_MS) {
-      rows.push({ ...base, status: "invalid", reason: "captured_at cannot be in the future." });
+      rows.push({ ...base, status: "invalid", reason: "采集时间不能在未来。" });
       continue;
     }
     if (!isCaptureOnTime(publication.publishedAt, checkpoint, capturedAt)) {
-      rows.push({ ...base, status: "invalid", reason: `captured_at is before the ${checkpoint} checkpoint target.` });
+      rows.push({ ...base, status: "invalid", reason: `采集时间早于 ${checkpoint} 数据点。` });
       continue;
     }
     base.capturedAt = capturedAt.toISOString();
@@ -284,7 +284,7 @@ export async function buildImportPreview(
     const targetKey = `${publication.id}:${checkpoint}`;
     const firstSeen = seenTargets.get(targetKey);
     if (firstSeen !== undefined) {
-      rows.push({ ...base, status: "duplicate", reason: `Duplicate target (same publication + checkpoint as row ${firstSeen + 1}).` });
+      rows.push({ ...base, status: "duplicate", reason: `目标重复（与第 ${firstSeen + 1} 行为同一发布记录 + 数据点）。` });
       continue;
     }
     seenTargets.set(targetKey, i);
@@ -318,11 +318,11 @@ export async function buildImportPreview(
       needsResolution.push(key);
     }
     if (invalidMetric) {
-      rows.push({ ...base, metrics, status: "invalid", reason: `Invalid metric value (${invalidMetric}).` });
+      rows.push({ ...base, metrics, status: "invalid", reason: `指标数值无效（${invalidMetric}）。` });
       continue;
     }
     if (needsResolution.length > 0) {
-      rows.push({ ...base, metrics, status: "needs_resolution", reason: `Unresolved metrics: ${needsResolution.join(", ")} — set a value or mark N/A.` });
+      rows.push({ ...base, metrics, status: "needs_resolution", reason: `未解析指标：${needsResolution.join("、")} —— 请填数值或标记 N/A。` });
       continue;
     }
     base.metrics = metrics;
@@ -357,7 +357,7 @@ export async function buildImportPreview(
       rows.push({
         ...base,
         status: "conflict",
-        reason: "Historical metric shape differs from current import schema. Use manual Edit for this snapshot.",
+        reason: "历史指标结构与当前导入不一致。请改用手动「编辑数据」修改这条数据。",
       });
       continue;
     }
@@ -376,7 +376,7 @@ export async function buildImportPreview(
     }
 
     if (diff.length === 0) {
-      rows.push({ ...base, status: "no_change", action: "skip", reason: "Identical to the stored snapshot." });
+      rows.push({ ...base, status: "no_change", action: "skip", reason: "与已保存的数据完全一致。" });
       continue;
     }
     rows.push({ ...base, status: "ready_update", action: "update", diff });

@@ -1,10 +1,11 @@
 /**
- * M4.3 — Shared presentation labels (presentation only).
+ * M6 — Authoritative Chinese product-language layer (presentation only).
  *
- * One authoritative mapping from internal enum keys to user-facing
- * English chrome. Known enums are fully covered; unknown values fall
- * back to a humanized form so raw snake_case never reaches the UI.
- * No domain/enum/schema semantics live here — display only.
+ * Chinese-first V1: one authoritative mapping from internal enum keys
+ * (unchanged) to user-facing Simplified Chinese. Known enums are fully
+ * covered; unknown values fall back to a humanized form so raw
+ * snake_case never reaches the UI. No domain/enum/schema semantics
+ * live here — display only. Page-specific sentences stay local.
  */
 
 function humanize(key: string): string {
@@ -19,159 +20,186 @@ function fromMap(map: Record<string, string>) {
   };
 }
 
-// ─── Platforms (full names only — never XHS/Bili) ──────
+// ─── Platforms（小红书 / Bilibili / 抖音） ─────────────
 
 export const platformLabel = fromMap({
-  xiaohongshu: "Xiaohongshu",
+  xiaohongshu: "小红书",
   bilibili: "Bilibili",
-  douyin: "Douyin",
+  douyin: "抖音",
 });
+
+// ─── Navigation ────────────────────────────────────────
+
+export const NAV_LABELS = {
+  home: "首页",
+  radar: "选题雷达",
+  studio: "内容工作台",
+  pipeline: "内容流程",
+  analytics: "数据复盘",
+  settings: "设置",
+} as const;
 
 // ─── Content / workflow statuses ───────────────────────
 
 export const contentStatusLabel = fromMap({
-  planning: "Planning",
-  in_progress: "In Progress",
-  review: "Review",
-  scheduled: "Scheduled",
-  published: "Published",
+  planning: "策划中",
+  in_progress: "制作中",
+  review: "待审核",
+  scheduled: "待发布",
+  published: "已发布",
 });
 
 export const versionStatusLabel = fromMap({
-  draft: "Draft",
-  review: "In Review",
-  approved: "Approved",
-  published: "Published",
+  draft: "草稿",
+  review: "审核中",
+  approved: "已通过",
+  published: "已发布",
 });
 
 export const signalStatusLabel = fromMap({
-  new: "New",
-  reviewing: "Reviewing",
-  selected: "Selected",
-  skipped: "Skipped",
+  new: "新线索",
+  reviewing: "评估中",
+  selected: "已选用",
+  skipped: "已跳过",
 });
 
 export const briefStatusLabel = fromMap({
-  draft: "Draft",
-  approved: "Approved",
+  draft: "草稿",
+  approved: "已确认",
 });
 
 // ─── Tests ─────────────────────────────────────────────
 
 export const testStatusLabel = fromMap({
-  running: "Running",
-  concluded: "Concluded",
+  running: "进行中",
+  concluded: "已完成",
 });
 
 export const testMethodLabel = fromMap({
   ab: "A/B",
-  sequential: "Sequential",
-  before_after: "Before / After",
-  content_comparison: "Content Comparison",
+  sequential: "连续对比",
+  before_after: "前后对比",
+  content_comparison: "内容对比",
 });
 
 export const testRoleLabel = fromMap({
-  control: "Control",
-  variant: "Variant",
-  comparison: "Comparison",
+  control: "对照",
+  variant: "变体",
+  comparison: "对比项",
 });
 
 export const testOutcomeLabel = fromMap({
-  win: "Win",
-  loss: "Loss",
-  trade_off: "Trade-off",
-  no_clear_result: "No clear result",
+  win: "支持假设",
+  loss: "不支持假设",
+  trade_off: "有得有失",
+  no_clear_result: "无明确结论",
 });
 
 export const confidenceLabel = fromMap({
-  high: "High",
-  medium: "Medium",
-  low: "Low",
-  insufficient_evidence: "Insufficient evidence",
+  high: "高置信度",
+  medium: "中置信度",
+  low: "低置信度",
+  insufficient_evidence: "证据不足",
+});
+
+// ─── Metric snapshot status ────────────────────────────
+
+export const snapshotStatusLabel = fromMap({
+  submitted: "已提交",
+  due: "待录入",
+  not_due: "未到时间",
 });
 
 // ─── Helpers (static product copy) ─────────────────────
 
 export const TEST_METHOD_HELPERS: Record<string, string> = {
-  ab: "Two variants of the same change, compared on one metric.",
-  sequential: "The same change tried across consecutive posts.",
-  before_after: "Compare posts before vs after a strategy change.",
-  content_comparison: "Compare two or more posts on the same metric.",
+  ab: "对同一改动做两个变体，比较同一指标。",
+  sequential: "在连续多篇内容上做同一改动，依次对比。",
+  before_after: "对比策略调整前后的表现。",
+  content_comparison: "比较两条或多条内容的同一指标。",
 };
 
 export const TEST_METHODS_FOOTNOTE =
-  "Methods describe how you compare. ContentLoop does not calculate statistical significance.";
+  "方法只描述对比方式。ContentLoop 不做统计显著性检验。";
 
 export const TEST_SECTION_HELPER =
-  "Tests help you check one specific operational question against published content data.";
+  "运营测试用来回答一个具体的运营问题——对照已发布内容的真实数据。";
 
 export const TEST_ROLE_HELPER =
-  "Roles organize publications for interpretation. They do not change evidence calculations or readiness.";
+  "角色只是用于解读的组织标记，不影响证据计算和结论条件。";
 
 export const CHECKPOINT_HELPER =
-  "Which data reading to use: around 24 or 72 hours after publishing.";
+  "选择读取哪个数据点：发布后约 24 或 72 小时。";
 
 export const PRIMARY_METRIC_HELPER =
-  "The main metric you use when judging this Test. It does not decide the outcome automatically.";
+  "你判断这次测试时主要看的那项指标，它不会自动决定结论。";
 
 export const TEST_OUTCOME_HELPERS: Record<string, string> = {
-  win: "The observed evidence supports the hypothesis.",
-  loss: "The observed evidence goes against the hypothesis.",
-  trade_off: "The evidence is meaningfully mixed.",
-  no_clear_result: "The observed evidence does not point clearly in one direction.",
+  win: "观察到的证据支持这个假设。",
+  loss: "观察到的证据不支持这个假设。",
+  trade_off: "证据明显好坏参半。",
+  no_clear_result: "观察到的证据没有明确指向任何一个方向。",
 };
 
-/** Distinct from no_clear_result: not enough data to interpret at all. */
+/** 与 no_clear_result 不同：是数据不足以解读。 */
 export const INSUFFICIENT_EVIDENCE_HELPER =
-  "There is not enough usable evidence to interpret the result reliably.";
+  "没有足够的可用证据来可靠地解读这个结果。";
 
-// ─── Baseline copy (workspace history, never industry) ─
+// ─── Baseline copy（自身历史，绝非行业基准） ───────────
 
 export const BASELINE_ACCOUNT_HELPER =
-  "Median from up to 20 prior comparable publications in this workspace for the same platform and checkpoint. Not an industry benchmark.";
+  "来自本工作区同平台、同数据点的最近 20 条可比发布的中位数。不是行业基准。";
 
 export const BASELINE_PILLAR_HELPER =
-  "Median from up to 20 prior comparable publications in the same pillar, platform and checkpoint. Not an industry benchmark.";
+  "来自同内容方向、同平台、同数据点的最近 20 条可比发布的中位数。不是行业基准。";
 
-/** n = per-metric sample count, NOT the cohort candidateCount. */
+/** n = 单项指标有历史数据的发布数，不是候选总数。 */
 export const BASELINE_N_HELPER =
-  "n = number of prior publications with an available value for this metric.";
+  "n = 该指标有历史数据的发布数。";
 
 /**
- * M4.3 acceptance fix — single baseline explainer for the Analytics
- * comparison table. Must carry the full M2.4 cohort semantics:
- * workspace history, up to 20 prior publications, same platform +
- * checkpoint, Pillar median additionally same Pillar, never an
- * industry benchmark, and the per-metric n meaning.
+ * 基线说明（Analytics 对比表）。必须完整承载 M2.4 口径：
+ * 自身工作区历史、最多 20 条、同平台同数据点、方向基线再加同内容方向、
+ * 绝非行业基准、n 为单项指标有值的发布数。
  */
 export const BASELINE_COHORT_HELPER =
-  "Medians use up to 20 prior publications from your workspace with the same platform and checkpoint; Pillar median also requires the same Pillar. They are not industry benchmarks. n = prior publications with a value for that metric.";
+  "中位数来自本工作区最近 20 条同平台、同数据点的可比发布；方向中位数还要求同内容方向。它们不是行业基准。n = 该指标有历史数据的发布数。";
 
-// ─── Metric input semantics (§6) ───────────────────────
+// ─── Metric input semantics（blank ≠ N/A ≠ 0） ─────────
 
 export const METRIC_NA_HELPER =
-  "N/A means this metric is unavailable for this snapshot. It is not zero — 0 means a measured value of zero.";
+  "N/A 表示本次没有该项数据，并不等于 0；0 表示实际记录到的数值为 0。";
 
 export const METRIC_BLANK_HELPER =
-  "Blank means this value is still unresolved. Enter a number or mark it N/A before saving.";
+  "留空表示这项数据还没录入。保存前请填数字，或标记为 N/A。";
 
 // ─── Learning / Apply boundaries ───────────────────────
 
 export const LEARNING_APPLY_HELPER =
-  "Reference only — this does not change the Brief, Master or platform versions.";
+  "仅作为参考标记——不会改变内容简报、内容母稿或平台版本。";
 
 export const AI_PROPOSAL_APPLY_HELPER =
-  "Applies this proposal to the editor. Nothing is saved until you save.";
+  "应用只是把草稿放进编辑区。保存后才会真正写入。";
 
-// ─── Demo provenance (M4.4) ────────────────────────────
+// ─── Demo provenance（DEMO 徽章保留英文） ──────────────
 
 /**
  * DEMO visual trust. Authority is contents.isDemo only — never title
- * or notes heuristics. Demo data keeps normal presentation plus an
- * explicit textual badge; real data gets no LIVE badge.
+ * or notes heuristics. Badge stays "DEMO"; explanation is Chinese.
  */
 export const DEMO_BADGE_LABEL = "DEMO";
 
-/** Matches M4.1 behavior exactly: demo targets stay readable; cohorts are real-only. */
+/** 与 M4.1 行为一致：demo 目标可读，cohort 仅真实数据。 */
 export const DEMO_NOTICE =
-  "Demo data — shown for product exploration. Demo publications are excluded from baseline cohorts.";
+  "演示数据——仅供产品体验。演示发布不进入运营基线。";
+
+// ─── Home sections ─────────────────────────────────────
+
+export const HOME_SECTIONS = {
+  needsAttention: "待处理",
+  continueWorking: "继续创作",
+  monitoring: "跟进中",
+} as const;
+
+/** 品牌陈述：语义化产品主张，非操作标签。 */
+export const HOME_THESIS = "让每次表现，成为下一次创作的依据。";

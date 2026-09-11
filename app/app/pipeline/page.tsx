@@ -78,17 +78,17 @@ interface PipelineItem {
 }
 
 const COLUMNS = [
-  { key: "planning", label: "Planning" },
-  { key: "in_progress", label: "In Progress" },
-  { key: "review", label: "Review" },
-  { key: "scheduled", label: "Scheduled" },
-  { key: "published", label: "Published" },
+  { key: "planning", label: contentStatusLabel("planning") },
+  { key: "in_progress", label: contentStatusLabel("in_progress") },
+  { key: "review", label: contentStatusLabel("review") },
+  { key: "scheduled", label: contentStatusLabel("scheduled") },
+  { key: "published", label: contentStatusLabel("published") },
 ] as const;
 
 function PlatformChips({ platforms }: { platforms: PlatformState[] }) {
   if (platforms.length === 0) {
     return (
-      <span className="text-[11px] text-ink-faint">No platform versions</span>
+      <span className="text-[11px] text-ink-faint">暂无平台版本</span>
     );
   }
   return (
@@ -106,7 +106,7 @@ function PlatformChips({ platforms }: { platforms: PlatformState[] }) {
         >
           {platformLabel(p.platform)} · {versionStatusLabel(p.status)}
           {p.status === "review" &&
-            ` · ${p.checklistDone}/${p.checklistTotal} checklist`}
+            ` · 清单 ${p.checklistDone}/${p.checklistTotal}`}
         </span>
       ))}
     </div>
@@ -124,9 +124,9 @@ function CardContent({ item }: { item: PipelineItem }) {
         <PlatformChips platforms={item.platforms} />
       </div>
       <div className="mt-1.5 flex items-center justify-between text-[11px] text-ink-muted">
-        <span>{item.ownerName ?? "Unassigned"}</span>
+        <span>{item.ownerName ?? "未分配"}</span>
         {item.deadlineAt && (
-          <span>Due {new Date(item.deadlineAt).toLocaleDateString()}</span>
+          <span>截止 {new Date(item.deadlineAt).toLocaleDateString()}</span>
         )}
       </div>
     </>
@@ -190,8 +190,8 @@ function Column({
         {items.length === 0 && (
           <p className="px-2 py-6 text-center text-[11px] text-ink-muted">
             {colKey === "published"
-              ? "Published content appears here after real Publications."
-              : "No content"}
+              ? "真实发布后，内容会出现在这里。"
+              : "暂无内容"}
           </p>
         )}
       </div>
@@ -221,11 +221,11 @@ export default function PipelinePage() {
     try {
       const res = await fetch("/api/pipeline");
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to load pipeline");
+      if (!res.ok) throw new Error(data.error || "内容流程加载失败");
       setItems(data.items);
       setLoadError(null);
     } catch (err) {
-      setLoadError(err instanceof Error ? err.message : "Failed to load");
+      setLoadError(err instanceof Error ? err.message : "加载失败");
     } finally {
       setLoading(false);
     }
@@ -260,11 +260,11 @@ export default function PipelinePage() {
         body: JSON.stringify({ to }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Transition rejected");
+      if (!res.ok) throw new Error(data.error || "状态变更被拒绝");
       await load();
     } catch (err) {
       setItems(prev);
-      setDragError(err instanceof Error ? err.message : "Transition rejected");
+      setDragError(err instanceof Error ? err.message : "状态变更被拒绝");
     }
   }
 
@@ -273,7 +273,7 @@ export default function PipelinePage() {
   if (loading) {
     return (
       <div className="flex h-full items-center justify-center">
-        <p className="text-sm text-ink-muted">Loading pipeline…</p>
+        <p className="text-sm text-ink-muted">正在加载内容流程…</p>
       </div>
     );
   }
@@ -291,7 +291,7 @@ export default function PipelinePage() {
           }}
         >
           <RefreshCw className="mr-1 h-3 w-3" />
-          Retry
+          重试
         </Button>
       </div>
     );
@@ -300,10 +300,10 @@ export default function PipelinePage() {
   return (
     <div className="flex h-full flex-col p-6">
       <div className="mb-4 flex items-center gap-3">
-        <h1 className="text-[24px] font-semibold leading-tight text-ink-primary">Pipeline</h1>
+        <h1 className="text-[24px] font-semibold leading-tight text-ink-primary">内容流程</h1>
         <div className="flex gap-1 rounded-[8px] border border-border p-0.5">
           <span className="rounded-md bg-mint-100 px-3 py-1 text-xs font-medium text-ink-primary">
-            Pipeline
+            内容流程
           </span>
         </div>
         {dragError && (
@@ -313,7 +313,7 @@ export default function PipelinePage() {
               className="text-xs text-ink-muted underline"
               onClick={() => setDragError(null)}
             >
-              Dismiss
+              知道了
             </button>
           </div>
         )}
@@ -359,26 +359,26 @@ export default function PipelinePage() {
               <div className="space-y-4 text-sm">
                 <div>
                   <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-ink-muted">
-                    People
+                    人员
                   </p>
                   <p className="mt-1 text-ink-secondary">
-                    Owner: {selected.ownerName ?? "Unassigned"}
+                    负责人：{selected.ownerName ?? "未分配"}
                   </p>
                   <p className="text-ink-secondary">
-                    Reviewer: {selected.reviewerName ?? "Unassigned"}
+                    审核人：{selected.reviewerName ?? "未分配"}
                   </p>
                 </div>
 
                 <div>
                   <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-ink-muted">
-                    Production
+                    生产进度
                   </p>
                   <p className="mt-1 text-ink-secondary">
-                    Brief:{" "}
+                    简报：{" "}
                     {selected.briefStatus
                       ? briefStatusLabel(selected.briefStatus)
-                      : "Not started"}{" "}
-                    · Master: {selected.hasMaster ? "Created" : "Not started"}
+                      : "未开始"}{" "}
+                    · 母稿：{selected.hasMaster ? "已创建" : "未开始"}
                   </p>
                   <div className="mt-1.5">
                     <PlatformChips platforms={selected.platforms} />
@@ -389,11 +389,11 @@ export default function PipelinePage() {
                   (selected.status === "scheduled" || selected.status === "published") && (
                   <div>
                     <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-ink-muted">
-                      Publication
+                      发布
                     </p>
                     <p className="mt-1 text-ink-secondary">
-                      {selected.platforms.filter((p) => p.status === "published").length}{" "}
-                      / {selected.platforms.length} published
+                      已发布 {selected.platforms.filter((p) => p.status === "published").length}
+                      /{selected.platforms.length}
                     </p>
                     <div className="mt-1.5 space-y-1.5">
                       {selected.platforms.map((p) => (
@@ -415,7 +415,7 @@ export default function PipelinePage() {
                                 setPubTarget({ item: selected, platform: p.platform })
                               }
                             >
-                              Mark as Published
+                              标记已发布
                             </button>
                           )}
                         </div>
@@ -438,10 +438,10 @@ export default function PipelinePage() {
                                       {platformLabel(p.platform)} {c}{" "}
                                       <span className="text-ink-muted">
                                         {st === "submitted"
-                                          ? "Submitted"
+                                          ? "已提交"
                                           : st === "due"
-                                            ? `Due since ${checkpointDueAt(pub.publishedAt, c).toLocaleString()}`
-                                            : "Not due"}
+                                            ? `自 ${checkpointDueAt(pub.publishedAt, c).toLocaleString()} 起待录入`
+                                            : "未到时间"}
                                       </span>
                                     </span>
                                     {st !== "not_due" && (
@@ -460,7 +460,7 @@ export default function PipelinePage() {
                                           })
                                         }
                                       >
-                                        {st === "submitted" ? "Edit" : `Enter ${c} Metrics`}
+                                        {st === "submitted" ? "编辑" : `录入 ${c} 数据`}
                                       </button>
                                     )}
                                   </div>
@@ -476,16 +476,16 @@ export default function PipelinePage() {
                 {(selected.deadlineAt || selected.scheduledAt) && (
                   <div>
                     <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-ink-muted">
-                      Dates
+                      日期
                     </p>
                     {selected.deadlineAt && (
                       <p className="mt-1 text-ink-secondary">
-                        Deadline: {new Date(selected.deadlineAt).toLocaleString()}
+                        截止时间：{new Date(selected.deadlineAt).toLocaleString()}
                       </p>
                     )}
                     {selected.scheduledAt && (
                       <p className="text-ink-secondary">
-                        Scheduled: {new Date(selected.scheduledAt).toLocaleString()}
+                        待发布时间：{new Date(selected.scheduledAt).toLocaleString()}
                       </p>
                     )}
                   </div>
@@ -494,7 +494,7 @@ export default function PipelinePage() {
                 <Link href={`/app/studio/${selected.id}`}>
                   <Button variant="primary" size="sm" className="w-full">
                     <ExternalLink className="mr-1 h-3 w-3" />
-                    Open in Studio
+                    在内容工作台打开
                   </Button>
                 </Link>
               </div>

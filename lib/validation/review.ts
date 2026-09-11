@@ -66,13 +66,13 @@ export function canDragTransition(from: string, to: string): boolean {
 /** Human-readable reason a drag transition is blocked. */
 export function dragBlockReason(from: string, to: string): string {
   if (to === "published") {
-    return "Publishing requires a real Publication record — not available yet.";
+    return "发布需要真实的发布记录——当前还没有。";
   }
   if (from === "review" && to === "scheduled") {
-    return "Complete the Review Checklist and use Approve for Publishing.";
+    return "请完成审核清单，然后使用“审核通过并待发布”。";
   }
   if (from === "scheduled" && to === "review") {
-    return "Return a platform version to draft to reopen review.";
+    return "请将平台版本退回草稿以重新审核。";
   }
-  return `Moving from ${contentStatusLabel(from)} to ${contentStatusLabel(to)} is not allowed.`;
+  return `不能从 ${contentStatusLabel(from)} 直接移动到 ${contentStatusLabel(to)}。`;
 }

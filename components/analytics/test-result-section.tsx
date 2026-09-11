@@ -65,7 +65,7 @@ function BaselineText({
       {/* Same shared formatter as the primary value — one format per
           MetricDefinition, presentation-only. */}
       {formatMetricValue(format, cell.median)}
-      <span className="ml-1 text-ink-faint">(n={cell.sampleCount})</span>
+      <span className="ml-1 text-ink-faint">（n={cell.sampleCount}）</span>
     </span>
   );
 }
@@ -107,7 +107,7 @@ export function ResultSection({
           className="mt-1 text-xs text-mint-600 underline"
           onClick={onRetryResult}
         >
-          Retry
+          重试
         </button>
       </section>
     );
@@ -115,7 +115,7 @@ export function ResultSection({
   if (!result) {
     return (
       <section className="rounded-[8px] border border-border bg-canvas p-3">
-        <p className="text-xs text-ink-faint">Loading observed results…</p>
+        <p className="text-xs text-ink-faint">正在加载观察结果…</p>
       </section>
     );
   }
@@ -127,24 +127,24 @@ export function ResultSection({
   return (
     <section className="rounded-[8px] border border-border bg-canvas p-3">
       <p className="text-xs font-semibold uppercase tracking-wide text-ink-muted">
-        Observed Results — {pm?.label ?? "Primary metric"} · {result.test.checkpoint}
+        观察结果 — {pm?.label ?? "主要指标"} · {result.test.checkpoint}
       </p>
 
       {!running && (
         <p className="mt-1 text-[11px] text-ink-faint">
-          Evidence captured at conclusion time.
+          证据于结论时定格。
         </p>
       )}
       {!running && result.resultStale && (
         <p className="mt-1 rounded-[8px] border border-warning/30 bg-warning/5 p-2 text-xs text-ink-secondary">
-          Underlying publication data changed since this Test was concluded.
+          该测试完成后，关联发布数据已变化。
         </p>
       )}
 
       <div className="mt-2 space-y-1.5">
         {rows.length === 0 && (
           <p className="text-xs text-ink-faint">
-            Attach publications to observe results.
+            关联发布记录以观察结果。
           </p>
         )}
         {rows.map((r) => (
@@ -160,25 +160,25 @@ export function ResultSection({
             </div>
             {r.availability === "awaiting" ? (
               <p className="mt-0.5 text-[11px] text-ink-muted">
-                No {result.test.checkpoint} data yet
+                还没有 {result.test.checkpoint} 数据
               </p>
             ) : r.availability === "metric_unavailable" ? (
               <p className="mt-0.5 text-[11px] text-ink-muted">
-                Primary metric unavailable (N/A)
+                主要指标不可用（N/A）
               </p>
             ) : (
               <p className="mt-0.5 text-xs text-ink-secondary">
                 <span className="font-medium text-ink-primary">
                   {pm ? formatMetricValue(pm.format, r.value) : "N/A"}
                 </span>
-                {" · "}Account median{" "}
+                {" · "}账号中位数{" "}
                 <BaselineText cell={r.accountBaseline} format={pm?.format ?? "count"} />
-                {" · "}Pillar median{" "}
+                {" · "}方向中位数{" "}
                 <BaselineText cell={r.pillarBaseline} format={pm?.format ?? "count"} />
                 {r.captureDeltaMinutes !== null && (
                   <span className="ml-1 text-ink-faint">
-                    · captured {r.captureDeltaMinutes >= 0 ? "+" : ""}
-                    {Math.round(r.captureDeltaMinutes)}min
+                    · 采集 {r.captureDeltaMinutes >= 0 ? "+" : ""}
+                    {Math.round(r.captureDeltaMinutes)} 分钟（相对目标）
                   </span>
                 )}
               </p>
@@ -189,9 +189,9 @@ export function ResultSection({
 
       {result.baselineError && (
         <p className="mt-2 text-xs text-danger">
-          Baseline context unavailable.{" "}
+          基线上下文不可用。{" "}
           <button className="underline" onClick={onRetryResult}>
-            Retry
+            重试
           </button>
         </p>
       )}
@@ -199,7 +199,7 @@ export function ResultSection({
       {!running && (
         <div className="mt-3 border-t border-border pt-3">
           <div className="flex items-center gap-2 text-xs font-semibold text-ink-secondary">
-            <span>Outcome:</span>
+            <span>结果：</span>
             <Badge variant={result.outcome === "win" ? "mint" : "default"}>
               {result.outcome ? testOutcomeLabel(result.outcome) : "—"}
             </Badge>
@@ -207,7 +207,7 @@ export function ResultSection({
           <p className="mt-1 text-xs text-ink-primary">{result.conclusion}</p>
           {result.concludedAt && (
             <p className="mt-1 text-[11px] text-ink-faint">
-              Concluded {new Date(result.concludedAt).toLocaleString()}
+              完成于 {new Date(result.concludedAt).toLocaleString()}
             </p>
           )}
         </div>
@@ -229,7 +229,7 @@ export function ResultSection({
             disabled={!result.readiness.canConclude || !!result.baselineError}
           >
             <Check className="mr-1 h-3 w-3" />
-            Complete Test
+            完成测试
           </Button>
         </div>
       )}
@@ -237,18 +237,16 @@ export function ResultSection({
       {running && concludeOpen && (
         <div className="mt-3 space-y-3 rounded-[8px] border border-mint-600/30 bg-mint-100/40 p-3">
           <p className="text-xs font-medium text-ink-primary">
-            Review the observed results above. The evidence is saved with your
-            conclusion when you confirm.
+            请复核上方观察结果。确认后，证据将随你的结论一起保存。
           </p>
           {result.readiness.forcedOutcome === "no_clear_result" && (
             <p className="rounded-[8px] border border-warning/30 bg-warning/5 p-2 text-[11px] text-ink-secondary">
-              {result.readiness.reasons.join(" ")} Only No clear result is
-              available.
+              {result.readiness.reasons.join(" ")}当前只能得出“无明确结论”。
             </p>
           )}
           <div>
             <label className="mb-1 block text-xs font-medium text-ink-secondary">
-              Outcome
+              结果
             </label>
             <select
               className="w-full rounded-[8px] border border-border bg-workspace px-3 py-2 text-sm outline-none focus:border-mint-600"
@@ -272,13 +270,13 @@ export function ResultSection({
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium text-ink-secondary">
-              Conclusion *
+              结论 *
             </label>
             <textarea
               rows={3}
               maxLength={2000}
               className="w-full rounded-[8px] border border-border bg-workspace px-3 py-2 text-sm outline-none focus:border-mint-600"
-              placeholder="Describe what you observed, not what was proven."
+              placeholder="描述你观察到的现象，而不是证明了什么。"
               value={conclusion}
               onChange={(e) => setConclusion(e.target.value)}
             />
@@ -290,10 +288,10 @@ export function ResultSection({
               onClick={onConclude}
               disabled={busy || conclusion.trim() === ""}
             >
-              {busy ? "Concluding…" : "Confirm Conclusion"}
+              {busy ? "保存中…" : "确认结论"}
             </Button>
             <Button variant="ghost" size="sm" onClick={onCloseConclude}>
-              Cancel
+              取消
             </Button>
           </div>
         </div>

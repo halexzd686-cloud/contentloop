@@ -30,8 +30,8 @@ export async function createManualContent(input: ManualCreateInput) {
     .select()
     .from(teamMembers)
     .where(and(eq(teamMembers.id, input.ownerId), eq(teamMembers.brandId, brand.id)));
-  if (!owner) throw new ReviewError("Owner not found.", 400);
-  if (!owner.isActive) throw new ReviewError("Owner is not active.", 400);
+  if (!owner) throw new ReviewError("负责人不存在。", 400);
+  if (!owner.isActive) throw new ReviewError("负责人已停用。", 400);
 
   const [created] = await db
     .insert(contents)
@@ -77,27 +77,27 @@ export async function setPrimaryPlatform(contentId: string, platform: Platform) 
       .where(eq(contents.id, contentId));
     if (anyContent) {
       throw new ReviewError(
-        "Archived content must be restored before setting a platform.",
+        "已归档的内容需要先恢复，才能设置平台。",
         409
       );
     }
-    throw new ReviewError("Content not found", 404);
+    throw new ReviewError("内容不存在", 404);
   }
   if (content.primaryPlatform !== null) {
     throw new ReviewError(
-      "Primary platform is already set and cannot be changed.",
+      "主要平台已设置，不可更改。",
       409
     );
   }
   if (content.status === "published") {
     throw new ReviewError(
-      "Published content cannot be given a new primary platform here.",
+      "已发布的内容不能在这里设置新的主要平台。",
       409
     );
   }
   if (!(CORRECTABLE_STATUSES as readonly string[]).includes(content.status)) {
     throw new ReviewError(
-      `This content's current state (${contentStatusLabel(content.status)}) doesn't allow setting a platform.`,
+      `这条内容的当前状态（${contentStatusLabel(content.status)}）不允许设置平台。`,
       409
     );
   }
@@ -130,11 +130,11 @@ export async function archiveContent(contentId: string) {
         .select({ id: contents.id })
         .from(contents)
         .where(eq(contents.id, contentId));
-      if (anyContent) throw new ReviewError("Content is already archived.", 409);
-      throw new ReviewError("Content not found", 404);
+      if (anyContent) throw new ReviewError("这条内容已归档。", 409);
+      throw new ReviewError("内容不存在", 404);
     }
     if (content.status === "published") {
-      throw new ReviewError("Published content cannot be archived.", 409);
+      throw new ReviewError("已发布的内容不能归档。", 409);
     }
 
     const pubs = await tx
@@ -149,7 +149,7 @@ export async function archiveContent(contentId: string) {
       .limit(1);
     if (pubs.length > 0) {
       throw new ReviewError(
-        "Content with a real publication cannot be archived.",
+        "已有真实发布记录的内容不能归档。",
         409
       );
     }
@@ -177,7 +177,7 @@ export async function restoreContent(contentId: string) {
         isNotNull(contents.deletedAt)
       )
     );
-  if (!content) throw new ReviewError("Content is not archived.", 409);
+  if (!content) throw new ReviewError("这条内容未归档。", 409);
 
   const [updated] = await db
     .update(contents)

@@ -33,11 +33,11 @@ export function LearningsSection() {
     try {
       const res = await fetch("/api/learnings");
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to load learnings");
+      if (!res.ok) throw new Error(data.error || "运营经验加载失败");
       setLearnings(data.learnings);
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load");
+      setError(err instanceof Error ? err.message : "加载失败");
     } finally {
       setLoaded(true);
     }
@@ -52,7 +52,7 @@ export function LearningsSection() {
     <div className="mt-4 rounded-[8px] border border-border bg-workspace">
       <div className="flex items-center gap-2 border-b border-border px-4 py-2.5">
         <BookOpen className="h-4 w-4 text-ink-muted" />
-        <span className="text-sm font-semibold text-ink-primary">Learnings</span>
+        <span className="text-sm font-semibold text-ink-primary">运营经验</span>
         <span className="text-xs text-ink-faint">{learnings.length}</span>
       </div>
 
@@ -60,8 +60,7 @@ export function LearningsSection() {
 
       {loaded && learnings.length === 0 ? (
         <p className="px-4 py-4 text-xs text-ink-faint">
-          No Learnings yet. Learnings are reusable lessons you save from
-          concluded Tests.
+          还没有运营经验。经验来自已完成的运营测试，由你保存后可复用。
         </p>
       ) : (
         <div className="divide-y divide-border">
@@ -75,15 +74,15 @@ export function LearningsSection() {
                 {l.pillarName && <span>· {l.pillarName}</span>}
                 {l.sourceTestTitle && (
                   <span>
-                    · from test: {l.sourceTestTitle}
-                    {l.sourceTestOutcome ? ` (${testOutcomeLabel(l.sourceTestOutcome)})` : ""}
+                    · 来自测试：{l.sourceTestTitle}
+                    {l.sourceTestOutcome ? `（${testOutcomeLabel(l.sourceTestOutcome)}）` : ""}
                   </span>
                 )}
                 {l.sourceStale && (
-                  <Badge variant="warning">source test data changed</Badge>
+                  <Badge variant="warning">来源测试数据已变化</Badge>
                 )}
                 {l.appliedCount > 0 && (
-                  <span>· currently applied to {l.appliedCount} {l.appliedCount === 1 ? "content" : "contents"}</span>
+                  <span>· 当前应用于 {l.appliedCount} 条内容</span>
                 )}
               </div>
               {/* M4.2: navigation only — Studio (Brief tab) remains the
@@ -92,7 +91,7 @@ export function LearningsSection() {
                 href="/app/studio"
                 className="mt-1.5 inline-block text-xs font-medium text-mint-600 hover:underline"
               >
-                Apply in Studio →
+                去内容工作台应用 →
               </Link>
             </div>
           ))}

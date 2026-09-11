@@ -54,12 +54,12 @@ const SOURCE_TYPE_CONFIG: Record<
   string,
   { label: string; icon: React.ComponentType<{ className?: string }> }
 > = {
-  official: { label: "Official", icon: Building },
-  community: { label: "Community", icon: Users },
-  competitor: { label: "Competitor", icon: Globe },
-  news: { label: "News", icon: Newspaper },
-  idea: { label: "Idea", icon: Lightbulb },
-  other: { label: "Other", icon: HelpCircle },
+  official: { label: "官方", icon: Building },
+  community: { label: "社区", icon: Users },
+  competitor: { label: "竞品", icon: Globe },
+  news: { label: "资讯", icon: Newspaper },
+  idea: { label: "想法", icon: Lightbulb },
+  other: { label: "其他", icon: HelpCircle },
 };
 
 const STATUS_VARIANT: Record<
@@ -88,9 +88,9 @@ function StatusMenu({
   // M1.1: only allow toggling between new and reviewing
   const availableActions =
     currentStatus === "new"
-      ? [{ status: "reviewing" as const, label: "Start Reviewing" }]
+      ? [{ status: "reviewing" as const, label: "开始评估" }]
       : currentStatus === "reviewing"
-        ? [{ status: "new" as const, label: "Back to New" }]
+        ? [{ status: "new" as const, label: "回到新线索" }]
         : [];
 
   if (availableActions.length === 0) return null;
@@ -104,7 +104,7 @@ function StatusMenu({
         disabled={disabled}
         className="text-xs"
       >
-        Update Status
+        更新状态
         <ChevronDown className="ml-1 h-3 w-3" />
       </Button>
       {open && (
@@ -198,7 +198,7 @@ export function SignalCard({
             {/* Data truth: only formally analyzed signals may show a score */}
             {signal.analyzedAt !== null && signal.topicScore !== null && (
               <span className="text-xs text-ink-muted">
-                Score: {signal.topicScore}
+                选题评分：{signal.topicScore}
               </span>
             )}
           </div>

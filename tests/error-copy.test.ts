@@ -56,13 +56,13 @@ describe("classifyAIError", () => {
 describe("aiUserMessage", () => {
   it("maps every bucket to its mandated copy", () => {
     expect(aiUserMessage("AI provider request timed out.")).toBe(
-      "AI is temporarily unavailable. Your manual workflow is unaffected. Retry, or continue by hand."
+      "AI 暂时不可用。你的手动操作流程不受影响。请重试，或先手动继续。"
     );
     expect(aiUserMessage("AI_API_KEY is not configured (workspace AI configuration missing).")).toBe(
-      "AI is not configured for this workspace. Your manual workflow is still available."
+      "本工作区尚未配置 AI。你的手动操作流程仍可正常使用。"
     );
     expect(aiUserMessage("AI returned invalid JSON")).toBe(
-      "AI returned an unusable result. Retry, or continue manually."
+      "AI 返回了无法使用的结果。请重试，或手动填写。"
     );
   });
 

@@ -11,6 +11,7 @@ import {
 } from "@/lib/db/schema";
 import { requireSingleBrand } from "@/lib/brand";
 import { ReviewError } from "@/lib/review";
+import { platformLabel } from "@/lib/labels";
 import type {
   CreateTestInput,
   PatchTestInput,
@@ -75,7 +76,7 @@ export async function getTest(id: string) {
     .select()
     .from(tests)
     .where(and(eq(tests.id, id), eq(tests.brandId, brand.id)));
-  if (!test) throw new ReviewError("Test not found", 404);
+  if (!test) throw new ReviewError("测试不存在", 404);
 
   const links = await db
     .select({
@@ -117,7 +118,7 @@ async function loadTest(id: string, brandId: string) {
     .select()
     .from(tests)
     .where(and(eq(tests.id, id), eq(tests.brandId, brandId)));
-  if (!test) throw new ReviewError("Test not found", 404);
+  if (!test) throw new ReviewError("测试不存在", 404);
   return test;
 }
 
@@ -138,13 +139,13 @@ export async function createTest(input: CreateTestInput) {
     );
   if (!def) {
     throw new ReviewError(
-      `Metric "${input.primaryMetricKey}" does not exist for ${input.platform}.`,
+      `指标“${input.primaryMetricKey}”在 ${platformLabel(input.platform)} 不存在。`,
       400
     );
   }
   if (!def.isActive) {
     throw new ReviewError(
-      `Metric "${input.primaryMetricKey}" is disabled for ${input.platform}.`,
+      `指标“${input.primaryMetricKey}”在 ${platformLabel(input.platform)} 已停用。`,
       400
     );
   }
@@ -173,7 +174,7 @@ export async function patchTest(id: string, input: PatchTestInput) {
   const brand = await requireSingleBrand();
   const test = await loadTest(id, brand.id);
   if (test.status !== "running") {
-    throw new ReviewError("Concluded tests cannot be edited.", 409);
+    throw new ReviewError("已完成的测试不能编辑。", 409);
   }
 
   const [updated] = await db
@@ -205,9 +206,9 @@ export async function attachPublication(
       .select()
       .from(tests)
       .where(and(eq(tests.id, testId), eq(tests.brandId, brand.id)));
-    if (!test) throw new ReviewError("Test not found", 404);
+    if (!test) throw new ReviewError("测试不存在", 404);
     if (test.status !== "running") {
-      throw new ReviewError("Concluded tests cannot change membership.", 409);
+      throw new ReviewError("已完成的测试不能变更发布关联。", 409);
     }
 
     const [pub] = await tx
@@ -220,10 +221,10 @@ export async function attachPublication(
       .where(
         and(eq(publications.id, publicationId), isNull(publications.deletedAt))
       );
-    if (!pub) throw new ReviewError("Publication not found", 404);
+    if (!pub) throw new ReviewError("发布记录不存在", 404);
     if (pub.platform !== test.platform) {
       throw new ReviewError(
-        `Publication platform (${pub.platform}) does not match the test platform (${test.platform}).`,
+        `发布记录的平台（${platformLabel(pub.platform)}）与测试平台（${platformLabel(test.platform)}）不一致。`,
         409
       );
     }
@@ -238,7 +239,7 @@ export async function attachPublication(
           isNull(contents.deletedAt)
         )
       );
-    if (!content) throw new ReviewError("Publication not found", 404);
+    if (!content) throw new ReviewError("发布记录不存在", 404);
 
     try {
       const [link] = await tx
@@ -255,7 +256,7 @@ export async function attachPublication(
         pgErr.constraint_name === "test_publications_test_id_publication_id_unique"
       ) {
         throw new ReviewError(
-          "This publication is already attached to the test.",
+          "这条发布记录已关联到该测试。",
           409
         );
       }
@@ -278,9 +279,9 @@ export async function discardTest(testId: string) {
       .select()
       .from(tests)
       .where(and(eq(tests.id, testId), eq(tests.brandId, brand.id)));
-    if (!test) throw new ReviewError("Test not found", 404);
+    if (!test) throw new ReviewError("测试不存在", 404);
     if (test.status !== "running") {
-      throw new ReviewError("Concluded tests cannot be discarded.", 409);
+      throw new ReviewError("已完成的测试不能放弃。", 409);
     }
 
     await tx
@@ -300,9 +301,9 @@ export async function detachPublication(testId: string, publicationId: string) {
       .select()
       .from(tests)
       .where(and(eq(tests.id, testId), eq(tests.brandId, brand.id)));
-    if (!test) throw new ReviewError("Test not found", 404);
+    if (!test) throw new ReviewError("测试不存在", 404);
     if (test.status !== "running") {
-      throw new ReviewError("Concluded tests cannot change membership.", 409);
+      throw new ReviewError("已完成的测试不能变更发布关联。", 409);
     }
 
     await tx

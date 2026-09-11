@@ -27,7 +27,7 @@ import {
 import { ImportMetricsModal } from "@/components/analytics/import-modal";
 import { TestsSection, type TestCreateRequest } from "@/components/analytics/tests-section";
 import { LearningsSection } from "@/components/analytics/learnings-section";
-import { platformLabel, BASELINE_COHORT_HELPER, DEMO_NOTICE } from "@/lib/labels";
+import { platformLabel, snapshotStatusLabel, BASELINE_COHORT_HELPER, DEMO_NOTICE } from "@/lib/labels";
 import { DemoBadge } from "@/components/ui/demo-badge";
 
 /**
@@ -101,10 +101,10 @@ interface Detail {
 function formatCaptureDelta(minutes: number | null): string {
   if (minutes === null) return "";
   const sign = minutes >= 0 ? "+" : "";
-  if (Math.abs(minutes) < 90) return `${sign}${Math.round(minutes)} min from target`;
+  if (Math.abs(minutes) < 90) return `${sign}${Math.round(minutes)} 分钟（相对目标）`;
   const hours = minutes / 60;
-  if (Math.abs(hours) < 48) return `${sign}${hours.toFixed(1)}h from target`;
-  return `${sign}${(hours / 24).toFixed(1)}d from target`;
+  if (Math.abs(hours) < 48) return `${sign}${hours.toFixed(1)} 小时（相对目标）`;
+  return `${sign}${(hours / 24).toFixed(1)} 天（相对目标）`;
 }
 
 export default function AnalyticsPage() {
@@ -171,8 +171,8 @@ export default function AnalyticsPage() {
     try {
       const res = await fetch(`/api/analytics/${pub.publicationId}/${cp}`);
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to load");
-      if (!data.fact.snapshot) throw new Error("Snapshot not found");
+      if (!res.ok) throw new Error(data.error || "加载失败");
+      if (!data.fact.snapshot) throw new Error("指标数据不存在");
       setSnapModal({
         publication: pub,
         checkpoint: cp,
@@ -180,7 +180,7 @@ export default function AnalyticsPage() {
         mode,
       });
     } catch {
-      setSnapEntryError({ key, message: "Couldn't load metric snapshot." });
+      setSnapEntryError({ key, message: "指标数据加载失败。" });
     } finally {
       setSnapEntryLoading(null);
     }
@@ -190,12 +190,12 @@ export default function AnalyticsPage() {
     try {
       const res = await fetch("/api/analytics");
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to load");
+      if (!res.ok) throw new Error(data.error || "加载失败");
       setIndex(data.publications);
       setLoadError(null);
       return data.publications as IndexPublication[];
     } catch (err) {
-      setLoadError(err instanceof Error ? err.message : "Failed to load");
+      setLoadError(err instanceof Error ? err.message : "加载失败");
       return [];
     } finally {
       setLoading(false);
@@ -208,10 +208,10 @@ export default function AnalyticsPage() {
     try {
       const res = await fetch(`/api/analytics/${publicationId}/${checkpoint}`);
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to load detail");
+      if (!res.ok) throw new Error(data.error || "加载失败");
       setDetail(data);
     } catch (err) {
-      setDetailError(err instanceof Error ? err.message : "Failed to load detail");
+      setDetailError(err instanceof Error ? err.message : "加载失败");
       setDetail(null);
     } finally {
       setDetailLoading(false);
@@ -234,7 +234,7 @@ export default function AnalyticsPage() {
         `/api/publications/${selected.publicationId}/metric-snapshots/${selected.checkpoint}/baseline`
       );
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Baseline failed");
+      if (!res.ok) throw new Error(data.error || "基线加载失败");
       setDetail((prev) =>
         prev
           ? {
@@ -251,7 +251,7 @@ export default function AnalyticsPage() {
           ? {
               ...prev,
               baselineError:
-                err instanceof Error ? err.message : "Baseline failed",
+                err instanceof Error ? err.message : "基线加载失败",
             }
           : prev
       );
@@ -322,7 +322,7 @@ export default function AnalyticsPage() {
         <td className="px-3 py-2.5 text-right">
           {detail?.pillarBaseline && "unavailable" in detail.pillarBaseline ? (
             <span className="text-xs text-ink-muted">
-              Pillar baseline unavailable — no pillar assigned
+              方向基线不可用——未设置内容方向
             </span>
           ) : pillar ? (
             <>
@@ -345,7 +345,7 @@ export default function AnalyticsPage() {
   if (loading) {
     return (
       <div className="flex h-full items-center justify-center">
-        <p className="text-sm text-ink-muted">Loading analytics…</p>
+        <p className="text-sm text-ink-muted">正在加载数据复盘…</p>
       </div>
     );
   }
@@ -356,7 +356,7 @@ export default function AnalyticsPage() {
         <p className="text-sm text-danger">{loadError}</p>
         <Button variant="secondary" size="sm" onClick={() => { setLoading(true); loadIndex(); }}>
           <RefreshCw className="mr-1 h-3 w-3" />
-          Retry
+          重试
         </Button>
       </div>
     );
@@ -369,20 +369,20 @@ export default function AnalyticsPage() {
         <div className="flex items-center justify-between">
           <div>
             <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-ink-muted">
-              Performance
+              表现复盘
             </p>
-            <h1 className="mt-1 text-[24px] font-semibold leading-tight text-ink-primary">Analytics</h1>
+            <h1 className="mt-1 text-[24px] font-semibold leading-tight text-ink-primary">数据复盘</h1>
           </div>
           <Button variant="secondary" size="sm" onClick={() => setImportOpen(true)}>
-            Import Metrics
+            导入数据
           </Button>
         </div>
 
         {index.length === 0 ? (
           <div className="mt-12 flex flex-col items-center text-center">
-            <p className="text-sm text-ink-secondary">No published content yet.</p>
+            <p className="text-sm text-ink-secondary">还没有已发布的内容。</p>
             <p className="mt-1 text-xs text-ink-muted">
-              Mark a platform version as published first.
+              请先把一个平台版本标记为已发布。
             </p>
           </div>
         ) : (
@@ -414,15 +414,11 @@ export default function AnalyticsPage() {
                   <div className="mt-1 flex items-center gap-3 text-xs text-ink-muted">
                     <span>{p.contentTitle}</span>
                     {p.pillarName && <span>· {p.pillarName}</span>}
-                    <span>· Published {new Date(p.publishedAt).toLocaleDateString()}</span>
+                    <span>· 发布于 {new Date(p.publishedAt).toLocaleDateString()}</span>
                     {p.checkpoints.map((c) => (
                       <span key={c.checkpoint}>
                         {c.checkpoint}:{" "}
-                        {c.status === "submitted"
-                          ? "Submitted"
-                          : c.status === "due"
-                            ? "Due"
-                            : "Not due"}
+                        {snapshotStatusLabel(c.status)}
                         {c.status === "due" && (
                           <span
                             className="ml-1 font-medium text-mint-600"
@@ -431,7 +427,7 @@ export default function AnalyticsPage() {
                               openSnapshotEntry(p, c.checkpoint);
                             }}
                           >
-                            {" "}· Enter
+                            {" "}· 录入
                           </span>
                         )}
                         {c.status === "submitted" && (
@@ -444,8 +440,8 @@ export default function AnalyticsPage() {
                           >
                             {" "}·{" "}
                             {snapEntryLoading === `${p.publicationId}:${c.checkpoint}`
-                              ? "Loading…"
-                              : "Edit"}
+                              ? "加载中…"
+                              : "编辑"}
                           </span>
                         )}
                         {snapEntryError?.key === `${p.publicationId}:${c.checkpoint}` && (
@@ -458,7 +454,7 @@ export default function AnalyticsPage() {
                                 openSnapshotEntry(p, c.checkpoint);
                               }}
                             >
-                              Retry
+                              重试
                             </span>
                           </span>
                         )}
@@ -494,7 +490,7 @@ export default function AnalyticsPage() {
 
                 <div className="p-4">
                   {detailLoading ? (
-                    <p className="text-sm text-ink-muted">Loading snapshot…</p>
+                    <p className="text-sm text-ink-muted">正在加载指标数据…</p>
                   ) : detailError ? (
                     <div className="flex items-center gap-3">
                       <p className="text-sm text-danger">{detailError}</p>
@@ -504,7 +500,7 @@ export default function AnalyticsPage() {
                         onClick={() => select(selected.publicationId, selected.checkpoint)}
                       >
                         <RefreshCw className="mr-1 h-3 w-3" />
-                        Retry
+                        重试
                       </Button>
                     </div>
                   ) : detail ? (
@@ -517,7 +513,7 @@ export default function AnalyticsPage() {
                         <DemoBadge isDemo={detail.fact.isDemo} />
                         <span className="ml-2">
                           {platformLabel(detail.fact.platform)} ·{" "}
-                          {detail.fact.pillarName ?? "No pillar"} · Published{" "}
+                          {detail.fact.pillarName ?? "无内容方向"} · 发布于{" "}
                           {new Date(detail.fact.publishedAt).toLocaleString()}
                         </span>
                       </div>
@@ -530,7 +526,7 @@ export default function AnalyticsPage() {
                       {!detail.fact.hasSnapshot ? (
                         <div className="mt-6 flex flex-col items-center py-6 text-center">
                           <p className="text-sm text-ink-secondary">
-                            No metric snapshot yet.
+                            还没有该数据点的指标数据。
                           </p>
                           {selectedPub?.checkpoints.find(
                             (c) => c.checkpoint === selected.checkpoint
@@ -543,16 +539,16 @@ export default function AnalyticsPage() {
                                 openSnapshotEntry(selectedPub, selected.checkpoint)
                               }
                             >
-                              Enter {selected.checkpoint} Metrics
+                              录入 {selected.checkpoint} 数据
                             </Button>
                           )}
                         </div>
                       ) : (
                         <>
                           <p className="mt-1 text-xs text-ink-muted">
-                            Target: {new Date(detail.fact.targetAt).toLocaleString()} ·
-                            Captured: {new Date(detail.fact.capturedAt!).toLocaleString()}{" "}
-                            ({formatCaptureDelta(detail.fact.captureDeltaMinutes)})
+                            目标时间：{new Date(detail.fact.targetAt).toLocaleString()} ·
+                            采集时间：{new Date(detail.fact.capturedAt!).toLocaleString()}{" "}
+                            {formatCaptureDelta(detail.fact.captureDeltaMinutes)}
                           </p>
 
                           {/* Metrics table */}
@@ -560,23 +556,23 @@ export default function AnalyticsPage() {
                             <table className="w-full">
                               <thead>
                                 <tr className="bg-canvas text-left text-[11px] uppercase tracking-wide text-ink-muted">
-                                  <th className="px-3 py-2">Metric</th>
-                                  <th className="px-3 py-2">Current</th>
-                                  <th className="px-3 py-2">Account median</th>
-                                  <th className="px-3 py-2">Pillar median</th>
+                                  <th className="px-3 py-2">指标</th>
+                                  <th className="px-3 py-2">当前值</th>
+                                  <th className="px-3 py-2">账号中位数</th>
+                                  <th className="px-3 py-2">方向中位数</th>
                                 </tr>
                               </thead>
                               <tbody>
                                 <tr>
                                   <td colSpan={4} className="bg-surface-subtle px-3 py-1.5 text-[11px] font-medium uppercase tracking-[0.08em] text-ink-muted">
-                                    Raw Metrics
+                                    原始指标
                                   </td>
                                 </tr>
                                 {raws.map(renderMetricRow)}
                                 {deriveds.length > 0 && (
                                   <tr>
                                     <td colSpan={4} className="bg-surface-subtle px-3 py-1.5 text-[11px] font-medium uppercase tracking-[0.08em] text-ink-muted">
-                                      Derived Metrics
+                                      派生指标
                                     </td>
                                   </tr>
                                 )}
@@ -589,22 +585,22 @@ export default function AnalyticsPage() {
                           <div className="mt-3 text-xs text-ink-muted">
                             {detail.baselineError ? (
                               <span className="flex items-center gap-2 text-danger">
-                                Couldn&apos;t load baseline.
+                                基线加载失败。
                                 <button
                                   className="underline"
                                   onClick={retryBaseline}
                                 >
-                                  Retry
+                                  重试
                                 </button>
                               </span>
                             ) : detail.accountBaseline ? (
                               <span>
-                                {detail.accountBaseline.candidateCount} comparable publications
+                                {detail.accountBaseline.candidateCount} 条可比发布
                                 {detail.accountBaseline.medianCaptureDeltaMinutes !== null &&
-                                  ` · median capture ${formatCaptureDelta(detail.accountBaseline.medianCaptureDeltaMinutes)}`}
+                                  ` · 中位采集 ${formatCaptureDelta(detail.accountBaseline.medianCaptureDeltaMinutes)}`}
                               </span>
                             ) : (
-                              <span>No historical {selected.checkpoint} snapshots yet.</span>
+                              <span>还没有历史 {selected.checkpoint} 数据。</span>
                             )}
                           </div>
                           <p className="mt-1 text-xs text-ink-secondary">
@@ -661,10 +657,10 @@ export default function AnalyticsPage() {
         ) : (
           <div>
             <p className="text-xs font-semibold uppercase tracking-wide text-ink-muted">
-              Loop Analysis
+              Loop 分析
             </p>
             <p className="mt-3 text-xs text-ink-faint">
-              Select a publication to see structured diagnosis.
+              选择一条发布记录以查看结构化诊断。
             </p>
           </div>
         )}

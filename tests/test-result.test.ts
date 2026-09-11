@@ -23,7 +23,7 @@ describe("computeReadiness (frozen matrix)", () => {
     expect(readiness.canConclude).toBe(false);
     expect(readiness.forcedOutcome).toBeNull();
     expect(observedCount).toBe(0);
-    expect(readiness.reasons[0]).toContain("Attach");
+    expect(readiness.reasons[0]).toContain("关联");
   });
 
   it("all awaiting (0 observed) → blocked; NOT no_clear_result", () => {

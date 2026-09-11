@@ -79,14 +79,14 @@ export function AddSignalDialog({ onCreated }: AddSignalDialogProps) {
 
       if (!res.ok) {
         const data = await res.json();
-        throw new Error(data.error || "Failed to create signal");
+        throw new Error(data.error || "创建线索失败");
       }
 
       resetForm();
       setOpen(false);
       onCreated();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to create signal");
+      setError(err instanceof Error ? err.message : "创建线索失败");
     } finally {
       setLoading(false);
     }
@@ -103,27 +103,27 @@ export function AddSignalDialog({ onCreated }: AddSignalDialogProps) {
       <DialogTrigger asChild>
         <Button variant="primary" size="sm">
           <Plus className="mr-1 h-4 w-4" />
-          Add Signal
+          新增线索
         </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Add Signal</DialogTitle>
+          <DialogTitle>新增线索</DialogTitle>
           <DialogDescription>
-            Add a URL or quick idea to evaluate as potential content.
+            添加一条链接或想法，作为潜在内容来评估。
           </DialogDescription>
         </DialogHeader>
 
         <Tabs defaultValue="url" className="mt-2">
           <TabsList>
-            <TabsTrigger value="url">URL</TabsTrigger>
-            <TabsTrigger value="idea">Idea</TabsTrigger>
+            <TabsTrigger value="url">链接</TabsTrigger>
+            <TabsTrigger value="idea">想法</TabsTrigger>
           </TabsList>
 
           <TabsContent value="url" className="space-y-4">
             <div>
               <label className="mb-1.5 block text-sm font-medium text-ink-primary">
-                URL
+                链接
               </label>
               <Input
                 placeholder="https://..."
@@ -134,10 +134,10 @@ export function AddSignalDialog({ onCreated }: AddSignalDialogProps) {
             </div>
             <div>
               <label className="mb-1.5 block text-sm font-medium text-ink-primary">
-                Title *
+                标题 *
               </label>
               <Input
-                placeholder="Signal title"
+                placeholder="线索标题"
                 value={urlTitle}
                 onChange={(e) => setUrlTitle(e.target.value)}
                 disabled={loading}
@@ -145,11 +145,11 @@ export function AddSignalDialog({ onCreated }: AddSignalDialogProps) {
             </div>
             <div>
               <label className="mb-1.5 block text-sm font-medium text-ink-primary">
-                Summary
+                简要说明（可选）
               </label>
               <textarea
                 className="flex min-h-[80px] w-full rounded-[8px] border border-border bg-workspace px-3 py-2 text-sm text-ink-primary placeholder:text-ink-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-mint-500 focus-visible:ring-offset-1 disabled:opacity-50"
-                placeholder="Brief summary (optional)"
+                placeholder="简要说明（可选）"
                 value={urlSummary}
                 onChange={(e) => setUrlSummary(e.target.value)}
                 disabled={loading}
@@ -157,7 +157,7 @@ export function AddSignalDialog({ onCreated }: AddSignalDialogProps) {
             </div>
             <div>
               <label className="mb-1.5 block text-sm font-medium text-ink-primary">
-                Source Type
+                来源类型
               </label>
               <select
                 className="flex h-9 w-full rounded-[8px] border border-border bg-workspace px-3 py-1 text-sm text-ink-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-mint-500 disabled:opacity-50"
@@ -165,12 +165,12 @@ export function AddSignalDialog({ onCreated }: AddSignalDialogProps) {
                 onChange={(e) => setUrlSourceType(e.target.value)}
                 disabled={loading}
               >
-                <option value="">Select...</option>
-                <option value="official">Official</option>
-                <option value="community">Community</option>
-                <option value="competitor">Competitor</option>
-                <option value="news">News</option>
-                <option value="other">Other</option>
+                <option value="">请选择…</option>
+                <option value="official">官方</option>
+                <option value="community">社区</option>
+                <option value="competitor">竞品</option>
+                <option value="news">资讯</option>
+                <option value="other">其他</option>
               </select>
             </div>
             {error && (
@@ -182,14 +182,14 @@ export function AddSignalDialog({ onCreated }: AddSignalDialogProps) {
                 onClick={() => setOpen(false)}
                 disabled={loading}
               >
-                Cancel
+                取消
               </Button>
               <Button
                 variant="primary"
                 onClick={() => handleSubmit("url")}
                 disabled={loading || !urlTitle.trim()}
               >
-                {loading ? "Adding..." : "Add Signal"}
+                {loading ? "添加中…" : "新增线索"}
               </Button>
             </DialogFooter>
           </TabsContent>
@@ -197,10 +197,10 @@ export function AddSignalDialog({ onCreated }: AddSignalDialogProps) {
           <TabsContent value="idea" className="space-y-4">
             <div>
               <label className="mb-1.5 block text-sm font-medium text-ink-primary">
-                Idea *
+                想法 *
               </label>
               <Input
-                placeholder="What's the idea?"
+                placeholder="这个想法是什么？"
                 value={ideaTitle}
                 onChange={(e) => setIdeaTitle(e.target.value)}
                 disabled={loading}
@@ -208,11 +208,11 @@ export function AddSignalDialog({ onCreated }: AddSignalDialogProps) {
             </div>
             <div>
               <label className="mb-1.5 block text-sm font-medium text-ink-primary">
-                Notes
+                备注
               </label>
               <textarea
                 className="flex min-h-[80px] w-full rounded-[8px] border border-border bg-workspace px-3 py-2 text-sm text-ink-primary placeholder:text-ink-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-mint-500 focus-visible:ring-offset-1 disabled:opacity-50"
-                placeholder="Additional context (optional)"
+                placeholder="补充说明（可选）"
                 value={ideaSummary}
                 onChange={(e) => setIdeaSummary(e.target.value)}
                 disabled={loading}
@@ -227,14 +227,14 @@ export function AddSignalDialog({ onCreated }: AddSignalDialogProps) {
                 onClick={() => setOpen(false)}
                 disabled={loading}
               >
-                Cancel
+                取消
               </Button>
               <Button
                 variant="primary"
                 onClick={() => handleSubmit("idea")}
                 disabled={loading || !ideaTitle.trim()}
               >
-                {loading ? "Adding..." : "Add Signal"}
+                {loading ? "添加中…" : "新增线索"}
               </Button>
             </DialogFooter>
           </TabsContent>

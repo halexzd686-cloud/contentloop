@@ -89,8 +89,8 @@ describe("drag transition table", () => {
   });
 
   it("dragBlockReason explains protected transitions", () => {
-    expect(dragBlockReason("review", "scheduled")).toContain("Checklist");
-    expect(dragBlockReason("scheduled", "published")).toContain("Publication");
-    expect(dragBlockReason("scheduled", "review")).toContain("draft");
+    expect(dragBlockReason("review", "scheduled")).toContain("审核清单");
+    expect(dragBlockReason("scheduled", "published")).toContain("发布记录");
+    expect(dragBlockReason("scheduled", "review")).toContain("草稿");
   });
 });

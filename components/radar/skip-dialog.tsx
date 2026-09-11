@@ -18,13 +18,13 @@ import { SKIP_REASONS } from "@/lib/validation/signal";
  */
 
 const SKIP_REASON_LABELS: Record<string, string> = {
-  too_late: "Too Late",
-  saturated: "Saturated",
-  low_audience_fit: "Low Audience Fit",
-  insufficient_information: "Insufficient Information",
-  high_production_cost: "High Production Cost",
-  no_clear_angle: "No Clear Angle",
-  other: "Other",
+  too_late: "时效已过",
+  saturated: "内容已饱和",
+  low_audience_fit: "受众匹配度低",
+  insufficient_information: "信息不足",
+  high_production_cost: "制作成本高",
+  no_clear_angle: "没有清晰角度",
+  other: "其他",
 };
 
 interface SkipDialogProps {
@@ -52,9 +52,9 @@ export function SkipDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Skip Signal</DialogTitle>
+          <DialogTitle>跳过线索</DialogTitle>
           <DialogDescription>
-            Why are you skipping this signal?
+            为什么要跳过这条线索？
           </DialogDescription>
         </DialogHeader>
 
@@ -81,14 +81,14 @@ export function SkipDialog({
             onClick={() => onOpenChange(false)}
             disabled={loading}
           >
-            Cancel
+            取消
           </Button>
           <Button
             variant="danger"
             onClick={handleConfirm}
             disabled={!selectedReason || loading}
           >
-            {loading ? "Skipping..." : "Skip Signal"}
+            {loading ? "跳过中…" : "跳过该线索"}
           </Button>
         </DialogFooter>
       </DialogContent>

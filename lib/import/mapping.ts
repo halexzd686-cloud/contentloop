@@ -126,10 +126,10 @@ export function validateMapping(
   }
 
   if (!mapping.publicationUrl && !mapping.publicationId) {
-    errors.push("Map either publication_url or publication_id.");
+    errors.push("请映射 publication_url 或 publication_id 其中一列。");
   }
   if (!mapping.checkpoint) {
-    errors.push("Map the checkpoint column.");
+    errors.push("请映射数据点列。");
   }
   return errors;
 }

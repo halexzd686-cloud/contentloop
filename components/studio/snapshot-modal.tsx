@@ -123,7 +123,7 @@ export function MetricSnapshotModal({
         if (!cancelled) setDefs(d.definitions);
       })
       .catch(() => {
-        if (!cancelled) setError("Failed to load metric definitions");
+        if (!cancelled) setError("指标定义加载失败");
       });
     return () => {
       cancelled = true;
@@ -256,14 +256,14 @@ export function MetricSnapshotModal({
       const data = await res.json();
       if (!res.ok) {
         throw new Error(
-          data.details ? `${data.error}: ${data.details}` : data.error || "Save failed"
+          data.details ? `${data.error}: ${data.details}` : data.error || "保存失败"
         );
       }
       onDone(data.snapshot);
       onOpenChange(false);
     } catch (err) {
       // Keep all user input on failure.
-      setError(err instanceof Error ? err.message : "Save failed");
+      setError(err instanceof Error ? err.message : "保存失败");
     } finally {
       setSubmitting(false);
     }
@@ -289,30 +289,29 @@ export function MetricSnapshotModal({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>
-            {isEdit ? "Edit" : "Enter"} {checkpoint} Metrics
+            {isEdit ? `编辑 ${checkpoint} 数据` : `录入 ${checkpoint} 数据`}
           </DialogTitle>
           <DialogDescription>
-            {publication.finalTitle} · {platformLabel(publication.platform)} · Published{" "}
+            {publication.finalTitle} · {platformLabel(publication.platform)} · 发布于{" "}
             {new Date(publication.publishedAt).toLocaleString()} · {checkpoint}{" "}
-            target {dueAt.toLocaleString()}
+            目标时间 {dueAt.toLocaleString()}
           </DialogDescription>
           <p className="text-xs text-ink-faint">
-            Data read about {checkpoint === "24h" ? "24" : "72"} hours after
-            publishing.
+            发布后约 {checkpoint === "24h" ? "24" : "72"} 小时读取的数据。
           </p>
         </DialogHeader>
 
         {editMissing ? (
           <div className="rounded-[8px] border border-danger/20 bg-danger/5 p-3 text-xs text-danger">
-            Couldn&apos;t load metric snapshot. Close and retry.
+            指标数据加载失败。请关闭后重试。
           </div>
         ) : !defs ? (
-          <p className="text-sm text-ink-muted">Loading metric definitions…</p>
+          <p className="text-sm text-ink-muted">正在加载指标定义…</p>
         ) : (
           <div className="space-y-4">
             <div>
               <label className="mb-1 block text-xs font-medium text-ink-secondary">
-                Captured At * (when you actually read the platform data)
+                采集时间 *（你实际查看平台数据的时间）
               </label>
               <input
                 type="datetime-local"
@@ -353,7 +352,7 @@ export function MetricSnapshotModal({
                         />
                         {invalidKeys.includes(k) && (
                           <span className="mt-1 block text-[11px] text-danger">
-                            Enter a whole number — commas are OK (e.g. 18,600).
+                            请输入整数——千位逗号可以（如 18,600）。
                           </span>
                         )}
                       </span>
@@ -367,7 +366,7 @@ export function MetricSnapshotModal({
                         }))
                       }
                     >
-                      {input.isNA ? "Restore input" : "Mark N/A"}
+                      {input.isNA ? "恢复输入" : "标记 N/A"}
                     </button>
                   </div>
                 );
@@ -378,7 +377,7 @@ export function MetricSnapshotModal({
             {derivedDefs.length > 0 && (
               <div className="rounded-[8px] border border-border bg-canvas p-3">
                 <p className="text-xs font-semibold uppercase tracking-wide text-ink-muted">
-                  Calculated preview
+                  派生预览
                 </p>
                 <div className="mt-2 space-y-1.5">
                   {derivedDefs.map((d) => {
@@ -409,7 +408,7 @@ export function MetricSnapshotModal({
 
             {discardConfirm && (
               <div className="rounded-[8px] border border-warning/30 bg-warning/5 p-3 text-xs text-ink-secondary">
-                Discard unsaved metric input?
+                放弃未保存的数据录入？
                 <button
                   className="ml-2 font-medium text-danger hover:underline"
                   onClick={() => {
@@ -417,13 +416,13 @@ export function MetricSnapshotModal({
                     onOpenChange(false);
                   }}
                 >
-                  Discard
+                  放弃
                 </button>
                 <button
                   className="ml-2 font-medium text-ink-primary hover:underline"
                   onClick={() => setDiscardConfirm(false)}
                 >
-                  Keep editing
+                  继续编辑
                 </button>
               </div>
             )}
@@ -436,14 +435,14 @@ export function MetricSnapshotModal({
 
         <DialogFooter>
           <Button variant="ghost" onClick={requestClose}>
-            Cancel
+            取消
           </Button>
           <Button
             variant="primary"
             onClick={submit}
             disabled={!formComplete || submitting || !defs}
           >
-            {submitting ? "Saving…" : isEdit ? "Save Changes" : "Save Metrics"}
+            {submitting ? "保存中…" : isEdit ? "保存修改" : "保存数据"}
           </Button>
         </DialogFooter>
       </DialogContent>

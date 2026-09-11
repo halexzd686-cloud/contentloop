@@ -56,7 +56,7 @@ const DrawerContent = React.forwardRef<
       </div>
       <DialogPrimitive.Close className="absolute right-4 top-4 rounded-[8px] p-1 text-ink-muted hover:text-ink-primary hover:bg-surface-subtle transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-mint-500">
         <X className="h-4 w-4" />
-        <span className="sr-only">Close</span>
+        <span className="sr-only">关闭</span>
       </DialogPrimitive.Close>
     </DialogPrimitive.Content>
   </DrawerPortal>

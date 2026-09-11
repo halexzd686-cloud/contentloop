@@ -16,10 +16,10 @@ export type AIUserErrorKind =
 
 export const AI_USER_MESSAGES: Record<AIUserErrorKind, string> = {
   unavailable:
-    "AI is temporarily unavailable. Your manual workflow is unaffected. Retry, or continue by hand.",
+    "AI 暂时不可用。你的手动操作流程不受影响。请重试，或先手动继续。",
   not_configured:
-    "AI is not configured for this workspace. Your manual workflow is still available.",
-  unusable_result: "AI returned an unusable result. Retry, or continue manually.",
+    "本工作区尚未配置 AI。你的手动操作流程仍可正常使用。",
+  unusable_result: "AI 返回了无法使用的结果。请重试，或手动填写。",
 };
 
 /** Classify an internal AI error string into a sanitized user bucket. */

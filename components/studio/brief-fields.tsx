@@ -22,14 +22,14 @@ export const BRIEF_FIELD_META: {
   label: string;
   placeholder: string;
 }[] = [
-  { key: "targetAudience", label: "Target Audience", placeholder: "Who is this content for?" },
-  { key: "userProblem", label: "User Problem", placeholder: "What problem does the audience have?" },
-  { key: "coreQuestion", label: "Core Question", placeholder: "The single question this content answers" },
-  { key: "mainAngle", label: "Main Angle", placeholder: "The unique angle or perspective" },
-  { key: "contentPromise", label: "Content Promise", placeholder: "What the audience gets from consuming this" },
-  { key: "keyEvidence", label: "Key Evidence", placeholder: "Evidence from real signal data only. If none: Not enough verified evidence yet." },
-  { key: "differentiation", label: "Differentiation", placeholder: "Why this content is different from what exists" },
-  { key: "cta", label: "CTA", placeholder: "What the audience should do next" },
+  { key: "targetAudience", label: "目标读者", placeholder: "这条内容是写给谁看的？" },
+  { key: "userProblem", label: "读者问题", placeholder: "读者有什么痛点？" },
+  { key: "coreQuestion", label: "核心问题", placeholder: "这条内容回答的唯一问题" },
+  { key: "mainAngle", label: "切入角度", placeholder: "独特的切入角度或视角" },
+  { key: "contentPromise", label: "内容承诺", placeholder: "读者看完能获得什么" },
+  { key: "keyEvidence", label: "关键证据", placeholder: "只写来自真实线索的证据。没有就写：暂无足够已验证证据。" },
+  { key: "differentiation", label: "差异点", placeholder: "和已有内容相比有什么不同" },
+  { key: "cta", label: "行动引导", placeholder: "希望读者接下来做什么" },
 ];
 
 interface BriefFieldsProps {

@@ -204,8 +204,8 @@ describe("mapping", () => {
       { ...EMPTY_MAPPING, metrics: {}, metricNAAll: [] },
       headers
     );
-    expect(missing.some((e) => e.includes("publication"))).toBe(true);
-    expect(missing.some((e) => e.includes("checkpoint"))).toBe(true);
+    expect(missing.some((e) => e.includes("publication_url"))).toBe(true);
+    expect(missing.some((e) => e.includes("数据点"))).toBe(true);
   });
 
   it("rejects derived / inactive metric mappings explicitly", () => {

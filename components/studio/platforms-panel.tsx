@@ -65,35 +65,35 @@ interface FieldDef {
 
 const PLATFORM_FIELDS: Record<Platform, FieldDef[]> = {
   xiaohongshu: [
-    { key: "title", label: "Title", kind: "input" },
-    { key: "coverCopy", label: "Cover Copy", kind: "input" },
-    { key: "opening", label: "Opening", kind: "textarea", rows: 2 },
-    { key: "body", label: "Body", kind: "textarea", rows: 8 },
-    { key: "cta", label: "CTA", kind: "input" },
-    { key: "tags", label: "Tags", kind: "list" },
+    { key: "title", label: "标题", kind: "input" },
+    { key: "coverCopy", label: "封面文案", kind: "input" },
+    { key: "opening", label: "开头", kind: "textarea", rows: 2 },
+    { key: "body", label: "正文", kind: "textarea", rows: 8 },
+    { key: "cta", label: "行动引导", kind: "input" },
+    { key: "tags", label: "标签", kind: "list" },
   ],
   bilibili: [
-    { key: "title", label: "Title", kind: "input" },
-    { key: "coverCopy", label: "Cover Copy", kind: "input" },
-    { key: "openingHook", label: "Opening Hook", kind: "textarea", rows: 2 },
-    { key: "script", label: "Script", kind: "textarea", rows: 10 },
-    { key: "chapters", label: "Chapters", kind: "list" },
-    { key: "description", label: "Description", kind: "textarea", rows: 4 },
+    { key: "title", label: "标题", kind: "input" },
+    { key: "coverCopy", label: "封面文案", kind: "input" },
+    { key: "openingHook", label: "开头钩子", kind: "textarea", rows: 2 },
+    { key: "script", label: "脚本", kind: "textarea", rows: 10 },
+    { key: "chapters", label: "章节", kind: "list" },
+    { key: "description", label: "简介", kind: "textarea", rows: 4 },
   ],
   douyin: [
-    { key: "hook", label: "Hook", kind: "input" },
-    { key: "script", label: "Script", kind: "textarea", rows: 10 },
-    { key: "rhythmNotes", label: "Rhythm Notes", kind: "textarea", rows: 3 },
-    { key: "cta", label: "CTA", kind: "input" },
+    { key: "hook", label: "开头钩子", kind: "input" },
+    { key: "script", label: "脚本", kind: "textarea", rows: 10 },
+    { key: "rhythmNotes", label: "节奏说明", kind: "textarea", rows: 3 },
+    { key: "cta", label: "行动引导", kind: "input" },
   ],
 };
 
 const SAVE_LABEL: Record<SaveQueueState, string> = {
   idle: "",
-  pending: "Editing…",
-  saving: "Saving…",
-  saved: "Saved",
-  failed: "Save failed",
+  pending: "编辑中…",
+  saving: "保存中…",
+  saved: "已保存",
+  failed: "保存失败",
 };
 
 interface Proposal {
@@ -248,7 +248,7 @@ export function usePlatformsPanel({
             }
           );
           const data = await res.json();
-          if (!res.ok) throw new Error(data.error || "Save failed");
+          if (!res.ok) throw new Error(data.error || "保存失败");
         },
         (s) => {
           // Obsolete ack after transition: never surface Saving/Failed/Retry.
@@ -341,7 +341,7 @@ export function usePlatformsPanel({
         }
       );
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to create draft");
+      if (!res.ok) throw new Error(data.error || "创建草稿失败");
       onVersionChange(data.version);
       setDrafts((prev) => ({
         ...prev,
@@ -349,7 +349,7 @@ export function usePlatformsPanel({
       }));
     } catch (err) {
       setActionError(
-        err instanceof Error ? err.message : "Failed to create draft"
+        err instanceof Error ? err.message : "创建草稿失败"
       );
     } finally {
       setCreating(false);
@@ -368,11 +368,11 @@ export function usePlatformsPanel({
         { method: "POST" }
       );
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Adaptation failed");
+      if (!res.ok) throw new Error(data.error || "AI 适配失败");
       setProposal({ data: data.proposal, isReAdapt: data.isReAdapt });
     } catch (err) {
       setAdaptError(
-        err instanceof Error ? err.message : "Adaptation failed"
+        err instanceof Error ? err.message : "AI 适配失败"
       );
     } finally {
       setAdapting(false);
@@ -394,7 +394,7 @@ export function usePlatformsPanel({
         }
       );
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to apply proposal");
+      if (!res.ok) throw new Error(data.error || "应用提案失败");
       onVersionChange(data.version);
       setDrafts((prev) => ({
         ...prev,
@@ -403,7 +403,7 @@ export function usePlatformsPanel({
       setProposal(null);
     } catch (err) {
       setActionError(
-        err instanceof Error ? err.message : "Failed to apply proposal"
+        err instanceof Error ? err.message : "应用提案失败"
       );
     }
   }
@@ -415,8 +415,8 @@ export function usePlatformsPanel({
   // ─── Render helpers ──────────────────────────────────
 
   function renderValue(v: unknown): string {
-    if (Array.isArray(v)) return v.length > 0 ? v.join(", ") : "(empty)";
-    return typeof v === "string" && v.trim() !== "" ? v : "(empty)";
+    if (Array.isArray(v)) return v.length > 0 ? v.join(", ") : "（空）";
+    return typeof v === "string" && v.trim() !== "" ? v : "（空）";
   }
 
   function renderEditor(data: PlatformData, readOnly: boolean) {
@@ -459,7 +459,7 @@ export function usePlatformsPanel({
                       <button
                         onClick={() => listRemove(f.key, i)}
                         className="text-ink-faint hover:text-danger"
-                        aria-label="Remove item"
+                        aria-label="删除该项"
                       >
                         <X className="h-3.5 w-3.5" />
                       </button>
@@ -472,7 +472,7 @@ export function usePlatformsPanel({
                     className="inline-flex items-center gap-1 text-xs text-mint-600 hover:underline"
                   >
                     <Plus className="h-3 w-3" />
-                    Add
+                    添加
                   </button>
                 )}
               </div>
@@ -505,9 +505,9 @@ export function usePlatformsPanel({
     return (
       <div className="space-y-3">
         <div className="grid grid-cols-[1fr_1fr_1fr] gap-2 text-xs font-semibold uppercase tracking-wide text-ink-muted">
-          <span>Field</span>
-          <span>OLD</span>
-          <span>NEW</span>
+          <span>字段</span>
+          <span>修改前</span>
+          <span>修改后</span>
         </div>
         {PLATFORM_FIELDS[selected].map((f) => {
           const changed =
@@ -546,7 +546,7 @@ export function usePlatformsPanel({
       <div className="flex flex-col items-center justify-center py-16 text-center">
         <Lock className="h-5 w-5 text-ink-faint" />
         <p className="mt-3 text-sm text-ink-secondary">
-          Create the Content Master before adapting platform versions.
+          请先创建内容母稿，再适配平台版本。
         </p>
       </div>
     );
@@ -572,10 +572,10 @@ export function usePlatformsPanel({
                   <span className="text-sm font-medium text-ink-primary">
                     {platformLabel(p)}
                   </span>
-                  {isPrimary && <Badge variant="mint">Primary</Badge>}
+                  {isPrimary && <Badge variant="mint">主要平台</Badge>}
                 </div>
                 <p className="mt-1 text-xs text-ink-muted">
-                  {v ? versionStatusLabel(v.status) : "Not created"}
+                  {v ? versionStatusLabel(v.status) : "未创建"}
                 </p>
               </button>
             );
@@ -585,8 +585,7 @@ export function usePlatformsPanel({
         {!approved && (
           <div className="mb-4 rounded-[8px] border border-warning/30 bg-warning/5 p-3">
             <p className="text-xs text-ink-secondary">
-              Brief has changed. Re-approve it to continue editing platform
-              versions.
+              简报已变更。重新确认后才能继续编辑平台版本。
             </p>
           </div>
         )}
@@ -602,7 +601,7 @@ export function usePlatformsPanel({
           <div className="flex flex-col items-center justify-center py-12 text-center">
             <FileText className="h-5 w-5 text-ink-faint" />
             <p className="mt-3 text-sm text-ink-secondary">
-              No {platformLabel(selected)} version yet.
+              还没有 {platformLabel(selected)} 版本。
             </p>
             {!locked && (
               <div className="mt-4 flex gap-2">
@@ -613,7 +612,7 @@ export function usePlatformsPanel({
                   disabled={adapting}
                 >
                   <Sparkles className="mr-1 h-3 w-3" />
-                  {adapting ? "Adapting…" : "Adapt from Master with AI"}
+                  {adapting ? "适配中…" : "AI 适配平台版本"}
                 </Button>
                 <Button
                   variant="secondary"
@@ -621,7 +620,7 @@ export function usePlatformsPanel({
                   onClick={createEmpty}
                   disabled={creating}
                 >
-                  {creating ? "Creating…" : "Create Empty Draft"}
+                  {creating ? "创建中…" : "创建空白草稿"}
                 </Button>
               </div>
             )}
@@ -632,15 +631,14 @@ export function usePlatformsPanel({
           <div>
             <div className="mb-4 rounded-[8px] border border-mint-600/30 bg-mint-100 p-3">
               <p className="text-xs font-medium text-ink-primary">
-                AI adaptation proposal — nothing is saved yet. Review, then
-                Apply or Discard.
+                这是 AI 适配提案——尚未保存任何内容。请审核后应用或放弃。
               </p>
               <div className="mt-2 flex gap-2">
                 <Button variant="primary" size="sm" onClick={applyProposal}>
-                  Apply
+                  应用
                 </Button>
                 <Button variant="ghost" size="sm" onClick={discardProposal}>
-                  Discard
+                  放弃
                 </Button>
               </div>
             </div>
@@ -652,15 +650,14 @@ export function usePlatformsPanel({
           <div>
             <div className="mb-4 rounded-[8px] border border-mint-600/30 bg-mint-100 p-3">
               <p className="text-xs font-medium text-ink-primary">
-                AI re-adapt proposal — auto-save is paused. Accept replaces
-                this platform&apos;s draft; Reject keeps the current version.
+                AI 重新适配提案——自动保存已暂停。接受将替换当前平台草稿；拒绝则保留当前版本。
               </p>
               <div className="mt-2 flex gap-2">
                 <Button variant="primary" size="sm" onClick={applyProposal}>
-                  Accept
+                  接受
                 </Button>
                 <Button variant="ghost" size="sm" onClick={discardProposal}>
-                  Reject
+                  拒绝
                 </Button>
               </div>
             </div>
@@ -690,7 +687,7 @@ export function usePlatformsPanel({
                       className="ml-1 underline"
                       onClick={() => getQueue(selected)?.retry()}
                     >
-                      Retry
+                      重试
                     </button>
                   )}
                 </span>
@@ -698,14 +695,12 @@ export function usePlatformsPanel({
             </div>
             {version.status === "published" && (
               <p className="mb-4 rounded-[8px] border border-mint-600/30 bg-mint-100/40 px-3 py-2 text-xs text-ink-secondary">
-                Published version is read-only. Use Edit Publication in the
-                Review tab to correct the publication record.
+                已发布版本为只读。如需更正发布记录，请到“审核”页使用“修改发布记录”。
               </p>
             )}
             {(version.status === "review" || version.status === "approved") && (
               <p className="mb-4 rounded-[8px] border border-warning/30 bg-warning/5 px-3 py-2 text-xs text-ink-secondary">
-                This version is currently {versionStatusLabel(version.status)}.
-                Read-only — use Return to Draft in the Review tab to edit it.
+                该版本当前为{versionStatusLabel(version.status)}。只读——请在“审核”页使用“退回草稿”来编辑。
               </p>
             )}
             {renderEditor(draft, locked || !editable)}
@@ -733,16 +728,16 @@ export function usePlatformsPanel({
         >
           <Sparkles className="mr-1 h-3 w-3" />
           {adapting
-            ? "Adapting…"
+            ? "适配中…"
             : version
-              ? "Re-adapt from Master with AI"
-              : "Adapt from Master with AI"}
+              ? "重新 AI 适配"
+              : "AI 适配平台版本"}
         </Button>
       ) : (
         <p className="rounded-[8px] border border-border bg-workspace p-3 text-xs text-ink-muted">
           {version?.status === "published"
-            ? "Published version is read-only. AI adaptation is unavailable after publication."
-            : `This version is currently ${versionStatusLabel(version?.status)}. AI adaptation is only available for drafts.`}
+            ? "已发布版本为只读。发布后不可再进行 AI 适配。"
+            : `该版本当前为${versionStatusLabel(version?.status)}。AI 适配仅适用于草稿。`}
         </p>
       )}
       {adaptError && (
@@ -753,19 +748,18 @@ export function usePlatformsPanel({
             className="mt-1.5 inline-flex items-center gap-1 text-xs font-medium text-mint-600 hover:underline"
           >
             <RefreshCw className="h-3 w-3" />
-            Retry
+            重试
           </button>
         </div>
       )}
       <p className="text-xs text-ink-faint">
         {hasPlaybook
-          ? "Custom playbook loaded for this platform."
-          : "No custom playbook — generic platform structure is used."}
+          ? "已加载该平台的自定义规范。"
+          : "没有自定义平台规范——使用通用平台结构。"}
       </p>
       <p className="text-xs text-ink-faint">
-        AI adapts the approved Content Master into a structured{" "}
-        {platformLabel(selected)} version. Nothing is saved until you Apply
-        or Accept.
+        AI 会把已确认的内容母稿适配为结构化的{" "}
+        {platformLabel(selected)} 版本。应用或接受前不会保存任何内容。
       </p>
     </div>
   );

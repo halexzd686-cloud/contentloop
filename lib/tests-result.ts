@@ -11,6 +11,7 @@ import {
 } from "@/lib/db/schema";
 import { requireSingleBrand } from "@/lib/brand";
 import { ReviewError } from "@/lib/review";
+import { platformLabel } from "@/lib/labels";
 import { calculateMetric, type MetricDefLike } from "@/lib/metrics/engine";
 import { getBaselineForSnapshot } from "@/lib/metrics/baseline-service";
 import { tryBaseline } from "@/lib/metrics/analytics";
@@ -80,7 +81,7 @@ async function loadTestContext(testId: string, brandId: string) {
     .select()
     .from(tests)
     .where(and(eq(tests.id, testId), eq(tests.brandId, brandId)));
-  if (!test) throw new ReviewError("Test not found", 404);
+  if (!test) throw new ReviewError("测试不存在", 404);
 
   // MetricDefinition resolves even if later disabled (tests must stay
   // readable; definitions are never deleted).
@@ -96,7 +97,7 @@ async function loadTestContext(testId: string, brandId: string) {
     );
   if (!def) {
     throw new ReviewError(
-      `Metric "${test.primaryMetricKey}" no longer exists for ${test.platform}.`,
+      `指标“${test.primaryMetricKey}”在 ${platformLabel(test.platform)} 已不存在。`,
       500
     );
   }
@@ -306,7 +307,7 @@ export async function getConcludedResult(testId: string) {
   const brand = await requireSingleBrand();
   const { test, subjects } = await loadTestContext(testId, brand.id);
   if (test.status !== "concluded") {
-    throw new ReviewError("Test has not concluded.", 409);
+    throw new ReviewError("测试尚未完成。", 409);
   }
   const evidence = test.resultEvidence as {
     primaryMetric?: { key: string; format: "count" | "percentage" | "ratio"; label: string };
@@ -332,25 +333,25 @@ export async function concludeTest(testId: string, input: ConcludeTestInput) {
   const runtime = await getTestResult(testId);
   if (runtime.previewFingerprint !== input.previewFingerprint) {
     throw new ReviewError(
-      "Observed result changed. Review the latest result before concluding.",
+      "观察结果已变化。请先复核最新结果，再完成测试。",
       409
     );
   }
   if (runtime.baselineError) {
     throw new ReviewError(
-      "Baseline context could not be read. Retry when the connection recovers.",
+      "基线上下文读取失败。请在连接恢复后重试。",
       409
     );
   }
   if (!runtime.readiness.canConclude) {
     throw new ReviewError(
-      `Test is not ready to conclude: ${runtime.readiness.reasons.join(" ")}`,
+      `测试还不能完成：${runtime.readiness.reasons.join(" ")}`,
       409
     );
   }
   if (!isOutcomeAllowed(input.outcome, runtime.readiness)) {
     throw new ReviewError(
-      "Evidence is insufficient for a directional outcome — only No Clear Result is allowed.",
+      "证据不足以支持方向性结论——只能得出“无明确结论”。",
       409
     );
   }
@@ -380,9 +381,9 @@ export async function concludeTest(testId: string, input: ConcludeTestInput) {
       .select()
       .from(tests)
       .where(and(eq(tests.id, testId), eq(tests.brandId, brand.id)));
-    if (!current) throw new ReviewError("Test not found", 404);
+    if (!current) throw new ReviewError("测试不存在", 404);
     if (current.status !== "running") {
-      throw new ReviewError("Test has already concluded.", 409);
+      throw new ReviewError("该测试已完成。", 409);
     }
 
     const now = new Date();

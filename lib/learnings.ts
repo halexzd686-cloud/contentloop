@@ -105,7 +105,7 @@ export function buildLearningEvidenceSummary(test: TestRow): string {
 
 function assertConcluded(test: TestRow) {
   if (test.status !== "concluded") {
-    throw new ReviewError("Learning can only be created from a concluded test.", 409);
+    throw new ReviewError("只能从已完成的测试创建运营经验。", 409);
   }
   if (
     !test.resultEvidence ||
@@ -115,7 +115,7 @@ function assertConcluded(test: TestRow) {
     !test.concludedAt
   ) {
     throw new ReviewError(
-      "This test's concluded result is incomplete — its saved evidence is missing.",
+      "这个测试的结论数据不完整——缺少已保存的证据。",
       409
     );
   }
@@ -138,7 +138,7 @@ export async function getLearningContext(testId: string) {
     .select()
     .from(tests)
     .where(and(eq(tests.id, testId), eq(tests.brandId, brand.id)));
-  if (!test) throw new ReviewError("Test not found", 404);
+  if (!test) throw new ReviewError("测试不存在", 404);
 
   const [learning] = await db
     .select()
@@ -154,7 +154,7 @@ export async function getLearningContext(testId: string) {
 
   if (test.status !== "concluded" && !learning) {
     throw new ReviewError(
-      "Learning can only be created from a concluded test.",
+      "只能从已完成的测试创建运营经验。",
       409
     );
   }
@@ -178,7 +178,7 @@ export async function createLearning(testId: string, input: LearningSaveInput) {
       .select()
       .from(tests)
       .where(and(eq(tests.id, testId), eq(tests.brandId, brand.id)));
-    if (!test) throw new ReviewError("Test not found", 404);
+    if (!test) throw new ReviewError("测试不存在", 404);
     assertConcluded(test);
 
     const [existing] = await tx
@@ -186,7 +186,7 @@ export async function createLearning(testId: string, input: LearningSaveInput) {
       .from(learnings)
       .where(eq(learnings.sourceTestId, test.id));
     if (existing) {
-      throw new ReviewError("A Learning already exists for this test.", 409);
+      throw new ReviewError("这个测试已有保存的运营经验。", 409);
     }
 
     let pillarId: string | null = null;
@@ -201,7 +201,7 @@ export async function createLearning(testId: string, input: LearningSaveInput) {
           )
         );
       if (!pillar)
-        throw new ReviewError("This pillar doesn't exist in your workspace.", 400);
+        throw new ReviewError("这个内容方向在你的工作区不存在。", 400);
       pillarId = pillar.id;
     }
 
@@ -227,7 +227,7 @@ export async function patchLearning(id: string, input: LearningPatchInput) {
     .select()
     .from(learnings)
     .where(and(eq(learnings.id, id), eq(learnings.brandId, brand.id)));
-  if (!learning) throw new ReviewError("Learning not found", 404);
+  if (!learning) throw new ReviewError("经验不存在", 404);
 
   if (input.pillarId) {
     const [pillar] = await db
@@ -240,7 +240,7 @@ export async function patchLearning(id: string, input: LearningPatchInput) {
         )
       );
     if (!pillar)
-      throw new ReviewError("This pillar doesn't exist in your workspace.", 400);
+      throw new ReviewError("这个内容方向在你的工作区不存在。", 400);
   }
 
   const [updated] = await db

@@ -107,14 +107,21 @@ const EMPTY_FIELDS: BriefFieldValues = {
 
 const TABS = ["Brief", "Master", "Platforms", "Review"] as const;
 
+const TAB_LABELS: Record<(typeof TABS)[number], string> = {
+  Brief: "内容简报",
+  Master: "内容母稿",
+  Platforms: "平台版本",
+  Review: "审核",
+};
+
 type SaveState = "idle" | "editing" | "saving" | "saved" | "failed";
 
 const SAVE_LABEL: Record<SaveState, string> = {
   idle: "",
-  editing: "Editing…",
-  saving: "Saving…",
-  saved: "Saved",
-  failed: "Save failed",
+  editing: "编辑中…",
+  saving: "保存中…",
+  saved: "已保存",
+  failed: "保存失败",
 };
 
 export default function StudioContentPage({
@@ -249,7 +256,7 @@ export default function StudioContentPage({
     try {
       const res = await fetch(`/api/contents/${id}`);
       setLoadError(null);
-      if (!res.ok) throw new Error("Failed to load content");
+      if (!res.ok) throw new Error("内容加载失败");
       const data = await res.json();
       setContent(data.content);
       setSignal(data.signal);
@@ -284,7 +291,7 @@ export default function StudioContentPage({
       setPublications(data.publications ?? []);
       setMetricSnapshots(data.metricSnapshots ?? []);
     } catch (err) {
-      setLoadError(err instanceof Error ? err.message : "Failed to load");
+      setLoadError(err instanceof Error ? err.message : "加载失败");
     } finally {
       setLoading(false);
     }
@@ -323,7 +330,7 @@ export default function StudioContentPage({
           body: JSON.stringify(values),
         });
         const data = await res.json();
-        if (!res.ok) throw new Error(data.error || "Save failed");
+        if (!res.ok) throw new Error(data.error || "保存失败");
         setBrief(data.brief);
         setSaveState("saved");
         dirtyRef.current = false;
@@ -359,12 +366,12 @@ export default function StudioContentPage({
         method: "POST",
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Draft generation failed");
+      if (!res.ok) throw new Error(data.error || "草稿生成失败");
       preProposalFields.current = fields;
       setProposal(data.draft);
     } catch (err) {
       setGenerateError(
-        err instanceof Error ? err.message : "Draft generation failed"
+        err instanceof Error ? err.message : "草稿生成失败"
       );
     } finally {
       setGenerating(false);
@@ -399,13 +406,13 @@ export default function StudioContentPage({
         method: "POST",
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Approve failed");
+      if (!res.ok) throw new Error(data.error || "确认失败");
       setBrief(data.brief);
       applyWorkflowSnapshot(data.workflow, beginWorkflowAction());
       dirtyRef.current = false;
       setSaveState("idle");
     } catch (err) {
-      setApproveError(err instanceof Error ? err.message : "Approve failed");
+      setApproveError(err instanceof Error ? err.message : "确认失败");
     } finally {
       setApproving(false);
     }
@@ -418,7 +425,7 @@ export default function StudioContentPage({
         method: "POST",
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to reopen brief");
+      if (!res.ok) throw new Error(data.error || "重新打开简报失败");
       setBrief(data.brief);
       if (data.workflow) {
         applyWorkflowSnapshot(data.workflow, beginWorkflowAction());
@@ -426,7 +433,7 @@ export default function StudioContentPage({
       setEditConfirmOpen(false);
     } catch (err) {
       setApproveError(
-        err instanceof Error ? err.message : "Failed to reopen brief"
+        err instanceof Error ? err.message : "重新打开简报失败"
       );
       setEditConfirmOpen(false);
     }
@@ -444,7 +451,7 @@ export default function StudioContentPage({
             body: JSON.stringify({ modules: snapshot }),
           });
           const data = await res.json();
-          if (!res.ok) throw new Error(data.error || "Save failed");
+          if (!res.ok) throw new Error(data.error || "保存失败");
         },
         setMasterSaveState
       );
@@ -480,13 +487,13 @@ export default function StudioContentPage({
         method: "POST",
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to create master");
+      if (!res.ok) throw new Error(data.error || "创建母稿失败");
       setMaster(data.master);
       setModules(data.master.modules);
       setMasterSaveState("idle");
     } catch (err) {
       setMasterError(
-        err instanceof Error ? err.message : "Failed to create master"
+        err instanceof Error ? err.message : "创建母稿失败"
       );
     } finally {
       setCreatingMaster(false);
@@ -513,7 +520,7 @@ export default function StudioContentPage({
   if (loading) {
     return (
       <div className="flex h-full items-center justify-center">
-        <p className="text-sm text-ink-muted">Loading content…</p>
+        <p className="text-sm text-ink-muted">正在加载内容…</p>
       </div>
     );
   }
@@ -521,7 +528,7 @@ export default function StudioContentPage({
   if (loadError || !content) {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-3">
-        <p className="text-sm text-danger">{loadError || "Content not found"}</p>
+        <p className="text-sm text-danger">{loadError || "内容不存在"}</p>
         <Button
           variant="secondary"
           size="sm"
@@ -532,7 +539,7 @@ export default function StudioContentPage({
           }}
         >
           <RefreshCw className="mr-1 h-3 w-3" />
-          Retry
+          重试
         </Button>
       </div>
     );
@@ -576,7 +583,7 @@ export default function StudioContentPage({
                     className="ml-1 underline"
                     onClick={() => persistBrief(fields)}
                   >
-                    Retry
+                    重试
                   </button>
                 )}
               </span>
@@ -589,8 +596,8 @@ export default function StudioContentPage({
               {content.primaryPlatform && (
                 <span>{platformLabel(content.primaryPlatform)}</span>
               )}
-              {content.owner && <span>Owner: {content.owner.name}</span>}
-              {approverName && <span>Reviewer: {approverName}</span>}
+              {content.owner && <span>负责人：{content.owner.name}</span>}
+              {approverName && <span>审核人：{approverName}</span>}
             </div>
           </div>
         </div>
@@ -609,7 +616,7 @@ export default function StudioContentPage({
                     : "text-ink-muted hover:text-ink-primary"
                 }`}
               >
-                {tab}
+                {TAB_LABELS[tab]}
               </button>
             );
           })}
@@ -629,7 +636,7 @@ export default function StudioContentPage({
           <>
           <div className="mb-4 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <h2 className="text-sm font-semibold text-ink-primary">Brief</h2>
+              <h2 className="text-sm font-semibold text-ink-primary">内容简报</h2>
               {brief && (
                 <Badge variant={approved ? "mint" : "default"}>
                   {briefStatusLabel(brief.status)}
@@ -640,9 +647,9 @@ export default function StudioContentPage({
               hasPublications ? (
                 <span
                   className="text-xs text-ink-faint"
-                  title="This content already has a published platform version. Brief and Master can no longer be edited."
+                  title="这条内容已有发布的平台版本。简报和母稿不能再编辑。"
                 >
-                  Published — Brief locked
+                  已发布——简报已锁定
                 </span>
               ) : (
                 <Button
@@ -650,7 +657,7 @@ export default function StudioContentPage({
                   size="sm"
                   onClick={() => setEditConfirmOpen(true)}
                 >
-                  Edit Brief
+                  编辑简报
                 </Button>
               )
             ) : (
@@ -663,21 +670,19 @@ export default function StudioContentPage({
                 }
               >
                 <Check className="mr-1 h-3 w-3" />
-                {approving ? "Approving…" : "Approve Brief"}
+                {approving ? "确认中…" : "确认内容简报"}
               </Button>
             )}
           </div>
 
           <p className="-mt-2 mb-4 text-xs text-ink-secondary">
-            Why this content should exist: who it&apos;s for, the problem it
-            addresses, and the angle.
+            这条内容为什么存在：写给谁、解决什么问题、用什么角度。
           </p>
 
           {approved && brief?.approvedAt && (
             <p className="mb-4 text-xs text-ink-muted">
-              Approved {new Date(brief.approvedAt).toLocaleString()}
-              {approverName ? ` by ${approverName}` : ""}. Read-only — use Edit
-              Brief to make changes.
+              已于 {new Date(brief.approvedAt).toLocaleString()}
+              {approverName ? ` 由 ${approverName}` : ""} 确认。只读状态——需要修改请点“编辑简报”。
             </p>
           )}
 
@@ -687,14 +692,14 @@ export default function StudioContentPage({
           {approved && !master && (
             <div className="mb-4 flex items-center justify-between rounded-[8px] border border-mint-600/30 bg-mint-100/40 px-3 py-2.5">
               <p className="text-xs text-ink-secondary">
-                Brief approved — next: create the Content Master.
+                简报已确认——下一步：创建内容母稿。
               </p>
               <Button
                 variant="primary"
                 size="sm"
                 onClick={() => setActiveTab("Master")}
               >
-                Continue to Master
+                继续写母稿
               </Button>
             </div>
           )}
@@ -710,15 +715,14 @@ export default function StudioContentPage({
               {/* M5.6: proposal arrival is static text — BlurText was
                   removed from the V1 React Bits set. */}
               <p className="text-xs font-medium text-ink-primary">
-                AI Draft proposal — auto-save is paused. Review below, then
-                Apply or Discard.
+                这是 AI 草稿——自动保存已暂停。请在下方审核，然后应用或放弃。
               </p>
               <div className="mt-2 flex gap-2">
                 <Button variant="primary" size="sm" onClick={handleApplyDraft}>
-                  Apply Draft
+                  应用草稿
                 </Button>
                 <Button variant="ghost" size="sm" onClick={handleDiscardDraft}>
-                  Discard
+                  放弃
                 </Button>
               </div>
             </div>
@@ -732,8 +736,7 @@ export default function StudioContentPage({
 
           {!brief && !proposalPending && (
             <p className="mt-4 text-xs text-ink-faint">
-              No brief saved yet. Edit any field to create a draft, or generate
-              an AI draft from the Loop AI panel.
+              还没有保存简报。编辑任意字段即可创建草稿，或在 Loop AI 面板生成 AI 草稿。
             </p>
           )}
 
@@ -762,7 +765,7 @@ export default function StudioContentPage({
                 });
                 const data = await res.json();
                 if (!res.ok) {
-                  setMasterError(data.error || "Failed to return to editing");
+                  setMasterError(data.error || "返回编辑失败");
                   return;
                 }
                 applyWorkflowSnapshot(data.workflow, rev);
@@ -801,7 +804,7 @@ export default function StudioContentPage({
                 genuine AI request; static at all other times. */}
             <p className="mt-1.5 text-xs text-ink-secondary">
               <ShinyText
-                text="AI proposes · You review and confirm"
+                text="AI 提供建议 · 由你审核确认"
                 disabled={!shinyTextActive(aiVisual)}
                 speed={1.6}
                 color="#5F625D"
@@ -814,14 +817,13 @@ export default function StudioContentPage({
           ) : activeTab === "Review" ? (
             <div className="mt-4">
               <p className="text-xs text-ink-secondary">
-                Review is human-only. AI never checks items or approves
-                content.
+                审核只能由人完成。AI 不会替你勾选清单或批准内容。
               </p>
             </div>
           ) : activeTab === "Master" ? (
             <div className="mt-3">
               <p className="text-xs text-ink-faint">
-                Master AI actions aren&apos;t available yet.
+                母稿的 AI 操作暂未开放。
               </p>
             </div>
           ) : (
@@ -834,7 +836,7 @@ export default function StudioContentPage({
               disabled={generating || approved || proposalPending}
             >
               <Sparkles className="mr-1 h-3 w-3" />
-              {generating ? "Generating draft…" : "Generate Draft Brief"}
+              {generating ? "生成草稿中…" : "AI 生成简报草稿"}
             </Button>
             {generateError && (
               <div className="rounded-[8px] border border-danger/20 bg-danger/5 p-3">
@@ -844,14 +846,14 @@ export default function StudioContentPage({
                   className="mt-1.5 inline-flex items-center gap-1 text-xs font-medium text-mint-600 hover:underline"
                 >
                   <RefreshCw className="h-3 w-3" />
-                  Retry
+                  重试
                 </button>
               </div>
             )}
             <p className="text-xs text-ink-faint">
               {signal
-                ? "AI proposes a draft based on the linked signal, brand context and playbook. Nothing is saved until you Apply and edit."
-                : "AI proposes a draft based on this content's context, brand context and playbook. Nothing is saved until you Apply and edit."}
+                ? "AI 会根据关联线索、品牌信息和平台规范起草。不应用就不会保存任何内容。"
+                : "AI 会根据这条内容、品牌信息和平台规范起草。不应用就不会保存任何内容。"}
             </p>
           </div>
           )}
@@ -862,17 +864,17 @@ export default function StudioContentPage({
       <Dialog open={editConfirmOpen} onOpenChange={setEditConfirmOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Edit approved brief?</DialogTitle>
+            <DialogTitle>编辑已确认的简报？</DialogTitle>
             <DialogDescription>
-              Editing this brief will require approval again.
+              编辑简报后需要重新确认。
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setEditConfirmOpen(false)}>
-              Cancel
+              取消
             </Button>
             <Button variant="primary" onClick={handleEditBrief}>
-              Edit Brief
+              编辑简报
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -923,7 +925,7 @@ function MasterWorkspace({
       <div className="flex flex-col items-center justify-center py-16 text-center">
         <Lock className="h-5 w-5 text-ink-faint" />
         <p className="mt-3 text-sm text-ink-secondary">
-          Approve Brief before creating the Content Master.
+          请先确认内容简报，再创建内容母稿。
         </p>
       </div>
     );
@@ -938,8 +940,8 @@ function MasterWorkspace({
         <div className="mb-4 rounded-[8px] border border-warning/30 bg-warning/5 p-3">
           <p className="text-xs text-ink-secondary">
             {hasPublications
-              ? "This content already has a published platform version. Brief and Master can no longer be edited."
-              : `Content is ${contentStatus === "scheduled" ? "approved for publishing" : "in review"}. The Master is read-only. Returning to editing will invalidate the current review and move the content back to production.`}
+              ? "这条内容已有发布的平台版本。简报和母稿不能再编辑。"
+              : `内容当前${contentStatus === "scheduled" ? "已通过待发布" : "在审核中"}。母稿为只读。返回编辑将使当前审核失效，并把内容退回制作中。`}
           </p>
           {!hasPublications && (
             <Button
@@ -948,7 +950,7 @@ function MasterWorkspace({
               className="mt-2"
               onClick={onReturnToEditing}
             >
-              Return to Editing
+              返回编辑
             </Button>
           )}
           {error && <p className="mt-2 text-xs text-danger">{error}</p>}
@@ -971,8 +973,7 @@ function MasterWorkspace({
       <div>
         <div className="mb-4 rounded-[8px] border border-warning/30 bg-warning/5 p-3">
           <p className="text-xs text-ink-secondary">
-            Brief has changed. Re-approve it to continue editing the Content
-            Master.
+            简报已变更。重新确认后才能继续编辑内容母稿。
           </p>
         </div>
         <MasterEditor
@@ -992,10 +993,10 @@ function MasterWorkspace({
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
         <p className="text-sm text-ink-secondary">
-          No Content Master yet. Create one to start structured production.
+          还没有内容母稿。创建一个，开始结构化生产。
         </p>
         <p className="mt-1 text-xs text-ink-secondary">
-          The master draft used to create platform-specific versions.
+          用于生成各平台版本的母稿。
         </p>
         <Button
           variant="primary"
@@ -1004,7 +1005,7 @@ function MasterWorkspace({
           onClick={onCreate}
           disabled={creating}
         >
-          {creating ? "Creating…" : "Create Content Master"}
+          {creating ? "创建中…" : "创建内容母稿"}
         </Button>
         {error && <p className="mt-3 text-xs text-danger">{error}</p>}
       </div>
@@ -1015,7 +1016,7 @@ function MasterWorkspace({
   return (
     <div>
       <p className="mb-4 text-xs text-ink-secondary">
-        The master draft used to create platform-specific versions.
+        用于生成各平台版本的母稿。
       </p>
       <MasterEditor
         modules={modules}

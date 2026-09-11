@@ -33,11 +33,11 @@ export function LearningsPanel({ contentId }: { contentId: string }) {
     try {
       const res = await fetch(`/api/contents/${contentId}/learning-applications`);
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error || "Failed to load");
+      if (!res.ok) throw new Error(json.error || "加载失败");
       setData(json);
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load");
+      setError(err instanceof Error ? err.message : "加载失败");
     }
   }, [contentId]);
 
@@ -63,10 +63,10 @@ export function LearningsPanel({ contentId }: { contentId: string }) {
             body: JSON.stringify({ learningId: item.learningId, action }),
           });
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error || "Action failed");
+      if (!res.ok) throw new Error(json.error || "操作失败");
       await load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Action failed");
+      setError(err instanceof Error ? err.message : "操作失败");
     } finally {
       setBusy(null);
     }
@@ -76,7 +76,7 @@ export function LearningsPanel({ contentId }: { contentId: string }) {
     return <p className="text-xs text-danger">{error}</p>;
   }
   if (!data) {
-    return <p className="text-xs text-ink-faint">Loading learnings…</p>;
+    return <p className="text-xs text-ink-faint">正在加载运营经验…</p>;
   }
 
   const total =
@@ -87,15 +87,14 @@ export function LearningsPanel({ contentId }: { contentId: string }) {
       <div className="flex items-center gap-2">
         <BookOpen className="h-3.5 w-3.5 text-ink-muted" />
         <p className="text-xs font-semibold uppercase tracking-wide text-ink-muted">
-          Learnings
+          运营经验
         </p>
         <span className="text-[11px] text-ink-faint">{total}</span>
       </div>
 
       {total === 0 && (
         <p className="mt-2 text-xs text-ink-secondary">
-          No Learnings match this Content yet. Learnings come from concluded
-          Tests and match by platform and Pillar.
+          暂无匹配这条内容的运营经验。经验来自已完成的运营测试，按平台和内容方向匹配。
         </p>
       )}
 
@@ -108,7 +107,7 @@ export function LearningsPanel({ contentId }: { contentId: string }) {
               state="applied"
               busy={busy === item.learningId}
               onAction={() => act(item, "dismissed")}
-              actionLabel="Dismiss"
+              actionLabel="忽略"
             />
           ))}
         </div>
@@ -117,7 +116,7 @@ export function LearningsPanel({ contentId }: { contentId: string }) {
       {data.available.length > 0 && (
         <div className="mt-3">
           <p className="text-[11px] font-semibold uppercase tracking-wide text-ink-faint">
-            Available
+            可应用
           </p>
           <p className="mt-1 text-[11px] text-ink-secondary">
             {LEARNING_APPLY_HELPER}
@@ -148,7 +147,7 @@ export function LearningsPanel({ contentId }: { contentId: string }) {
             ) : (
               <ChevronRight className="h-3 w-3" />
             )}
-            Dismissed ({data.dismissed.length})
+            已忽略 ({data.dismissed.length})
           </button>
           {showDismissed && (
             <div className="mt-1.5 space-y-2">
@@ -159,7 +158,7 @@ export function LearningsPanel({ contentId }: { contentId: string }) {
                   state="dismissed"
                   busy={busy === item.learningId}
                   onAction={() => act(item, "applied")}
-                  actionLabel="Apply"
+                  actionLabel="应用"
                 />
               ))}
             </div>
@@ -193,7 +192,7 @@ function LearningCard({
       <div className="flex items-start justify-between gap-2">
         <p className="text-xs text-ink-primary">{item.text}</p>
         {state === "applied" && (
-          <Badge variant="mint">Applied</Badge>
+          <Badge variant="mint">已应用</Badge>
         )}
       </div>
       <div className="mt-1 flex flex-wrap items-center gap-x-2 text-[11px] text-ink-muted">
@@ -201,18 +200,18 @@ function LearningCard({
         {item.pillarName && <span>· {item.pillarName}</span>}
         {item.sourceTestTitle && (
           <span>
-            · test: {item.sourceTestTitle}
-            {item.sourceTestOutcome ? ` (${testOutcomeLabel(item.sourceTestOutcome)})` : ""}
+            · 来自测试：{item.sourceTestTitle}
+            {item.sourceTestOutcome ? `（${testOutcomeLabel(item.sourceTestOutcome)}）` : ""}
           </span>
         )}
         {item.sourceStale && (
           <span className="text-warning">
-            · source test data changed — review before relying on it
+            · 来源测试数据已变化——参考前请复核
           </span>
         )}
         {item.scopeMismatch && (
           <span className="text-warning">
-            · no longer matches this content&apos;s platform or pillar
+            · 已不再匹配这条内容的平台或内容方向
           </span>
         )}
       </div>
@@ -221,7 +220,7 @@ function LearningCard({
           className="text-[11px] text-ink-muted hover:text-ink-primary"
           onClick={() => setExpand(!expand)}
         >
-          {expand ? "Hide evidence" : "Evidence"}
+          {expand ? "收起证据" : "证据"}
         </button>
         {state === "available" && (
           <>
@@ -230,14 +229,14 @@ function LearningCard({
               onClick={onApply}
               disabled={busy}
             >
-              Apply
+              应用
             </button>
             <button
               className="text-[11px] text-ink-muted hover:underline disabled:opacity-50"
               onClick={onDismiss}
               disabled={busy}
             >
-              Dismiss
+              忽略
             </button>
           </>
         )}

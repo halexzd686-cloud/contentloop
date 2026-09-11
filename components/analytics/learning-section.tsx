@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Sparkles, RefreshCw } from "lucide-react";
-import { AI_PROPOSAL_APPLY_HELPER } from "@/lib/labels";
+import { AI_PROPOSAL_APPLY_HELPER, platformLabel } from "@/lib/labels";
 
 /**
  * Learning section — M3.3, inside the concluded Test drawer.
@@ -46,11 +46,11 @@ export function LearningSection({ testId }: { testId: string }) {
     try {
       const res = await fetch(`/api/tests/${testId}/learning`);
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to load");
+      if (!res.ok) throw new Error(data.error || "加载失败");
       setCtx(data);
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load");
+      setError(err instanceof Error ? err.message : "加载失败");
     }
   }, [testId]);
 
@@ -72,10 +72,10 @@ export function LearningSection({ testId }: { testId: string }) {
     try {
       const res = await fetch(`/api/tests/${testId}/learning/draft`, { method: "POST" });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Draft failed");
+      if (!res.ok) throw new Error(data.error || "生成草稿失败");
       setDraft(data.draft.text);
     } catch (err) {
-      setAiError(err instanceof Error ? err.message : "Draft failed");
+      setAiError(err instanceof Error ? err.message : "生成草稿失败");
     } finally {
       setAiBusy(false);
     }
@@ -92,12 +92,12 @@ export function LearningSection({ testId }: { testId: string }) {
         body: JSON.stringify({ text, pillarId }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Save failed");
+      if (!res.ok) throw new Error(data.error || "保存失败");
       setCreating(false);
       setDraft(null);
       await load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Save failed");
+      setError(err instanceof Error ? err.message : "保存失败");
     } finally {
       setSaving(false);
     }
@@ -114,11 +114,11 @@ export function LearningSection({ testId }: { testId: string }) {
         body: JSON.stringify({ text, pillarId }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Save failed");
+      if (!res.ok) throw new Error(data.error || "保存失败");
       setEditingSaved(false);
       await load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Save failed");
+      setError(err instanceof Error ? err.message : "保存失败");
     } finally {
       setSaving(false);
     }
@@ -128,22 +128,21 @@ export function LearningSection({ testId }: { testId: string }) {
     return <p className="text-xs text-danger">{error}</p>;
   }
   if (!ctx) {
-    return <p className="text-xs text-ink-faint">Loading learning…</p>;
+    return <p className="text-xs text-ink-faint">正在加载经验…</p>;
   }
 
   return (
     <section className="rounded-[8px] border border-border bg-canvas p-3">
       <p className="text-xs font-semibold uppercase tracking-wide text-ink-muted">
-        Learning
+        运营经验
       </p>
       <p className="mt-1 text-xs text-ink-secondary">
-        A reusable operating lesson you chose to save from a concluded Test.
+        你从已完成的运营测试中选择保存的可复用经验。
       </p>
 
       {ctx.sourceStale && (
         <p className="mt-2 rounded-[8px] border border-warning/30 bg-warning/5 p-2 text-xs text-ink-secondary">
-          This Test&apos;s underlying source data has changed. This Learning is
-          based on the evidence captured at conclusion time.
+          该测试的底层数据已变化。这条经验基于结论时定格的证据。
         </p>
       )}
 
@@ -152,18 +151,17 @@ export function LearningSection({ testId }: { testId: string }) {
         <div className="mt-2 space-y-2">
           <p className="text-sm text-ink-primary">{ctx.learning.text}</p>
           <p className="text-[11px] text-ink-faint">
-            {ctx.learning.platform ?? "all platforms"}
-            {ctx.learning.pillarId ? ` · pillar scoped` : ""}
-            {" · "}saved {new Date(ctx.learning.createdAt).toLocaleString()}
+            {ctx.learning.platform ? platformLabel(ctx.learning.platform) : "全部平台"}
+            {ctx.learning.pillarId ? ` · 限定内容方向` : ""}
+            {" · "}保存于 {new Date(ctx.learning.createdAt).toLocaleString()}
           </p>
           {/* M4.2: persistent guidance — a saved Learning never rewrites
               content; Studio (Brief tab) is the only Apply surface. */}
           <p className="text-xs text-ink-muted">
-            Saved. This does not change any content. Apply it from Studio →
-            Brief on eligible content.
+            已保存。这不会改动任何内容。请在内容工作台的“内容简报”中应用到合适的内容。
           </p>
           <details className="text-xs text-ink-muted">
-            <summary className="cursor-pointer">Evidence summary</summary>
+            <summary className="cursor-pointer">证据摘要</summary>
             <pre className="mt-1 whitespace-pre-wrap rounded-[8px] border border-border bg-workspace p-2 font-sans">
               {ctx.learning.evidenceSummary}
             </pre>
@@ -177,7 +175,7 @@ export function LearningSection({ testId }: { testId: string }) {
               setPillarId(ctx.learning!.pillarId);
             }}
           >
-            Edit
+            编辑
           </Button>
         </div>
       )}
@@ -194,14 +192,14 @@ export function LearningSection({ testId }: { testId: string }) {
           />
           <div>
             <label className="mb-1 block text-xs font-medium text-ink-secondary">
-              Pillar scope
+              内容方向范围
             </label>
             <select
               className="w-full rounded-[8px] border border-border bg-workspace px-3 py-2 text-sm outline-none focus:border-mint-600"
               value={pillarId ?? ""}
               onChange={(e) => setPillarId(e.target.value || null)}
             >
-              <option value="">No pillar scope</option>
+              <option value="">不限内容方向</option>
               {pillars.map((pl) => (
                 <option key={pl.id} value={pl.id}>{pl.name}</option>
               ))}
@@ -209,13 +207,12 @@ export function LearningSection({ testId }: { testId: string }) {
           </div>
           <div className="flex gap-2">
             <Button variant="primary" size="sm" onClick={saveEdit} disabled={saving || text.trim() === ""}>
-              {saving ? "Saving…" : "Save"}
+              {saving ? "保存中…" : "保存"}
             </Button>
-            <Button variant="ghost" size="sm" onClick={() => setEditingSaved(false)}>Cancel</Button>
+            <Button variant="ghost" size="sm" onClick={() => setEditingSaved(false)}>取消</Button>
           </div>
           <p className="text-[11px] text-ink-faint">
-            Evidence summary was recorded at conclusion and is never rewritten
-            by edits.
+            证据摘要定格于结论时，编辑不会改写它。
           </p>
         </div>
       )}
@@ -223,14 +220,14 @@ export function LearningSection({ testId }: { testId: string }) {
       {/* Create */}
       {!ctx.learning && !creating && (
         <Button variant="secondary" size="sm" className="mt-2" onClick={startCreate}>
-          Create Learning
+          保存运营经验
         </Button>
       )}
 
       {!ctx.learning && creating && (
         <div className="mt-2 space-y-2">
           <details className="text-xs text-ink-muted" open>
-            <summary className="cursor-pointer">Evidence summary (recorded at conclusion)</summary>
+            <summary className="cursor-pointer">证据摘要（定格于结论时）</summary>
             <pre className="mt-1 whitespace-pre-wrap rounded-[8px] border border-border bg-workspace p-2 font-sans">
               {ctx.evidenceSummaryPreview}
             </pre>
@@ -238,21 +235,21 @@ export function LearningSection({ testId }: { testId: string }) {
 
           <div>
             <div className="flex items-center justify-between">
-              <label className="text-xs font-medium text-ink-secondary">Learning text *</label>
+              <label className="text-xs font-medium text-ink-secondary">经验内容 *</label>
               <button
                 className="inline-flex items-center gap-1 text-xs text-mint-600 hover:underline"
                 onClick={generateDraft}
                 disabled={aiBusy}
               >
                 <Sparkles className="h-3 w-3" />
-                {aiBusy ? "Drafting…" : "Draft with AI"}
+                {aiBusy ? "AI 正在起草…" : "AI 生成经验草稿"}
               </button>
             </div>
             {aiError && (
               <p className="mt-1 text-xs text-danger">
                 {aiError}{" "}
                 <button className="underline" onClick={generateDraft}>
-                  <RefreshCw className="mr-0.5 inline h-3 w-3" />Retry
+                  <RefreshCw className="mr-0.5 inline h-3 w-3" />重试
                 </button>
               </p>
             )}
@@ -267,13 +264,13 @@ export function LearningSection({ testId }: { testId: string }) {
                       setDraft(null);
                     }}
                   >
-                    Apply
+                    应用
                   </button>
                   <button
                     className="text-xs text-ink-muted hover:underline"
                     onClick={() => setDraft(null)}
                   >
-                    Discard
+                    放弃
                   </button>
                 </div>
                 <p className="mt-1.5 text-[11px] text-ink-secondary">
@@ -285,7 +282,7 @@ export function LearningSection({ testId }: { testId: string }) {
               rows={3}
               maxLength={2000}
               className="mt-1 w-full rounded-[8px] border border-border bg-workspace px-3 py-2 text-sm outline-none focus:border-mint-600"
-              placeholder="What should future content remember from this test?"
+              placeholder="未来的内容应该记住这次测试的什么？"
               value={text}
               onChange={(e) => setText(e.target.value)}
             />
@@ -293,14 +290,14 @@ export function LearningSection({ testId }: { testId: string }) {
 
           <div>
             <label className="mb-1 block text-xs font-medium text-ink-secondary">
-              Pillar scope (optional)
+              内容方向范围（可选）
             </label>
             <select
               className="w-full rounded-[8px] border border-border bg-workspace px-3 py-2 text-sm outline-none focus:border-mint-600"
               value={pillarId ?? ""}
               onChange={(e) => setPillarId(e.target.value || null)}
             >
-              <option value="">No pillar scope</option>
+              <option value="">不限内容方向</option>
               {pillars.map((pl) => (
                 <option key={pl.id} value={pl.id}>{pl.name}</option>
               ))}
@@ -309,10 +306,10 @@ export function LearningSection({ testId }: { testId: string }) {
 
           <div className="flex gap-2">
             <Button variant="primary" size="sm" onClick={save} disabled={saving || text.trim() === ""}>
-              {saving ? "Saving…" : "Save Learning"}
+              {saving ? "保存中…" : "保存运营经验"}
             </Button>
             <Button variant="ghost" size="sm" onClick={() => { setCreating(false); setDraft(null); }}>
-              Cancel
+              取消
             </Button>
           </div>
           {error && <p className="text-xs text-danger">{error}</p>}

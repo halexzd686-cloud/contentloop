@@ -37,21 +37,21 @@ import type { SaveQueueState } from "@/lib/save-queue";
  */
 
 const MODULE_LABEL: Record<ModuleType, string> = {
-  hook: "Hook",
-  core_message: "Core Message",
-  section: "Section",
-  demo: "Demo / Example",
-  evidence: "Evidence",
-  conclusion: "Conclusion",
-  cta: "CTA",
+  hook: "开头钩子",
+  core_message: "核心信息",
+  section: "章节",
+  demo: "演示示例",
+  evidence: "证据",
+  conclusion: "总结",
+  cta: "行动引导",
 };
 
 const SAVE_LABEL: Record<SaveQueueState, string> = {
   idle: "",
-  pending: "Editing…",
-  saving: "Saving…",
-  saved: "Saved",
-  failed: "Save failed",
+  pending: "编辑中…",
+  saving: "保存中…",
+  saved: "已保存",
+  failed: "保存失败",
 };
 
 interface MasterEditorProps {
@@ -112,7 +112,7 @@ export function MasterEditor({
     <div>
       <div className="mb-3 flex items-center justify-between">
         <p className="text-xs text-ink-muted">
-          {modules.length} modules · drag the handle to reorder
+          {modules.length} 个模块 · 拖动手柄调整顺序
         </p>
         <span
           className={`text-xs ${
@@ -126,7 +126,7 @@ export function MasterEditor({
           {SAVE_LABEL[saveState]}
           {saveState === "failed" && (
             <button className="ml-1 underline" onClick={onRetrySave}>
-              Retry
+              重试
             </button>
           )}
         </span>
@@ -231,7 +231,7 @@ function SortableModule({
             {...attributes}
             {...listeners}
             className="cursor-grab touch-none text-ink-faint hover:text-ink-primary active:cursor-grabbing"
-            aria-label={`Drag ${MODULE_LABEL[module.type]} module`}
+            aria-label={`拖动${MODULE_LABEL[module.type]}模块`}
           >
             <GripVertical className="h-4 w-4" />
           </button>
@@ -244,7 +244,7 @@ function SortableModule({
                 onClick={() => onMove(module.id, -1)}
                 disabled={index === 0}
                 className="p-1 text-ink-faint hover:text-ink-primary disabled:opacity-30"
-                aria-label="Move up"
+                aria-label="上移"
               >
                 <ArrowUp className="h-3 w-3" />
               </button>
@@ -252,7 +252,7 @@ function SortableModule({
                 onClick={() => onMove(module.id, 1)}
                 disabled={index === total - 1}
                 className="p-1 text-ink-faint hover:text-ink-primary disabled:opacity-30"
-                aria-label="Move down"
+                aria-label="下移"
               >
                 <ArrowDown className="h-3 w-3" />
               </button>
@@ -262,7 +262,7 @@ function SortableModule({
             <button
               onClick={() => onRemove(module.id)}
               className="p-1 text-ink-faint hover:text-danger"
-              aria-label="Delete module"
+              aria-label="删除模块"
             >
               <Trash2 className="h-3 w-3" />
             </button>
@@ -278,8 +278,8 @@ function SortableModule({
         rows={focused || module.content ? 4 : 2}
         placeholder={
           module.type === "evidence"
-            ? 'Evidence from real data only. If none: "Evidence still needs verification."'
-            : `${MODULE_LABEL[module.type]} content…`
+            ? "只写来自真实数据的证据。没有就写：证据仍需验证。"
+            : `${MODULE_LABEL[module.type]}内容…`
         }
         className="w-full resize-y rounded-b-[8px] bg-transparent px-3 py-2 text-sm text-ink-primary placeholder:text-ink-faint focus-visible:outline-none read-only:text-ink-secondary"
       />

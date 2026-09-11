@@ -58,7 +58,7 @@ async function loadContentScope(
         isNull(contents.deletedAt)
       )
     );
-  if (!content) throw new ReviewError("Content not found", 404);
+  if (!content) throw new ReviewError("内容不存在", 404);
 
   // M4.1: Content.primaryPlatform is the authority. Signal's value is
   // only create-time provenance, never re-read.
@@ -79,7 +79,7 @@ async function loadLearningScope(
     .select()
     .from(learnings)
     .where(and(eq(learnings.id, learningId), eq(learnings.brandId, brandId)));
-  if (!learning) throw new ReviewError("Learning not found", 404);
+  if (!learning) throw new ReviewError("经验不存在", 404);
   return {
     id: learning.id,
     platform: learning.platform,
@@ -100,7 +100,7 @@ export async function applyAction(
 
     if (!isScopeEligible(learning, content)) {
       throw new ReviewError(
-        "This learning's platform or pillar doesn't match this content.",
+        "这条经验的平台或内容方向与这条内容不匹配。",
         409
       );
     }
@@ -116,7 +116,7 @@ export async function applyAction(
       );
     if (existing) {
       throw new ReviewError(
-        "You've already applied or dismissed this learning for this content — change that choice instead.",
+        "你已经对这条内容应用或忽略过这条经验——请直接修改你的选择。",
         409
       );
     }
@@ -146,18 +146,18 @@ export async function transitionAction(
       .select()
       .from(learningApplications)
       .where(eq(learningApplications.id, applicationId));
-    if (!app) throw new ReviewError("Application not found", 404);
+    if (!app) throw new ReviewError("应用记录不存在", 404);
 
     const content = await loadContentScope(tx, app.contentId, brand.id);
     if (app.action === action) {
       throw new ReviewError(
-        `Application is already ${action}.`,
+        `这条经验已是“${action === "applied" ? "应用" : "忽略"}”状态。`,
         409
       );
     }
     if (content.status === "published") {
       throw new ReviewError(
-        "This content is published — its learning choices are kept as a record and can't be changed.",
+        "这条内容已发布——其经验选择将作为记录保留，不可更改。",
         409
       );
     }
@@ -167,7 +167,7 @@ export async function transitionAction(
       const learning = await loadLearningScope(tx, app.learningId, brand.id);
       if (!isScopeEligible(learning, content)) {
         throw new ReviewError(
-          "This learning's platform or pillar no longer matches this content.",
+          "这条经验的平台或内容方向与这条内容不再匹配。",
           409
         );
       }
@@ -218,7 +218,7 @@ export async function getApplicationsForContent(contentId: string) {
       )
     )
     .then((r) => r[0]);
-  if (!content) throw new ReviewError("Content not found", 404);
+  if (!content) throw new ReviewError("内容不存在", 404);
 
   const scope: ContentScope = {
     id: content.id,

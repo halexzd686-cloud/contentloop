@@ -11,6 +11,8 @@ import {
   testRoleLabel,
   testOutcomeLabel,
   confidenceLabel,
+  snapshotStatusLabel,
+  NAV_LABELS,
   TEST_METHOD_HELPERS,
   TEST_METHODS_FOOTNOTE,
   TEST_ROLE_HELPER,
@@ -25,79 +27,101 @@ import {
   METRIC_NA_HELPER,
   METRIC_BLANK_HELPER,
   LEARNING_APPLY_HELPER,
-  DEMO_NOTICE,
-  DEMO_BADGE_LABEL,
+  HOME_THESIS,
 } from "@/lib/labels";
 import { TEST_METHODS, TEST_ROLES } from "@/lib/validation/test";
 
 /**
- * M4.3 — shared presentation labels. Known enums fully covered;
- * unknown values must never leak raw snake_case to the UI.
+ * M6 — authoritative Chinese product-language layer. Frozen enums keep
+ * English keys; labels are Simplified Chinese. Known enums fully
+ * covered; unknown values never leak raw snake_case.
  */
 
-describe("label coverage", () => {
-  it("platforms: full names, never abbreviations", () => {
-    expect(platformLabel("xiaohongshu")).toBe("Xiaohongshu");
+describe("label coverage (Chinese-first)", () => {
+  it("platforms: 小红书 / Bilibili / 抖音", () => {
+    expect(platformLabel("xiaohongshu")).toBe("小红书");
     expect(platformLabel("bilibili")).toBe("Bilibili");
-    expect(platformLabel("douyin")).toBe("Douyin");
+    expect(platformLabel("douyin")).toBe("抖音");
+  });
+
+  it("navigation set is the approved six", () => {
+    expect(NAV_LABELS).toEqual({
+      home: "首页",
+      radar: "选题雷达",
+      studio: "内容工作台",
+      pipeline: "内容流程",
+      analytics: "数据复盘",
+      settings: "设置",
+    });
   });
 
   it("content statuses", () => {
-    for (const s of ["planning", "in_progress", "review", "scheduled", "published"])
-      expect(contentStatusLabel(s)).not.toContain("_");
+    expect(contentStatusLabel("planning")).toBe("策划中");
+    expect(contentStatusLabel("in_progress")).toBe("制作中");
+    expect(contentStatusLabel("review")).toBe("待审核");
+    expect(contentStatusLabel("scheduled")).toBe("待发布");
+    expect(contentStatusLabel("published")).toBe("已发布");
   });
 
   it("version statuses", () => {
-    expect(versionStatusLabel("review")).toBe("In Review");
+    expect(versionStatusLabel("review")).toBe("审核中");
     for (const s of ["draft", "review", "approved", "published"])
       expect(versionStatusLabel(s)).not.toContain("_");
   });
 
   it("signal statuses", () => {
-    for (const s of ["new", "reviewing", "selected", "skipped"])
-      expect(signalStatusLabel(s)).not.toContain("_");
+    expect(signalStatusLabel("new")).toBe("新线索");
+    expect(signalStatusLabel("reviewing")).toBe("评估中");
+    expect(signalStatusLabel("selected")).toBe("已选用");
+    expect(signalStatusLabel("skipped")).toBe("已跳过");
   });
 
-  it("brief statuses", () => {
-    expect(briefStatusLabel("draft")).toBe("Draft");
-    expect(briefStatusLabel("approved")).toBe("Approved");
+  it("brief: 草稿 / 已确认（确认 not 批准）", () => {
+    expect(briefStatusLabel("draft")).toBe("草稿");
+    expect(briefStatusLabel("approved")).toBe("已确认");
   });
 
   it("test statuses", () => {
-    expect(testStatusLabel("running")).toBe("Running");
-    expect(testStatusLabel("concluded")).toBe("Concluded");
+    expect(testStatusLabel("running")).toBe("进行中");
+    expect(testStatusLabel("concluded")).toBe("已完成");
   });
 
-  it("every known test method has a label and a helper", () => {
+  it("every known test method has a Chinese label and helper", () => {
     for (const m of TEST_METHODS) {
       expect(testMethodLabel(m)).not.toContain("_");
       expect(TEST_METHOD_HELPERS[m]).toBeTruthy();
     }
-    expect(TEST_METHODS_FOOTNOTE).toContain("does not calculate statistical significance");
+    expect(TEST_METHODS_FOOTNOTE).toContain("统计显著性");
   });
 
-  it("every known test role has a label", () => {
+  it("every known test role has a Chinese label", () => {
     for (const r of TEST_ROLES) expect(testRoleLabel(r)).not.toContain("_");
-    expect(TEST_ROLE_HELPER).toContain("do not change evidence calculations");
+    expect(TEST_ROLE_HELPER).toContain("不影响证据计算");
   });
 
-  it("outcomes: no raw enum, helpers for all four", () => {
-    expect(testOutcomeLabel("win")).toBe("Win");
-    expect(testOutcomeLabel("loss")).toBe("Loss");
-    expect(testOutcomeLabel("trade_off")).toBe("Trade-off");
-    expect(testOutcomeLabel("no_clear_result")).toBe("No clear result");
-    for (const o of ["win", "loss", "trade_off", "no_clear_result"])
+  it("outcomes: 支持假设/不支持假设/有得有失/无明确结论 — never 假设成立", () => {
+    expect(testOutcomeLabel("win")).toBe("支持假设");
+    expect(testOutcomeLabel("loss")).toBe("不支持假设");
+    expect(testOutcomeLabel("trade_off")).toBe("有得有失");
+    expect(testOutcomeLabel("no_clear_result")).toBe("无明确结论");
+    for (const o of ["win", "loss", "trade_off", "no_clear_result"]) {
       expect(TEST_OUTCOME_HELPERS[o]).toBeTruthy();
+    }
   });
 
-  it("confidence: insufficient_evidence reads correctly", () => {
-    expect(confidenceLabel("insufficient_evidence")).toBe("Insufficient evidence");
+  it("confidence: 证据不足 reads correctly", () => {
+    expect(confidenceLabel("insufficient_evidence")).toBe("证据不足");
+  });
+
+  it("snapshot statuses: 已提交 / 待录入 / 未到时间", () => {
+    expect(snapshotStatusLabel("submitted")).toBe("已提交");
+    expect(snapshotStatusLabel("due")).toBe("待录入");
+    expect(snapshotStatusLabel("not_due")).toBe("未到时间");
   });
 
   it("unknown fallback humanizes instead of exposing snake_case", () => {
     expect(platformLabel("some_future_platform")).toBe("Some future platform");
-    expect(testOutcomeLabel("future_outcome")).toBe("Future outcome");
-    expect(platformLabel("some_future_platform")).not.toContain("_");
+    expect(testOutcomeLabel("future_outcome")).not.toContain("_");
   });
 
   it("null/empty stays empty", () => {
@@ -106,59 +130,48 @@ describe("label coverage", () => {
   });
 });
 
-describe("semantic boundaries", () => {
-  it("no_clear_result and insufficient_evidence are distinct concepts", () => {
-    expect(TEST_OUTCOME_HELPERS.no_clear_result).toContain(
-      "does not point clearly in one direction"
-    );
-    expect(INSUFFICIENT_EVIDENCE_HELPER).toContain("not enough usable evidence");
+describe("semantic boundaries (Chinese)", () => {
+  it("无明确结论 ≠ 证据不足", () => {
+    expect(TEST_OUTCOME_HELPERS.no_clear_result).toContain("没有明确指向");
+    expect(INSUFFICIENT_EVIDENCE_HELPER).toContain("没有足够的可用证据");
     expect(TEST_OUTCOME_HELPERS.no_clear_result).not.toBe(INSUFFICIENT_EVIDENCE_HELPER);
   });
 
-  it("baseline copy states workspace history, never industry benchmark", () => {
+  it("baseline copy: 自身历史 / 最多 20 条 / 同平台同数据点 / 方向基线加同方向 / 非行业基准", () => {
     for (const h of [BASELINE_ACCOUNT_HELPER, BASELINE_PILLAR_HELPER]) {
-      expect(h).toContain("20 prior comparable publications");
-      expect(h).toContain("Not an industry benchmark");
-      expect(h.toLowerCase()).not.toContain("industry average");
+      expect(h).toContain("20");
+      expect(h).toContain("不是行业基准");
+      expect(h).not.toContain("industry average");
     }
+    const c = BASELINE_COHORT_HELPER;
+    expect(c).toContain("本工作区");
+    expect(c).toContain("20");
+    expect(c).toContain("同平台");
+    expect(c).toContain("方向中位数还要求同内容方向");
+    expect(c).toContain("不是行业基准");
+    expect(c).toContain("n = 该指标有历史数据的发布数");
   });
 
-  it("combined cohort helper carries the full M2.4 cohort semantics", () => {
-    const h = BASELINE_COHORT_HELPER;
-    expect(h).toContain("your workspace");
-    expect(h).toContain("up to 20 prior publications");
-    expect(h).toContain("same platform and checkpoint");
-    expect(h).toContain("Pillar median also requires the same Pillar");
-    expect(h).toContain("not industry benchmarks");
-    expect(h).toContain("n = prior publications with a value for that metric");
-    expect(h.toLowerCase()).not.toContain("industry average");
+  it("n helper 是单项指标有值发布数", () => {
+    expect(BASELINE_N_HELPER).toContain("该指标有历史数据");
   });
 
-  it("n helper is per-metric sample count, not cohort candidateCount", () => {
-    expect(BASELINE_N_HELPER).toContain("available value for this metric");
-    expect(BASELINE_N_HELPER.toLowerCase()).not.toContain("candidate");
+  it("N/A ≠ 0；留空 = 未录入；不归因平台", () => {
+    expect(METRIC_NA_HELPER).toContain("并不等于 0");
+    expect(METRIC_NA_HELPER).not.toContain("平台不提供");
+    expect(METRIC_BLANK_HELPER).toContain("还没录入");
   });
 
-  it("N/A is not zero; blank is unresolved; neither blames the platform", () => {
-    expect(METRIC_NA_HELPER).toContain("unavailable for this snapshot");
-    expect(METRIC_NA_HELPER).toContain("not zero");
-    expect(METRIC_NA_HELPER.toLowerCase()).not.toContain("platform doesn't provide");
-    expect(METRIC_BLANK_HELPER).toContain("unresolved");
+  it("Learning Apply 不暗示改写内容", () => {
+    expect(LEARNING_APPLY_HELPER).toContain("不会改变");
   });
 
-  it("Learning Apply never implies content mutation", () => {
-    expect(LEARNING_APPLY_HELPER).toContain("does not change");
+  it("checkpoint / primary metric helpers 符合冻结语义", () => {
+    expect(CHECKPOINT_HELPER).toContain("发布后约 24 或 72 小时");
+    expect(PRIMARY_METRIC_HELPER).toContain("不会自动决定结论");
   });
 
-  it("demo notice matches M4.1 behavior — no 'excluded from all analytics'", () => {
-    expect(DEMO_NOTICE).toContain("product exploration");
-    expect(DEMO_NOTICE).toContain("excluded from baseline cohorts");
-    expect(DEMO_NOTICE.toLowerCase()).not.toContain("excluded from all");
-    expect(DEMO_BADGE_LABEL).toBe("DEMO"); // textual, never color-only
-  });
-
-  it("checkpoint / primary metric helpers match frozen semantics", () => {
-    expect(CHECKPOINT_HELPER).toContain("24 or 72 hours after publishing");
-    expect(PRIMARY_METRIC_HELPER).toContain("does not decide the outcome automatically");
+  it("Home thesis 是批准的中文陈述", () => {
+    expect(HOME_THESIS).toBe("让每次表现，成为下一次创作的依据。");
   });
 });

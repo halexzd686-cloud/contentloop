@@ -67,10 +67,10 @@ export default function StudioPage() {
     try {
       const res = await fetch(`/api/contents${archived ? "?archived=true" : ""}`);
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to load contents");
+      if (!res.ok) throw new Error(data.error || "内容加载失败");
       setContents(data.contents);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load contents");
+      setError(err instanceof Error ? err.message : "内容加载失败");
     } finally {
       setLoading(false);
     }
@@ -90,12 +90,12 @@ export default function StudioPage() {
         method: "POST",
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Archive failed");
+      if (!res.ok) throw new Error(data.error || "归档失败");
       setArchiveTarget(null);
       await load();
     } catch (err) {
       setArchiveTarget(null);
-      setError(err instanceof Error ? err.message : "Archive failed");
+      setError(err instanceof Error ? err.message : "归档失败");
     } finally {
       setBusy(false);
     }
@@ -108,10 +108,10 @@ export default function StudioPage() {
     try {
       const res = await fetch(`/api/contents/${id}/restore`, { method: "POST" });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Restore failed");
+      if (!res.ok) throw new Error(data.error || "恢复失败");
       await load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Restore failed");
+      setError(err instanceof Error ? err.message : "恢复失败");
     } finally {
       setBusy(false);
     }
@@ -122,14 +122,14 @@ export default function StudioPage() {
       <div className="border-b border-border bg-workspace px-6 py-4">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h1 className="text-[24px] font-semibold leading-tight text-ink-primary">Studio</h1>
+            <h1 className="text-[24px] font-semibold leading-tight text-ink-primary">内容工作台</h1>
             <p className="mt-0.5 text-sm text-ink-muted">
-              Produce content from Brief to platform versions.
+              从简报到平台版本，完成内容生产。
             </p>
           </div>
           <Button variant="primary" size="sm" onClick={() => setCreateOpen(true)}>
             <Plus className="mr-1 h-3 w-3" />
-            New Content
+            新建内容
           </Button>
         </div>
         <div className="mt-3 flex gap-1">
@@ -143,7 +143,7 @@ export default function StudioPage() {
                   : "text-ink-muted hover:bg-surface-subtle"
               }`}
             >
-              {v === "active" ? "Active" : "Archived"}
+              {v === "active" ? "进行中" : "已归档"}
             </button>
           ))}
         </div>
@@ -167,18 +167,17 @@ export default function StudioPage() {
             <p className="text-sm text-danger">{error}</p>
             <Button variant="secondary" size="sm" className="mt-3" onClick={load}>
               <RefreshCw className="mr-1 h-3 w-3" />
-              Retry
+              重试
             </Button>
           </div>
         ) : contents.length === 0 ? (
           <div className="py-16 text-center">
             {archived ? (
-              <p className="text-sm text-ink-secondary">No archived content.</p>
+              <p className="text-sm text-ink-secondary">暂无已归档内容。</p>
             ) : (
               <>
                 <p className="text-sm text-ink-secondary">
-                  No content yet. Create one directly, or select a signal in
-                  Radar and create content from it.
+                  还没有内容。直接新建，或去选题雷达选用一条线索来创建。
                 </p>
                 <div className="mt-4 flex justify-center gap-2">
                   <Button
@@ -186,11 +185,11 @@ export default function StudioPage() {
                     size="sm"
                     onClick={() => setCreateOpen(true)}
                   >
-                    New Content
+                    新建内容
                   </Button>
                   <Link href="/app/radar">
                     <Button variant="secondary" size="sm">
-                      Go to Radar
+                      去选题雷达
                     </Button>
                   </Link>
                 </div>
@@ -230,7 +229,7 @@ export default function StudioPage() {
                               restore(c.id);
                             }}
                           >
-                            Restore
+                            恢复
                           </Button>
                         ) : (
                           c.status !== "published" && (
@@ -244,7 +243,7 @@ export default function StudioPage() {
                                 setArchiveTarget(c);
                               }}
                             >
-                              Archive
+                              归档
                             </Button>
                           )
                         )}
@@ -253,7 +252,7 @@ export default function StudioPage() {
                   </CardHeader>
                   <CardContent className="pt-0">
                     <div className="flex items-center gap-3 text-xs text-ink-muted">
-                      {c.ownerName && <span>Owner: {c.ownerName}</span>}
+                      {c.ownerName && <span>负责人：{c.ownerName}</span>}
                       {c.primaryPlatform ? (
                         <span>{platformLabel(c.primaryPlatform)}</span>
                       ) : archived ? null : CORRECTABLE_STATUSES.includes(c.status) ? (
@@ -265,21 +264,21 @@ export default function StudioPage() {
                             setPlatformTarget(c);
                           }}
                         >
-                          No platform — Set one
+                          未设平台——去设置
                         </button>
                       ) : (
-                        <span className="text-ink-faint">No platform set</span>
+                        <span className="text-ink-faint">未设平台</span>
                       )}
                       <span>
-                        Brief:{" "}
+                        简报：
                         {c.briefStatus === "approved"
-                          ? "Approved"
+                          ? "已确认"
                           : c.briefStatus === "draft"
-                            ? "Draft"
-                            : "Not started"}
+                            ? "草稿"
+                            : "未开始"}
                       </span>
                       <span>
-                        Updated {new Date(c.updatedAt).toLocaleDateString()}
+                        更新于 {new Date(c.updatedAt).toLocaleDateString()}
                       </span>
                     </div>
                   </CardContent>
@@ -305,19 +304,17 @@ export default function StudioPage() {
         <Dialog open onOpenChange={(o) => !o && setArchiveTarget(null)}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Archive Content</DialogTitle>
+              <DialogTitle>归档这条内容？</DialogTitle>
               <DialogDescription>
-                This removes &ldquo;{archiveTarget.title}&rdquo; from the active
-                workflow. Its brief, master and platform versions are kept, and
-                you can restore it at any time.
+                会把“{archiveTarget.title}”移出进行中的工作。简报、母稿和平台版本都会保留，随时可以恢复。
               </DialogDescription>
             </DialogHeader>
             <DialogFooter>
               <Button variant="ghost" onClick={() => setArchiveTarget(null)}>
-                Cancel
+                取消
               </Button>
               <Button variant="danger" onClick={archive} disabled={busy}>
-                {busy ? "Archiving…" : "Archive"}
+                {busy ? "归档中…" : "归档"}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -393,10 +390,10 @@ function NewContentDialog({
         }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Create failed");
+      if (!res.ok) throw new Error(data.error || "创建失败");
       onCreated();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Create failed");
+      setError(err instanceof Error ? err.message : "创建失败");
     } finally {
       setBusy(false);
     }
@@ -406,17 +403,16 @@ function NewContentDialog({
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>New Content</DialogTitle>
+          <DialogTitle>新建内容</DialogTitle>
           <DialogDescription>
-            Create a content project directly — no signal required. It starts
-            in Planning; brief and master stay untouched until you start them.
+            直接创建内容项目——不需要先有线索。从“策划中”开始；简报和母稿由你后续创建。
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-3">
           <div>
             <label className="mb-1 block text-xs font-medium text-ink-secondary">
-              Title *
+              标题 *
             </label>
             <input
               className="w-full rounded-[8px] border border-border bg-workspace px-3 py-2 text-sm outline-none focus:border-mint-600"
@@ -427,7 +423,7 @@ function NewContentDialog({
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="mb-1 block text-xs font-medium text-ink-secondary">
-                Primary Platform *
+                主要平台 *
               </label>
               <select
                 className="w-full rounded-[8px] border border-border bg-workspace px-3 py-2 text-sm outline-none focus:border-mint-600"
@@ -443,14 +439,14 @@ function NewContentDialog({
             </div>
             <div>
               <label className="mb-1 block text-xs font-medium text-ink-secondary">
-                Pillar
+                内容方向
               </label>
               <select
                 className="w-full rounded-[8px] border border-border bg-workspace px-3 py-2 text-sm outline-none focus:border-mint-600"
                 value={pillarId}
                 onChange={(e) => setPillarId(e.target.value)}
               >
-                <option value="">— none —</option>
+                <option value="">— 无 —</option>
                 {pillars.map((p) => (
                   <option key={p.id} value={p.id}>
                     {p.name}
@@ -461,14 +457,14 @@ function NewContentDialog({
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium text-ink-secondary">
-              Owner *
+              负责人 *
             </label>
             <select
               className="w-full rounded-[8px] border border-border bg-workspace px-3 py-2 text-sm outline-none focus:border-mint-600"
               value={ownerId}
               onChange={(e) => setOwnerId(e.target.value)}
             >
-              <option value="">— select —</option>
+              <option value="">— 请选择 —</option>
               {members.map((m) => (
                 <option key={m.id} value={m.id}>
                   {m.name}
@@ -486,10 +482,10 @@ function NewContentDialog({
 
         <DialogFooter>
           <Button variant="ghost" onClick={onClose}>
-            Cancel
+            取消
           </Button>
           <Button variant="primary" onClick={submit} disabled={!valid || busy}>
-            {busy ? "Creating…" : "Create Content"}
+            {busy ? "创建中…" : "创建内容"}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -523,10 +519,10 @@ function SetPlatformDialog({
         body: JSON.stringify({ primaryPlatform: platform }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Save failed");
+      if (!res.ok) throw new Error(data.error || "保存失败");
       onSaved();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Save failed");
+      setError(err instanceof Error ? err.message : "保存失败");
     } finally {
       setBusy(false);
     }
@@ -536,17 +532,15 @@ function SetPlatformDialog({
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Set Primary Platform</DialogTitle>
+          <DialogTitle>设置主要平台</DialogTitle>
           <DialogDescription>
-            &ldquo;{content.title}&rdquo; has no primary platform. Set it once
-            so platform-scoped learnings can match this content. It cannot be
-            changed afterwards.
+            “{content.title}”没有主要平台。设置一次，平台范围的运营经验才能匹配到这条内容。设置后不可更改。
           </DialogDescription>
         </DialogHeader>
 
         <div>
           <label className="mb-1 block text-xs font-medium text-ink-secondary">
-            Primary Platform
+            主要平台
           </label>
           <select
             className="w-full rounded-[8px] border border-border bg-workspace px-3 py-2 text-sm outline-none focus:border-mint-600"
@@ -568,10 +562,10 @@ function SetPlatformDialog({
 
         <DialogFooter>
           <Button variant="ghost" onClick={onClose}>
-            Cancel
+            取消
           </Button>
           <Button variant="primary" onClick={submit} disabled={busy}>
-            {busy ? "Saving…" : "Set Platform"}
+            {busy ? "保存中…" : "设置平台"}
           </Button>
         </DialogFooter>
       </DialogContent>

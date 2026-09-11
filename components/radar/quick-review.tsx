@@ -18,7 +18,7 @@ import {
   Sparkles,
   RefreshCw,
 } from "lucide-react";
-import { signalStatusLabel, confidenceLabel } from "@/lib/labels";
+import { signalStatusLabel, confidenceLabel, platformLabel } from "@/lib/labels";
 import { DotTexture } from "@/components/reactbits/dot-texture";
 
 /**
@@ -69,28 +69,22 @@ const SOURCE_TYPE_CONFIG: Record<
   string,
   { label: string; icon: React.ComponentType<{ className?: string }> }
 > = {
-  official: { label: "Official", icon: Building },
-  community: { label: "Community", icon: Users },
-  competitor: { label: "Competitor", icon: Globe },
-  news: { label: "News", icon: Newspaper },
-  idea: { label: "Idea", icon: Lightbulb },
-  other: { label: "Other", icon: HelpCircle },
+  official: { label: "官方", icon: Building },
+  community: { label: "社区", icon: Users },
+  competitor: { label: "竞品", icon: Globe },
+  news: { label: "资讯", icon: Newspaper },
+  idea: { label: "想法", icon: Lightbulb },
+  other: { label: "其他", icon: HelpCircle },
 };
 
 const SKIP_REASON_LABELS: Record<string, string> = {
-  too_late: "Too Late",
-  saturated: "Saturated",
-  low_audience_fit: "Low Audience Fit",
-  insufficient_information: "Insufficient Information",
-  high_production_cost: "High Production Cost",
-  no_clear_angle: "No Clear Angle",
-  other: "Other",
-};
-
-const PLATFORM_LABELS: Record<string, string> = {
-  xiaohongshu: "Xiaohongshu",
-  bilibili: "Bilibili",
-  douyin: "Douyin",
+  too_late: "时效已过",
+  saturated: "内容已饱和",
+  low_audience_fit: "受众匹配度低",
+  insufficient_information: "信息不足",
+  high_production_cost: "制作成本高",
+  no_clear_angle: "没有清晰角度",
+  other: "其他",
 };
 
 const CONFIDENCE_CONFIG: Record<
@@ -104,9 +98,9 @@ const CONFIDENCE_CONFIG: Record<
 };
 
 const EVIDENCE_SOURCE_LABELS: Record<string, string> = {
-  signal_input: "Signal input",
-  brand_context: "Brand context",
-  model_inference: "AI inference",
+  signal_input: "线索输入",
+  brand_context: "品牌上下文",
+  model_inference: "AI 推断",
 };
 
 // ─── Small pieces ──────────────────────────────────────
@@ -116,7 +110,7 @@ function EmptyField({ label }: { label: string }) {
     <div>
       <p className="text-xs font-medium text-ink-muted">{label}</p>
       <p className="mt-1 text-sm text-ink-faint">
-        Analysis not generated yet.
+        尚未生成 AI 分析。
       </p>
     </div>
   );
@@ -166,11 +160,10 @@ export function QuickReview({
               stays a normal surface; restrained editorial texture only. */}
           <DotTexture className="pointer-events-none absolute inset-x-0 top-0 h-16 opacity-60" />
           <p className="relative text-sm font-medium text-ink-secondary">
-            Quick Review
+            快速评估
           </p>
           <p className="relative mt-2 text-xs leading-relaxed text-ink-muted">
-            Select a signal on the left to review its analysis, score and
-            possible angles — then decide: skip it, or turn it into content.
+            从左侧选择一条线索，查看它的分析、评分和可选角度——然后决定：跳过，或创建内容。
           </p>
         </div>
       </div>
@@ -215,7 +208,7 @@ export function QuickReview({
       }
     } catch (err) {
       setCreateError(
-        err instanceof Error ? err.message : "Failed to create content"
+        err instanceof Error ? err.message : "创建内容失败"
       );
     } finally {
       setActionLoading(false);
@@ -230,7 +223,7 @@ export function QuickReview({
     } catch (err) {
       // Failure never clears an existing valid analysis.
       setAnalyzeError(
-        err instanceof Error ? err.message : "Analysis failed. Please retry."
+        err instanceof Error ? err.message : "分析失败，请重试。"
       );
     } finally {
       setAnalyzing(false);
@@ -242,13 +235,13 @@ export function QuickReview({
       {/* Header */}
       <div className="flex items-center justify-between border-b border-border pb-3">
         <h2 className="text-sm font-semibold text-ink-primary">
-          Quick Review
+          快速评估
         </h2>
         <button
           onClick={onClose}
           className="text-xs text-ink-muted hover:text-ink-primary"
         >
-          Close
+          关闭
         </button>
       </div>
 
@@ -281,19 +274,19 @@ export function QuickReview({
               className="mt-1 inline-flex items-center gap-1 text-xs text-mint-600 hover:underline"
             >
               <ExternalLink className="h-3 w-3" />
-              Source
+              查看来源
             </a>
           )}
           <p className="mt-1 text-xs text-ink-muted">
             {signal.publishedAt
-              ? `Published ${new Date(signal.publishedAt).toLocaleDateString()}`
-              : `Added ${new Date(signal.createdAt).toLocaleDateString()}`}
+              ? `发布于 ${new Date(signal.publishedAt).toLocaleDateString()}`
+              : `添加于 ${new Date(signal.createdAt).toLocaleDateString()}`}
           </p>
         </div>
 
         {signal.summary && (
           <div>
-            <p className="text-xs font-medium text-ink-muted">Summary</p>
+            <p className="text-xs font-medium text-ink-muted">摘要</p>
             <p className="mt-1 text-sm text-ink-secondary">{signal.summary}</p>
           </div>
         )}
@@ -302,7 +295,7 @@ export function QuickReview({
         <div className="space-y-4 border-t border-border pt-4">
           <div className="flex items-center justify-between">
             <p className="text-xs font-semibold uppercase tracking-wide text-ink-muted">
-              Analysis
+              AI 分析
             </p>
             {analyzed && signal.analysisConfidence && (
               <Badge
@@ -311,9 +304,7 @@ export function QuickReview({
                   "default"
                 }
               >
-                {signal.analysisConfidence === "insufficient_evidence"
-                  ? confidenceLabel(signal.analysisConfidence)
-                  : `${confidenceLabel(signal.analysisConfidence)} confidence`}
+                {confidenceLabel(signal.analysisConfidence)}
               </Badge>
             )}
           </div>
@@ -328,7 +319,7 @@ export function QuickReview({
                   className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-mint-600 hover:underline disabled:opacity-50"
                 >
                   <RefreshCw className="h-3 w-3" />
-                  Retry
+                  重试
                 </button>
               )}
             </div>
@@ -336,44 +327,43 @@ export function QuickReview({
 
           {!analyzed ? (
             <>
-              <EmptyField label="Topic Score" />
-              <EmptyField label="Why It Matters" />
-              <EmptyField label="Audience Match" />
-              <EmptyField label="Content Risk" />
-              <EmptyField label="Possible Angles" />
+              <EmptyField label="选题评分" />
+              <EmptyField label="为什么值得做" />
+              <EmptyField label="受众匹配" />
+              <EmptyField label="内容风险" />
+              <EmptyField label="可选角度" />
             </>
           ) : (
             <>
               {/* Topic Score */}
               <div>
-                <p className="text-xs font-medium text-ink-muted">Topic Score</p>
+                <p className="text-xs font-medium text-ink-muted">选题评分</p>
                 <p className="mt-0.5 text-[11px] text-ink-secondary">
-                  Topic Score summarizes Audience Fit, Timing and Content
-                  Potential.
+                  选题评分综合受众匹配、时机和内容潜力。
                 </p>
                 {insufficient ? (
                   <p className="mt-1 text-sm text-ink-faint">
-                    Not enough verified information to score this signal.
+                    信息不足，暂无法评分。
                   </p>
                 ) : (
                   <div className="mt-1.5 space-y-1">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs text-ink-muted">Overall</span>
+                      <span className="text-xs text-ink-muted">综合</span>
                       <span className="text-sm font-semibold text-ink-primary">
                         {signal.topicScore === null ? "N/A" : signal.topicScore}
                       </span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-xs text-ink-muted">Audience Fit</span>
+                      <span className="text-xs text-ink-muted">受众匹配</span>
                       <ScoreValue value={signal.audienceFitScore} />
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-xs text-ink-muted">Timing</span>
+                      <span className="text-xs text-ink-muted">时机</span>
                       <ScoreValue value={signal.timingScore} />
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-xs text-ink-muted">
-                        Content Potential
+                        内容潜力
                       </span>
                       <ScoreValue value={signal.contentPotentialScore} />
                     </div>
@@ -384,7 +374,7 @@ export function QuickReview({
               {/* Text fields */}
               <div>
                 <p className="text-xs font-medium text-ink-muted">
-                  Why It Matters
+                  为什么值得做
                 </p>
                 <p className="mt-1 text-sm text-ink-secondary">
                   {signal.whyItMatters || "N/A"}
@@ -392,7 +382,7 @@ export function QuickReview({
               </div>
               <div>
                 <p className="text-xs font-medium text-ink-muted">
-                  Audience Match
+                  受众匹配
                 </p>
                 <p className="mt-1 text-sm text-ink-secondary">
                   {signal.audienceMatch || "N/A"}
@@ -400,7 +390,7 @@ export function QuickReview({
               </div>
               <div>
                 <p className="text-xs font-medium text-ink-muted">
-                  Content Risk
+                  内容风险
                 </p>
                 <p className="mt-1 text-sm text-ink-secondary">
                   {signal.contentRisk || "N/A"}
@@ -410,7 +400,7 @@ export function QuickReview({
               {/* Possible Angles */}
               <div>
                 <p className="text-xs font-medium text-ink-muted">
-                  Possible Angles
+                  可选角度
                 </p>
                 {signal.possibleAngles && signal.possibleAngles.length > 0 ? (
                   <ul className="mt-1 list-disc space-y-1 pl-4 text-sm text-ink-secondary">
@@ -420,7 +410,7 @@ export function QuickReview({
                   </ul>
                 ) : (
                   <p className="mt-1 text-sm text-ink-faint">
-                    None suggested.
+                    暂无建议角度。
                   </p>
                 )}
               </div>
@@ -430,7 +420,7 @@ export function QuickReview({
                 signal.analysisEvidence.length > 0 && (
                   <div>
                     <p className="text-xs font-medium text-ink-muted">
-                      Evidence
+                      证据
                     </p>
                     <ul className="mt-1 space-y-1.5">
                       {signal.analysisEvidence.map((item, i) => (
@@ -452,7 +442,7 @@ export function QuickReview({
         {/* Skipped state */}
         {isSkipped && signal.skipReason && (
           <div className="rounded-[8px] border border-danger/20 bg-danger/5 p-3">
-            <p className="text-xs font-medium text-ink-muted">Skip Reason</p>
+            <p className="text-xs font-medium text-ink-muted">跳过原因</p>
             <p className="mt-1 text-sm text-ink-primary">
               {SKIP_REASON_LABELS[signal.skipReason] || signal.skipReason}
             </p>
@@ -462,20 +452,20 @@ export function QuickReview({
         {/* Selected state */}
         {isSelected && (
           <div className="rounded-[8px] border border-mint-600/20 bg-mint-100 p-3 space-y-2">
-            <p className="text-xs font-medium text-mint-600">Selected</p>
+            <p className="text-xs font-medium text-mint-600">已选用</p>
             {signal.selectedAngle && (
               <p className="text-sm text-ink-primary">
-                Angle: {signal.selectedAngle}
+                选定角度：{signal.selectedAngle}
               </p>
             )}
             {signal.primaryPlatform && (
               <p className="text-sm text-ink-secondary">
-                Platform: {PLATFORM_LABELS[signal.primaryPlatform] || signal.primaryPlatform}
+                主要平台：{platformLabel(signal.primaryPlatform)}
               </p>
             )}
             {createdContentId && (
               <p className="mt-2 text-sm font-medium text-mint-600">
-                Content created successfully.
+                内容已创建。
               </p>
             )}
             {(signal.contentId || createdContentId) && (
@@ -483,7 +473,7 @@ export function QuickReview({
                 href={`/app/studio/${signal.contentId || createdContentId}`}
                 className="mt-1 inline-flex items-center gap-1 text-sm font-medium text-mint-600 hover:underline"
               >
-                Open Content
+                打开内容
                 <ArrowRight className="h-3 w-3" />
               </Link>
             )}
@@ -503,10 +493,10 @@ export function QuickReview({
           >
             <Sparkles className="mr-1 h-3 w-3" />
             {analyzing
-              ? "Analyzing signal…"
+              ? "AI 正在分析线索…"
               : analyzed
-                ? "Re-analyze Signal"
-                : "Analyze Signal"}
+                ? "重新 AI 分析"
+                : "AI 分析线索"}
           </Button>
           <div className="flex gap-2">
             <Button
@@ -515,7 +505,7 @@ export function QuickReview({
               onClick={() => setSkipOpen(true)}
               disabled={actionLoading || analyzing}
             >
-              Skip
+              跳过
             </Button>
             <Button
               variant="primary"
@@ -524,7 +514,7 @@ export function QuickReview({
               onClick={() => setCreateOpen(true)}
               disabled={actionLoading || analyzing}
             >
-              Create Content
+              创建内容
               <ArrowRight className="ml-1 h-3 w-3" />
             </Button>
           </div>

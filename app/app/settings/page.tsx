@@ -50,9 +50,9 @@ const PLATFORMS = [
 ] as const;
 
 const FORMAT_LABEL: Record<MetricFormat, string> = {
-  count: "count",
-  percentage: "percentage (×100%)",
-  ratio: "ratio (x : 1)",
+  count: "计数",
+  percentage: "百分比（×100%）",
+  ratio: "比值（x : 1）",
 };
 
 export default function SettingsPage() {
@@ -67,11 +67,11 @@ export default function SettingsPage() {
     try {
       const res = await fetch("/api/settings/metrics");
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to load");
+      if (!res.ok) throw new Error(data.error || "加载失败");
       setDefs(data.definitions);
       setLoadError(null);
     } catch (err) {
-      setLoadError(err instanceof Error ? err.message : "Failed to load");
+      setLoadError(err instanceof Error ? err.message : "加载失败");
     } finally {
       setLoading(false);
     }
@@ -107,24 +107,23 @@ export default function SettingsPage() {
         body: JSON.stringify({ isActive: !d.isActive }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Update failed");
+      if (!res.ok) throw new Error(data.error || "更新失败");
       await load();
     } catch (err) {
-      setActionError(err instanceof Error ? err.message : "Update failed");
+      setActionError(err instanceof Error ? err.message : "更新失败");
     }
   }
 
   return (
     <div className="p-8">
-      <h1 className="text-2xl font-semibold text-ink-primary">Settings</h1>
+      <h1 className="text-2xl font-semibold text-ink-primary">设置</h1>
 
       <div className="mt-6">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-ink-muted">
-          Metrics
+          指标
         </h2>
         <p className="mt-1 text-xs text-ink-secondary">
-          These definitions control how each metric is calculated and
-          displayed. Derived metrics always show their formula.
+          这些定义控制每项指标如何计算和展示。派生指标始终显示其公式。
         </p>
       </div>
 
@@ -135,7 +134,7 @@ export default function SettingsPage() {
       )}
 
       {loading ? (
-        <p className="mt-6 text-sm text-ink-muted">Loading metrics…</p>
+        <p className="mt-6 text-sm text-ink-muted">正在加载指标…</p>
       ) : loadError ? (
         <div className="mt-6 flex items-center gap-3">
           <p className="text-sm text-danger">{loadError}</p>
@@ -148,7 +147,7 @@ export default function SettingsPage() {
             }}
           >
             <RefreshCw className="mr-1 h-3 w-3" />
-            Retry
+            重试
           </Button>
         </div>
       ) : (
@@ -164,13 +163,13 @@ export default function SettingsPage() {
                   onClick={() => setCreatePlatform(p.key)}
                 >
                   <Plus className="h-3 w-3" />
-                  Derived Metric
+                  新建派生指标
                 </button>
               </div>
               <div className="mt-2 divide-y divide-border rounded-[8px] border border-border bg-workspace">
                 {(byPlatform.get(p.key) ?? []).length === 0 ? (
                   <p className="px-3 py-2.5 text-xs text-ink-secondary">
-                    No metrics defined for this platform.
+                    该平台还没有指标定义。
                   </p>
                 ) : (
                   (byPlatform.get(p.key) ?? []).map((d) => (
@@ -184,9 +183,9 @@ export default function SettingsPage() {
                           {d.alias ?? d.displayName}
                         </span>
                         <Badge variant={d.type === "derived" ? "mint" : "default"}>
-                          {d.type === "derived" ? "Derived" : "Raw"}
+                          {d.type === "derived" ? "派生" : "原始"}
                         </Badge>
-                        {!d.isActive && <Badge variant="default">disabled</Badge>}
+                        {!d.isActive && <Badge variant="default">已停用</Badge>}
                       </div>
                       <p className="mt-0.5 text-xs text-ink-muted">
                         <code className="text-ink-faint">{d.key}</code>
@@ -209,13 +208,13 @@ export default function SettingsPage() {
                       className="text-xs text-ink-muted hover:text-ink-primary"
                       onClick={() => setEditTarget(d)}
                     >
-                      Edit
+                      编辑
                     </button>
                     <button
                       className="text-xs text-ink-muted hover:text-ink-primary"
                       onClick={() => toggleActive(d)}
                     >
-                      {d.isActive ? "Disable" : "Enable"}
+                      {d.isActive ? "停用" : "启用"}
                     </button>
                   </div>
                   ))
@@ -311,10 +310,10 @@ function EditMetricDialog({
         body: JSON.stringify(body),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Save failed");
+      if (!res.ok) throw new Error(data.error || "保存失败");
       onSaved();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Save failed");
+      setError(err instanceof Error ? err.message : "保存失败");
     } finally {
       setSaving(false);
     }
@@ -325,18 +324,18 @@ function EditMetricDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>
-            Edit: {def.alias ?? def.displayName}
+            编辑：{def.alias ?? def.displayName}
           </DialogTitle>
           <DialogDescription>
-            <code>{def.key}</code> · {platformLabel(def.platform)} · {def.type}{" "}
-            — key, platform and type can&apos;t be changed.
+            <code>{def.key}</code> · {platformLabel(def.platform)} · {def.type === "derived" ? "派生" : "原始"}{" "}
+            —— key、平台和类型不可更改。
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-3">
           <div>
             <label className="mb-1 block text-xs font-medium text-ink-secondary">
-              Alias (team terminology)
+              别名（团队叫法）
             </label>
             <input
               className="w-full rounded-[8px] border border-border bg-workspace px-3 py-2 text-sm outline-none focus:border-mint-600"
@@ -350,7 +349,7 @@ function EditMetricDialog({
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="mb-1 block text-xs font-medium text-ink-secondary">
-                    Numerator
+                    分子
                   </label>
                   <select
                     className="w-full rounded-[8px] border border-border bg-workspace px-3 py-2 text-sm outline-none focus:border-mint-600"
@@ -366,7 +365,7 @@ function EditMetricDialog({
                 </div>
                 <div>
                   <label className="mb-1 block text-xs font-medium text-ink-secondary">
-                    Denominator
+                    分母
                   </label>
                   <select
                     className="w-full rounded-[8px] border border-border bg-workspace px-3 py-2 text-sm outline-none focus:border-mint-600"
@@ -383,20 +382,20 @@ function EditMetricDialog({
               </div>
               <div>
                 <label className="mb-1 block text-xs font-medium text-ink-secondary">
-                  Format
+                  格式
                 </label>
                 <select
                   className="w-full rounded-[8px] border border-border bg-workspace px-3 py-2 text-sm outline-none focus:border-mint-600"
                   value={format}
                   onChange={(e) => setFormat(e.target.value as MetricFormat)}
                 >
-                  <option value="percentage">percentage (×100%)</option>
-                  <option value="ratio">ratio (x : 1)</option>
+                  <option value="percentage">百分比（×100%）</option>
+                  <option value="ratio">比值（x : 1）</option>
                 </select>
               </div>
               {preview && (
                 <p className="rounded-[8px] border border-mint-600/30 bg-mint-100/40 px-3 py-2 text-xs text-ink-secondary">
-                  Preview: {preview}
+                  预览：{preview}
                 </p>
               )}
             </>
@@ -404,7 +403,7 @@ function EditMetricDialog({
 
           <div>
             <label className="mb-1 block text-xs font-medium text-ink-secondary">
-              Meaning
+              含义
             </label>
             <textarea
               className="w-full rounded-[8px] border border-border bg-workspace px-3 py-2 text-sm outline-none focus:border-mint-600"
@@ -415,7 +414,7 @@ function EditMetricDialog({
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium text-ink-secondary">
-              Caution
+              注意事项
             </label>
             <input
               className="w-full rounded-[8px] border border-border bg-workspace px-3 py-2 text-sm outline-none focus:border-mint-600"
@@ -433,10 +432,10 @@ function EditMetricDialog({
 
         <DialogFooter>
           <Button variant="ghost" onClick={onClose}>
-            Cancel
+            取消
           </Button>
           <Button variant="primary" onClick={save} disabled={saving}>
-            {saving ? "Saving…" : "Save"}
+            {saving ? "保存中…" : "保存"}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -501,10 +500,10 @@ function CreateDerivedDialog({
         }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Create failed");
+      if (!res.ok) throw new Error(data.error || "创建失败");
       onCreated();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Create failed");
+      setError(err instanceof Error ? err.message : "创建失败");
     } finally {
       setCreating(false);
     }
@@ -514,18 +513,16 @@ function CreateDerivedDialog({
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>New Derived Metric</DialogTitle>
+          <DialogTitle>新建派生指标</DialogTitle>
           <DialogDescription>
-            Platform: {platformLabel(platform)}. A derived metric can only
-            reference directly entered metrics. Its key is generated once and
-            stays stable.
+            平台：{platformLabel(platform)}。派生指标只能引用直接录入的指标。它的 key 生成一次后保持不变。
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-3">
           <div>
             <label className="mb-1 block text-xs font-medium text-ink-secondary">
-              Display Name *
+              展示名称 *
             </label>
             <input
               className="w-full rounded-[8px] border border-border bg-workspace px-3 py-2 text-sm outline-none focus:border-mint-600"
@@ -535,7 +532,7 @@ function CreateDerivedDialog({
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium text-ink-secondary">
-              Alias (team terminology, optional)
+              别名（团队叫法，可选）
             </label>
             <input
               className="w-full rounded-[8px] border border-border bg-workspace px-3 py-2 text-sm outline-none focus:border-mint-600"
@@ -546,7 +543,7 @@ function CreateDerivedDialog({
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="mb-1 block text-xs font-medium text-ink-secondary">
-                Numerator *
+                分子 *
               </label>
               <select
                 className="w-full rounded-[8px] border border-border bg-workspace px-3 py-2 text-sm outline-none focus:border-mint-600"
@@ -562,7 +559,7 @@ function CreateDerivedDialog({
             </div>
             <div>
               <label className="mb-1 block text-xs font-medium text-ink-secondary">
-                Denominator *
+                分母 *
               </label>
               <select
                 className="w-full rounded-[8px] border border-border bg-workspace px-3 py-2 text-sm outline-none focus:border-mint-600"
@@ -579,26 +576,26 @@ function CreateDerivedDialog({
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium text-ink-secondary">
-              Format *
+              格式 *
             </label>
             <select
               className="w-full rounded-[8px] border border-border bg-workspace px-3 py-2 text-sm outline-none focus:border-mint-600"
               value={format}
               onChange={(e) => setFormat(e.target.value as "percentage" | "ratio")}
             >
-              <option value="percentage">percentage (×100%)</option>
-              <option value="ratio">ratio (x : 1)</option>
+              <option value="percentage">百分比（×100%）</option>
+              <option value="ratio">比值（x : 1）</option>
             </select>
           </div>
           {preview && (
             <p className="rounded-[8px] border border-mint-600/30 bg-mint-100/40 px-3 py-2 text-xs text-ink-secondary">
-              Preview: {preview}
+              预览：{preview}
               {format === "ratio" ? " → x : 1" : " → x.x%"}
             </p>
           )}
           <div>
             <label className="mb-1 block text-xs font-medium text-ink-secondary">
-              Meaning (optional)
+              含义（可选）
             </label>
             <textarea
               className="w-full rounded-[8px] border border-border bg-workspace px-3 py-2 text-sm outline-none focus:border-mint-600"
@@ -617,14 +614,14 @@ function CreateDerivedDialog({
 
         <DialogFooter>
           <Button variant="ghost" onClick={onClose}>
-            Cancel
+            取消
           </Button>
           <Button
             variant="primary"
             onClick={create}
             disabled={creating || displayName.trim() === ""}
           >
-            {creating ? "Creating…" : "Create"}
+            {creating ? "创建中…" : "创建"}
           </Button>
         </DialogFooter>
       </DialogContent>

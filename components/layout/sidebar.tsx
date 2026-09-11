@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { NAV_LABELS } from "@/lib/labels";
 
 /**
  * ContentLoop Sidebar — design.md §9, §40
@@ -26,12 +27,12 @@ import { cn } from "@/lib/utils";
  */
 
 const NAV_ITEMS = [
-  { label: "Home", href: "/app", icon: Home },
-  { label: "Radar", href: "/app/radar", icon: Radar },
-  { label: "Studio", href: "/app/studio", icon: PenTool },
-  { label: "Pipeline", href: "/app/pipeline", icon: KanbanSquare },
-  { label: "Analytics", href: "/app/analytics", icon: BarChart3 },
-  { label: "Settings", href: "/app/settings", icon: Settings },
+  { label: NAV_LABELS.home, href: "/app", icon: Home },
+  { label: NAV_LABELS.radar, href: "/app/radar", icon: Radar },
+  { label: NAV_LABELS.studio, href: "/app/studio", icon: PenTool },
+  { label: NAV_LABELS.pipeline, href: "/app/pipeline", icon: KanbanSquare },
+  { label: NAV_LABELS.analytics, href: "/app/analytics", icon: BarChart3 },
+  { label: NAV_LABELS.settings, href: "/app/settings", icon: Settings },
 ] as const;
 
 export function Sidebar() {
@@ -106,14 +107,14 @@ export function Sidebar() {
             "flex w-full items-center gap-3 rounded-[8px] px-3 py-2 text-sm text-ink-muted hover:bg-surface-subtle hover:text-ink-primary transition-colors duration-150",
             collapsed && "justify-center px-2"
           )}
-          title={collapsed ? "Expand" : "Collapse"}
+          title={collapsed ? "展开" : "收起"}
         >
           {collapsed ? (
             <ChevronsRight className="h-4 w-4" />
           ) : (
             <>
               <ChevronsLeft className="h-4 w-4" />
-              <span>Collapse</span>
+              <span>收起</span>
             </>
           )}
         </button>

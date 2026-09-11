@@ -58,7 +58,7 @@ export function computeReadiness(rows: { availability: ResultAvailability }[]): 
       readiness: {
         canConclude: false,
         forcedOutcome: null,
-        reasons: ["Attach publications to observe results."],
+        reasons: ["关联发布记录以观察结果。"],
       },
       observedCount: 0,
     };
@@ -75,7 +75,7 @@ export function computeReadiness(rows: { availability: ResultAvailability }[]): 
       readiness: {
         canConclude: false,
         forcedOutcome: null,
-        reasons: ["No checkpoint data yet — wait for snapshots."],
+        reasons: ["还没有该数据点的数据——请先录入指标。"],
       },
       observedCount,
     };
@@ -87,7 +87,7 @@ export function computeReadiness(rows: { availability: ResultAvailability }[]): 
         canConclude: true,
         forcedOutcome: "no_clear_result",
         reasons: [
-          "Only one observed publication — a single observation cannot support a directional outcome.",
+          "只有一条观察对象——单条数据不支持方向性结论。",
         ],
       },
       observedCount,
@@ -100,7 +100,7 @@ export function computeReadiness(rows: { availability: ResultAvailability }[]): 
         canConclude: true,
         forcedOutcome: "no_clear_result",
         reasons: [
-          `${awaiting + metricUnavailable} publication(s) missing data — outcome is limited to No Clear Result.`,
+          `有 ${awaiting + metricUnavailable} 条发布缺少数据——结论只能是“无明确结论”。`,
         ],
       },
       observedCount,

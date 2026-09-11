@@ -47,7 +47,7 @@ async function loadContext(
     .from(publications)
     .where(eq(publications.id, publicationId));
   if (!publication || publication.deletedAt) {
-    throw new ReviewError("Publication not found", 404);
+    throw new ReviewError("发布记录不存在", 404);
   }
 
   // Brand scope check via content.
@@ -61,7 +61,7 @@ async function loadContext(
         isNull(contents.deletedAt)
       )
     );
-  if (!content) throw new ReviewError("Publication not found", 404);
+  if (!content) throw new ReviewError("发布记录不存在", 404);
 
   const [snapshot] = await tx
     .select()
@@ -90,11 +90,11 @@ function toSummary(s: typeof metricSnapshots.$inferSelect) {
 
 function assertCapturedAtValid(publishedAt: Date, checkpoint: Checkpoint, capturedAt: Date) {
   if (capturedAt.getTime() > Date.now() + CAPTURED_AT_FUTURE_SKEW_MS) {
-    throw new ReviewError("Capture time can't be in the future.", 400);
+    throw new ReviewError("采集时间不能在未来。", 400);
   }
   if (!isCaptureOnTime(publishedAt, checkpoint, capturedAt)) {
     throw new ReviewError(
-      `Capture time is before the ${checkpoint} reading point. Record the data only after that time.`,
+      `采集时间早于 ${checkpoint} 数据点。请在该时间之后再录入数据。`,
       409
     );
   }
@@ -128,7 +128,7 @@ export async function createSnapshotIn(
 
   if (ctx.snapshot) {
     throw new ReviewError(
-      `A ${checkpoint} snapshot already exists. Edit it instead.`,
+      `${checkpoint} 的指标数据已存在。请使用编辑。`,
       409
     );
   }
@@ -148,7 +148,7 @@ export async function createSnapshotIn(
   assertExactKeySet(
     Object.keys(input.metrics),
     activeRaws.map((d) => d.key),
-    "the metrics available for this platform"
+    "该平台当前可用的指标"
   );
 
   const capturedAt = new Date(input.capturedAt);
@@ -195,7 +195,7 @@ export async function editSnapshotIn(
 
   if (!ctx.snapshot) {
     throw new ReviewError(
-      `No ${checkpoint} snapshot exists yet. Create it first.`,
+      `还没有 ${checkpoint} 的指标数据。请先录入。`,
       404
     );
   }
@@ -208,7 +208,7 @@ export async function editSnapshotIn(
   assertExactKeySet(
     Object.keys(input.metrics),
     storedKeys,
-    "the previously saved metrics"
+    "之前保存的指标"
   );
 
   const capturedAt = new Date(input.capturedAt);
@@ -232,10 +232,10 @@ function assertExactKeySet(actual: string[], expected: string[], label: string) 
   const extra = actual.filter((k) => !expected.includes(k));
   if (missing.length > 0 || extra.length > 0) {
     const parts: string[] = [];
-    if (missing.length > 0) parts.push(`missing: ${missing.join(", ")}`);
-    if (extra.length > 0) parts.push(`unexpected: ${extra.join(", ")}`);
+    if (missing.length > 0) parts.push(`缺少：${missing.join(", ")}`);
+    if (extra.length > 0) parts.push(`多余：${extra.join(", ")}`);
     throw new ReviewError(
-      `Edited metrics must exactly match ${label} — ${parts.join("; ")}.`,
+      `提交的指标必须与${label}完全一致——${parts.join("；")}。`,
       400
     );
   }

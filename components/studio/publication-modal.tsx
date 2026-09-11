@@ -105,14 +105,14 @@ export function PublicationModal({
       const data = await res.json();
       if (!res.ok) {
         throw new Error(
-          data.details ? `${data.error}: ${data.details}` : data.error || "Failed"
+          data.details ? `${data.error}: ${data.details}` : data.error || "操作失败"
         );
       }
       onDone(data as PublicationResult);
       onOpenChange(false);
     } catch (err) {
       // Keep user input on failure.
-      setError(err instanceof Error ? err.message : "Failed");
+      setError(err instanceof Error ? err.message : "操作失败");
     } finally {
       setSubmitting(false);
     }
@@ -123,19 +123,19 @@ export function PublicationModal({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>
-            {isEdit ? "Edit Publication" : "Mark as Published"}
+            {isEdit ? "修改发布记录" : "标记已发布"}
           </DialogTitle>
           <DialogDescription>
             {isEdit
-              ? "Correct the publication record. Platform and status do not change."
-              : `Record that the ${platformLabel} version was really published. This cannot be undone.`}
+              ? "更正发布记录。平台和状态不会改变。"
+              : `记录这个 ${platformLabel} 版本已真实发布。此操作不可撤销。`}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-3">
           <div>
             <label className="mb-1 block text-xs font-medium text-ink-secondary">
-              Platform
+              平台
             </label>
             <input
               className="w-full rounded-[8px] border border-border bg-surface-subtle px-3 py-2 text-sm text-ink-muted"
@@ -145,7 +145,7 @@ export function PublicationModal({
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium text-ink-secondary">
-              Final Title *
+              最终标题 *
             </label>
             <input
               className="w-full rounded-[8px] border border-border bg-workspace px-3 py-2 text-sm text-ink-primary outline-none focus:border-mint-600"
@@ -155,7 +155,7 @@ export function PublicationModal({
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium text-ink-secondary">
-              Published At * (your local time)
+              发布时间 *（你的本地时间）
             </label>
             <input
               type="datetime-local"
@@ -166,13 +166,13 @@ export function PublicationModal({
             />
             {snapshotsExist && (
               <p className="mt-1 text-[11px] text-ink-faint">
-                Published time is locked because metric snapshots already exist.
+                发布时间已锁定，因为已有指标数据。
               </p>
             )}
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium text-ink-secondary">
-              URL *
+              链接 *
             </label>
             <input
               className="w-full rounded-[8px] border border-border bg-workspace px-3 py-2 text-sm text-ink-primary outline-none focus:border-mint-600"
@@ -183,7 +183,7 @@ export function PublicationModal({
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium text-ink-secondary">
-              Cover URL (optional)
+              封面链接（可选）
             </label>
             <input
               className="w-full rounded-[8px] border border-border bg-workspace px-3 py-2 text-sm text-ink-primary outline-none focus:border-mint-600"
@@ -194,7 +194,7 @@ export function PublicationModal({
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium text-ink-secondary">
-              Notes (optional)
+              备注（可选）
             </label>
             <textarea
               className="w-full rounded-[8px] border border-border bg-workspace px-3 py-2 text-sm text-ink-primary outline-none focus:border-mint-600"
@@ -213,7 +213,7 @@ export function PublicationModal({
 
         <DialogFooter>
           <Button variant="ghost" onClick={() => onOpenChange(false)}>
-            Cancel
+            取消
           </Button>
           <Button
             variant="primary"
@@ -222,11 +222,11 @@ export function PublicationModal({
           >
             {submitting
               ? isEdit
-                ? "Saving…"
-                : "Marking…"
+                ? "保存中…"
+                : "标记中…"
               : isEdit
-                ? "Save Correction"
-                : "Confirm Published"}
+                ? "保存更正"
+                : "确认已发布"}
           </Button>
         </DialogFooter>
       </DialogContent>

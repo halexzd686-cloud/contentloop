@@ -134,7 +134,7 @@ export async function loadAggregate(
     publications: { id: string; platformVersionId: string }[] | null;
   }[];
   const row = rows[0];
-  if (!row?.content) throw new ReviewError("Content not found", 404);
+  if (!row?.content) throw new ReviewError("内容不存在", 404);
 
   return {
     content: row.content,
@@ -231,31 +231,31 @@ export async function sendToReview(contentId: string) {
 
     if (agg.content.status !== "in_progress") {
       throw new ReviewError(
-        `Only in-progress content can be sent to review (current: ${contentStatusLabel(agg.content.status)}).`,
+        `只有制作中的内容才能送审（当前状态：${contentStatusLabel(agg.content.status)}）。`,
         409
       );
     }
     if (agg.brief?.status !== "approved") {
-      throw new ReviewError("Approve Brief before sending to review.", 409);
+      throw new ReviewError("请先确认内容简报，再送审。", 409);
     }
     if (!agg.hasMaster) {
       throw new ReviewError(
-        "Create the Content Master before sending to review.",
+        "请先创建内容母稿，再送审。",
         409
       );
     }
     if (agg.versions.length === 0) {
       throw new ReviewError(
-        "Create at least one platform version before sending to review.",
+        "请先创建至少一个平台版本，再送审。",
         409
       );
     }
     const notDraft = agg.versions.filter((v) => v.status !== "draft");
     if (notDraft.length > 0) {
       throw new ReviewError(
-        `All platform versions must be draft to enter review (not draft: ${notDraft
+        `所有平台版本都必须是草稿才能进入审核（非草稿：${notDraft
           .map((v) => platformLabel(v.platform))
-          .join(", ")}).`,
+          .join("，")}）。`,
         409
       );
     }
@@ -345,7 +345,7 @@ export async function withdrawFromReview(contentId: string) {
 
     if (agg.content.status !== "review") {
       throw new ReviewError(
-        `Only content in review can be withdrawn (current: ${contentStatusLabel(agg.content.status)}).`,
+        `只有待审核的内容才能撤回（当前状态：${contentStatusLabel(agg.content.status)}）。`,
         409
       );
     }
@@ -424,13 +424,13 @@ export async function saveChecklist(
     }[];
     const row = rows[0];
 
-    if (!row?.content) throw new ReviewError("Content not found", 404);
+    if (!row?.content) throw new ReviewError("内容不存在", 404);
     if (!row.version) {
-      throw new ReviewError("No version exists for this platform.", 404);
+      throw new ReviewError("该平台还没有版本。", 404);
     }
     if (row.version.status !== "review") {
       throw new ReviewError(
-        `Checklist can only be edited while the version is in review (current: ${versionStatusLabel(row.version.status)}).`,
+        `只有审核中的版本才能编辑审核清单（当前状态：${versionStatusLabel(row.version.status)}）。`,
         409
       );
     }
@@ -470,12 +470,12 @@ export async function approveForPublishing(contentId: string) {
       agg.content.status === "scheduled" && agg.publications.length > 0;
     if (agg.content.status !== "review" && !partiallyPublished) {
       throw new ReviewError(
-        `Only content in review can be approved for publishing (current: ${contentStatusLabel(agg.content.status)}).`,
+        `只有待审核的内容才能审核通过并待发布（当前状态：${contentStatusLabel(agg.content.status)}）。`,
         409
       );
     }
     if (agg.versions.length === 0) {
-      throw new ReviewError("No platform versions to approve.", 409);
+      throw new ReviewError("没有可审核通过的平台版本。", 409);
     }
 
     const toApprove: string[] = [];
@@ -488,14 +488,14 @@ export async function approveForPublishing(contentId: string) {
           toApprove.push(v.id);
           continue;
         }
-        blockers.push(`${v.platform} (checklist incomplete)`);
+        blockers.push(`${platformLabel(v.platform)}（清单未完成）`);
         continue;
       }
-      blockers.push(`${platformLabel(v.platform)} (status: ${versionStatusLabel(v.status)})`);
+      blockers.push(`${platformLabel(v.platform)}（状态：${versionStatusLabel(v.status)}）`);
     }
     if (blockers.length > 0) {
       throw new ReviewError(
-        `Cannot approve for publishing: ${blockers.join(", ")}.`,
+        `无法审核通过并待发布：${blockers.join("，")}。`,
         409
       );
     }
@@ -517,7 +517,7 @@ export async function approveForPublishing(contentId: string) {
     const approver = resolveApprover(reviewer ?? null, owner ?? null);
     if (!approver) {
       throw new ReviewError(
-        "No valid reviewer or owner available to approve.",
+        "没有可用的审核人或负责人来完成审核。",
         400
       );
     }
@@ -586,17 +586,17 @@ export async function returnVersionToDraft(contentId: string, platform: string) 
 
     if (agg.content.status !== "review" && agg.content.status !== "scheduled") {
       throw new ReviewError(
-        "Platform versions can only be returned to draft while the content is in review or scheduled.",
+        "只有内容处于待审核或待发布状态时，平台版本才能退回草稿。",
         409
       );
     }
     const version = agg.versions.find((v) => v.platform === platform);
     if (!version) {
-      throw new ReviewError("No version exists for this platform.", 404);
+      throw new ReviewError("该平台还没有版本。", 404);
     }
     if (version.status !== "review" && version.status !== "approved") {
       throw new ReviewError(
-        `Only a review/approved version can return to draft (current: ${versionStatusLabel(version.status)}).`,
+        `只有审核中或已通过的版本才能退回草稿（当前状态：${versionStatusLabel(version.status)}）。`,
         409
       );
     }
@@ -650,17 +650,17 @@ export async function submitVersionToReview(contentId: string, platform: string)
 
     if (agg.content.status !== "review" && agg.content.status !== "scheduled") {
       throw new ReviewError(
-        "A version can only be submitted to review while the content is in review or scheduled.",
+        "只有内容处于待审核或待发布状态时，版本才能提交审核。",
         409
       );
     }
     const version = agg.versions.find((v) => v.platform === platform);
     if (!version) {
-      throw new ReviewError("No version exists for this platform.", 404);
+      throw new ReviewError("该平台还没有版本。", 404);
     }
     if (version.status !== "draft") {
       throw new ReviewError(
-        `Only a draft version can be submitted to review (current: ${versionStatusLabel(version.status)}).`,
+        `只有草稿版本才能提交审核（当前状态：${versionStatusLabel(version.status)}）。`,
         409
       );
     }
@@ -742,7 +742,7 @@ export async function globalUpstreamInvalidation(
     .limit(1);
   if (existingPubs.length > 0) {
     throw new ReviewError(
-      "This content already has a published platform version. Brief and Master can no longer be globally edited.",
+      "这条内容已有已发布的平台版本。简报和母稿不能再全局编辑。",
       409
     );
   }
@@ -798,7 +798,7 @@ export async function transitionViaDrag(contentId: string, to: string) {
         isNull(contents.deletedAt)
       )
     );
-  if (!content) throw new ReviewError("Content not found", 404);
+  if (!content) throw new ReviewError("内容不存在", 404);
 
   if (!canDragTransition(content.status, to)) {
     throw new ReviewError(dragBlockReason(content.status, to), 409);
@@ -818,7 +818,7 @@ export async function transitionViaDrag(contentId: string, to: string) {
     .where(eq(contentBriefs.contentId, contentId));
   if (brief?.status !== "approved") {
     throw new ReviewError(
-      "Approve Brief before moving the content into production.",
+      "请先确认内容简报，再将内容投入制作。",
       409
     );
   }

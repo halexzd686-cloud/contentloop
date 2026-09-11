@@ -54,11 +54,11 @@ export interface ReviewVersion {
 export type ReviewRow = WorkflowSnapshot["reviews"][number];
 
 const CHECKLIST_ITEMS: { key: keyof ReviewChecklist; label: string }[] = [
-  { key: "factsConfirmed", label: "Facts confirmed" },
-  { key: "titleCoverMatch", label: "Title / cover matches body" },
-  { key: "platformFitConfirmed", label: "Platform fit confirmed" },
-  { key: "riskChecked", label: "No obvious risk" },
-  { key: "humanReviewed", label: "Final version human-reviewed" },
+  { key: "factsConfirmed", label: "事实已核实" },
+  { key: "titleCoverMatch", label: "标题/封面与正文一致" },
+  { key: "platformFitConfirmed", label: "平台适配已确认" },
+  { key: "riskChecked", label: "无明显风险" },
+  { key: "humanReviewed", label: "最终版本已人工复核" },
 ];
 
 const EMPTY: ReviewChecklist = {
@@ -72,9 +72,9 @@ const EMPTY: ReviewChecklist = {
 const SAVE_LABEL: Record<SaveQueueState, string> = {
   idle: "",
   pending: "",
-  saving: "Saving…",
-  saved: "Saved",
-  failed: "Save failed",
+  saving: "保存中…",
+  saved: "已保存",
+  failed: "保存失败",
 };
 
 interface ReviewPanelProps {
@@ -174,7 +174,7 @@ export function ReviewPanel({
             }
           );
           const data = await res.json();
-          if (!res.ok) throw new Error(data.error || "Save failed");
+          if (!res.ok) throw new Error(data.error || "保存失败");
           // Response is an acknowledgement only — never applied to local state.
         },
         (state) => setChecklists((prev) => ({ ...prev, [v.id]: state })),
@@ -192,10 +192,10 @@ export function ReviewPanel({
     try {
       const res = await fn();
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Action failed");
+      if (!res.ok) throw new Error(data.error || "操作失败");
       if (data.workflow) onWorkflow(data.workflow, rev);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Action failed");
+      setError(err instanceof Error ? err.message : "操作失败");
     } finally {
       setBusy(null);
     }
@@ -211,7 +211,7 @@ export function ReviewPanel({
       );
       if (results.some((ok) => !ok)) {
         throw new Error(
-          "A checklist save failed. Retry the save before approving."
+          "清单保存失败。请先重试保存再批准。"
         );
       }
       const rev = beginAction();
@@ -219,19 +219,19 @@ export function ReviewPanel({
         method: "POST",
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Approve failed");
+      if (!res.ok) throw new Error(data.error || "批准失败");
       if (data.workflow) onWorkflow(data.workflow, rev);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Approve failed");
+      setError(err instanceof Error ? err.message : "批准失败");
     } finally {
       setBusy(null);
     }
   }
 
   const gateHints: string[] = [];
-  if (!briefApproved) gateHints.push("Brief must be approved");
-  if (!hasMaster) gateHints.push("Content Master must exist");
-  if (versions.length === 0) gateHints.push("Create at least one platform version");
+  if (!briefApproved) gateHints.push("需要先确认内容简报");
+  if (!hasMaster) gateHints.push("需要先创建内容母稿");
+  if (versions.length === 0) gateHints.push("请先创建至少一个平台版本");
 
   const anySaveFailed = versions.some((v) => saveStates[v.id] === "failed");
   const aggregateReady =
@@ -248,24 +248,24 @@ export function ReviewPanel({
     <div>
       <div className="mb-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <h2 className="text-sm font-semibold text-ink-primary">Review</h2>
+          <h2 className="text-sm font-semibold text-ink-primary">审核</h2>
           <Badge variant={contentStatus === "scheduled" ? "mint" : "default"}>
             {contentStatus === "review"
-              ? "In review"
+              ? "审核中"
               : contentStatus === "scheduled"
-                ? "Approved for publishing"
-                : "Not in review"}
+                ? "已通过待发布"
+                : "未在审核"}
           </Badge>
         </div>
         {approverName && (
-          <span className="text-xs text-ink-muted">Reviewer: {approverName}</span>
+          <span className="text-xs text-ink-muted">审核人：{approverName}</span>
         )}
         {contentStatus === "scheduled" && (
           <Link
             href="/app/pipeline"
             className="text-xs font-medium text-mint-600 hover:underline"
           >
-            View in Pipeline
+            去内容流程查看
           </Link>
         )}
       </div>
@@ -280,7 +280,7 @@ export function ReviewPanel({
         <div className="flex flex-col items-center justify-center py-12 text-center">
           <Lock className="h-5 w-5 text-ink-faint" />
           <p className="mt-3 text-sm text-ink-secondary">
-            Create at least one platform version first.
+            请先创建至少一个平台版本。
           </p>
         </div>
       )}
@@ -321,7 +321,7 @@ export function ReviewPanel({
                             className="ml-1 underline"
                             onClick={() => getEditor(v).retry()}
                           >
-                            Retry
+                            重试
                           </button>
                         )}
                       </span>
@@ -341,7 +341,7 @@ export function ReviewPanel({
                       }
                     >
                       <Undo2 className="h-3 w-3" />
-                      Return to draft
+                      退回草稿
                     </button>
                   )}
                   {v.status === "draft" &&
@@ -359,15 +359,15 @@ export function ReviewPanel({
                           )
                         }
                       >
-                        Send to Review
+                        提交审核
                       </Button>
                     )}
                 </div>
 
                 {v.status === "approved" && review?.approvedAt && (
                   <p className="mt-2 text-xs text-ink-muted">
-                    Approved {new Date(review.approvedAt).toLocaleString()}
-                    {approverName ? ` by ${approverName}` : ""}
+                    已于 {new Date(review.approvedAt).toLocaleString()}
+                    {approverName ? ` 由 ${approverName} 通过` : " 通过"}
                   </p>
                 )}
 
@@ -380,7 +380,7 @@ export function ReviewPanel({
                       disabled={busy !== null}
                       onClick={() => setPubModal({ platform: v.platform, edit: false })}
                     >
-                      Mark as Published
+                      标记已发布
                     </Button>
                   </div>
                 )}
@@ -394,9 +394,7 @@ export function ReviewPanel({
                     if (!pub) {
                       return (
                         <p className="mt-2 text-xs text-ink-faint">
-                          Published — the publication record couldn&apos;t be
-                          loaded. Reload this page; if it persists, check the
-                          Pipeline page.
+                          已发布——发布记录加载失败。请刷新页面；若仍失败，请到内容流程页查看。
                         </p>
                       );
                     }
@@ -414,16 +412,16 @@ export function ReviewPanel({
                           {pub.url}
                         </a>
                         <p className="mt-1 text-xs text-ink-muted">
-                          Published {new Date(pub.publishedAt).toLocaleString()}
+                          发布于 {new Date(pub.publishedAt).toLocaleString()}
                         </p>
                         {pub.coverUrl && (
                           <p className="mt-1 break-all text-xs text-ink-muted">
-                            Cover: {pub.coverUrl}
+                            封面：{pub.coverUrl}
                           </p>
                         )}
                         {pub.notes && (
                           <p className="mt-1 text-xs text-ink-secondary">
-                            Notes: {pub.notes}
+                            备注：{pub.notes}
                           </p>
                         )}
                         {/* M2.3: checkpoint metric entry */}
@@ -443,10 +441,10 @@ export function ReviewPanel({
                                   {c}{" "}
                                   <span className="text-ink-muted">
                                     {st === "submitted"
-                                      ? `Submitted · recorded ${new Date(snap!.capturedAt).toLocaleString()}`
+                                      ? `已提交 · 记录于 ${new Date(snap!.capturedAt).toLocaleString()}`
                                       : st === "due"
-                                        ? `Due since ${checkpointDueAt(pub.publishedAt, c).toLocaleString()}`
-                                        : `Not due yet — come back after ${checkpointDueAt(pub.publishedAt, c).toLocaleString()}`}
+                                        ? `自 ${checkpointDueAt(pub.publishedAt, c).toLocaleString()} 起待录入`
+                                        : `未到时间——请在 ${checkpointDueAt(pub.publishedAt, c).toLocaleString()} 后再录入`}
                                   </span>
                                 </span>
                                 {st === "due" && (
@@ -456,7 +454,7 @@ export function ReviewPanel({
                                       setSnapModal({ publication: pub, checkpoint: c })
                                     }
                                   >
-                                    Enter {c} Metrics
+                                    录入 {c} 数据
                                   </button>
                                 )}
                                 {st === "submitted" && (
@@ -466,7 +464,7 @@ export function ReviewPanel({
                                       setSnapModal({ publication: pub, checkpoint: c })
                                     }
                                   >
-                                    Edit Metrics
+                                    编辑数据
                                   </button>
                                 )}
                               </div>
@@ -477,7 +475,7 @@ export function ReviewPanel({
                           className="mt-2 text-xs text-mint-600 hover:underline"
                           onClick={() => setPubModal({ platform: v.platform, edit: true })}
                         >
-                          Edit Publication
+                          修改发布记录
                         </button>
                       </div>
                     );
@@ -485,7 +483,7 @@ export function ReviewPanel({
 
                 {v.status === "draft" && (
                   <p className="mt-2 text-xs text-ink-faint">
-                    Draft — not part of the current review round.
+                    草稿——不在本轮审核中。
                   </p>
                 )}
 
@@ -498,14 +496,14 @@ export function ReviewPanel({
                           disabled={!editable}
                           onClick={() => getEditor(v).setAll(true)}
                         >
-                          Select All
+                          全选
                         </button>
                         <button
                           className="text-xs text-ink-muted hover:underline disabled:opacity-50"
                           disabled={!editable}
                           onClick={() => getEditor(v).setAll(false)}
                         >
-                          Clear All
+                          清空
                         </button>
                       </div>
                     )}
@@ -560,7 +558,7 @@ export function ReviewPanel({
               }
             >
               <Send className="mr-1 h-3 w-3" />
-              {busy === "send" ? "Sending…" : "Send to Review"}
+              {busy === "send" ? "提交中…" : "提交审核"}
             </Button>
           </div>
         )}
@@ -569,7 +567,7 @@ export function ReviewPanel({
           <div>
             {anySaveFailed && (
               <p className="mb-2 text-xs text-danger">
-                A checklist save failed — retry it before approving.
+                清单保存失败——请先重试保存再批准。
               </p>
             )}
             <div className="flex gap-2">
@@ -579,13 +577,13 @@ export function ReviewPanel({
                 disabled={busy !== null || !aggregateReady || anySaveFailed}
                 title={
                   aggregateReady
-                    ? "Approve all reviewed platform versions"
-                    : "Complete every platform checklist first"
+                    ? "批准所有已审核的平台版本"
+                    : "请先完成每个平台的审核清单"
                 }
                 onClick={handleApprove}
               >
                 <Check className="mr-1 h-3 w-3" />
-                {busy === "approve" ? "Saving & Approving…" : "Approve for Publishing"}
+                {busy === "approve" ? "保存并审核中…" : "审核通过并待发布"}
               </Button>
               <Button
                 variant="ghost"
@@ -600,7 +598,7 @@ export function ReviewPanel({
                 }
               >
                 <RefreshCw className="mr-1 h-3 w-3" />
-                Withdraw from Review
+                撤回审核
               </Button>
             </div>
           </div>
@@ -608,16 +606,15 @@ export function ReviewPanel({
 
         {contentStatus === "scheduled" && (
           <p className="text-xs text-ink-muted">
-            Approved for publishing. Published{" "}
+            已审核通过待发布。已发布{" "}
             {versions.filter((v) => v.status === "published").length} /{" "}
-            {versions.length} — mark each platform as published after its real
-            release.
+            {versions.length}——请在各平台真实发布后标记已发布。
           </p>
         )}
 
         {contentStatus === "published" && (
           <p className="text-xs text-mint-600">
-            All target platforms published. This content is complete.
+            所有目标平台均已发布。这条内容已完成。
           </p>
         )}
       </div>

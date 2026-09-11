@@ -12,7 +12,14 @@ import {
   type HomeTestRow,
   type HomeModel,
 } from "@/lib/home";
-import { platformLabel, contentStatusLabel, testStatusLabel } from "@/lib/labels";
+import {
+  platformLabel,
+  contentStatusLabel,
+  testStatusLabel,
+  NAV_LABELS,
+  HOME_SECTIONS,
+  HOME_THESIS,
+} from "@/lib/labels";
 
 /**
  * Home — M5.6 visual pass: H2 static composition.
@@ -42,9 +49,9 @@ export default function HomePage() {
         aRes.json(),
         tRes.json(),
       ]);
-      if (!cRes.ok) throw new Error(c.error || "Failed to load contents");
-      if (!aRes.ok) throw new Error(a.error || "Failed to load analytics");
-      if (!tRes.ok) throw new Error(t.error || "Failed to load tests");
+      if (!cRes.ok) throw new Error(c.error || "内容加载失败");
+      if (!aRes.ok) throw new Error(a.error || "数据加载失败");
+      if (!tRes.ok) throw new Error(t.error || "测试加载失败");
       setModel(
         buildHomeModel({
           contents: c.contents as HomeContentRow[],
@@ -53,7 +60,7 @@ export default function HomePage() {
         })
       );
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load");
+      setError(err instanceof Error ? err.message : "加载失败");
     } finally {
       setLoading(false);
     }
@@ -89,7 +96,7 @@ export default function HomePage() {
           <p className="text-sm text-danger">{error}</p>
           <Button variant="secondary" size="sm" className="mt-3" onClick={load}>
             <RefreshCw className="mr-1 h-3 w-3" />
-            Retry
+            重试
           </Button>
         </div>
       </div>
@@ -109,13 +116,13 @@ export default function HomePage() {
           heading group (product thesis, not a watermark). */}
       <div className="border-b border-border px-10 pb-6 pt-8">
         <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-ink-muted">
-          ContentLoop workspace
+          工作区
         </p>
         <div className="mt-2 flex items-baseline gap-4">
-          <h1 className="text-[26px] font-semibold leading-tight">Home</h1>
+          <h1 className="text-[26px] font-semibold leading-tight">{NAV_LABELS.home}</h1>
           <span className="hidden h-5 w-px bg-border-strong sm:block" />
           <p className="font-serif text-lg italic text-ink-secondary">
-            Close the loop.
+            {HOME_THESIS}
           </p>
         </div>
       </div>
@@ -123,18 +130,17 @@ export default function HomePage() {
       {model.isEmpty ? (
         <div className="py-16 text-center">
           <p className="text-sm text-ink-secondary">
-            ContentLoop turns signals into published content, real metrics and
-            reusable learnings. Start the loop:
+            ContentLoop 把选题线索变成已发布的内容、真实数据和可复用的运营经验。开始这个循环：
           </p>
           <div className="mt-4 flex justify-center gap-2">
             <Link href="/app/radar">
               <Button variant="primary" size="sm">
-                Add Signal
+                添加线索
               </Button>
             </Link>
             <Link href="/app/studio">
               <Button variant="secondary" size="sm">
-                New Content
+                新建内容
               </Button>
             </Link>
           </div>
@@ -144,11 +150,11 @@ export default function HomePage() {
           {/* Primary: needs attention */}
           <section className="xl:col-span-3">
             <h2 className="text-[11px] font-medium uppercase tracking-[0.14em] text-ink-muted">
-              Needs Attention
+              {HOME_SECTIONS.needsAttention}
             </h2>
             {!hasAttention ? (
               <p className="mt-3 rounded-[10px] border border-border bg-workspace px-5 py-4 text-sm text-ink-secondary">
-                Nothing needs attention right now.
+                现在没有待处理事项。
               </p>
             ) : (
               <div className="mt-3 space-y-3">
@@ -164,12 +170,12 @@ export default function HomePage() {
                           {d.finalTitle}
                         </p>
                         <p className="mt-0.5 text-xs text-ink-secondary">
-                          {platformLabel(d.platform)} · {d.checkpoint} metrics
-                          due since {new Date(d.dueAt).toLocaleDateString()}
+                          {platformLabel(d.platform)} · {d.checkpoint} 数据自{" "}
+                          {new Date(d.dueAt).toLocaleDateString()} 起待录入
                         </p>
                       </div>
                       <span className="flex shrink-0 items-center gap-1 text-[13px] font-medium text-mint-600">
-                        Enter metrics <ArrowRight className="h-3.5 w-3.5" />
+                        录入数据 <ArrowRight className="h-3.5 w-3.5" />
                       </span>
                     </div>
                   </Link>
@@ -186,11 +192,11 @@ export default function HomePage() {
                           {c.title}
                         </p>
                         <p className="mt-0.5 text-xs text-ink-secondary">
-                          Waiting for review
+                          等待审核
                         </p>
                       </div>
                       <span className="flex shrink-0 items-center gap-1 text-[13px] font-medium text-mint-600">
-                        Open Review <ArrowRight className="h-3.5 w-3.5" />
+                        去审核 <ArrowRight className="h-3.5 w-3.5" />
                       </span>
                     </div>
                   </Link>
@@ -204,22 +210,26 @@ export default function HomePage() {
             <section>
               <div className="flex items-baseline justify-between">
                 <h2 className="text-[11px] font-medium uppercase tracking-[0.14em] text-ink-muted">
-                  Continue Working
+                  {HOME_SECTIONS.continueWorking}
                 </h2>
                 <Link
                   href="/app/studio"
                   className="text-xs text-mint-600 hover:underline"
                 >
-                  View all
+                  查看全部
                 </Link>
               </div>
               {model.continueWorking.length === 0 ? (
                 <p className="mt-3 rounded-[10px] border border-border bg-workspace px-4 py-3 text-[13px] text-ink-secondary">
-                  No content in production.{" "}
+                  暂无制作中的内容。{" "}
                   <Link href="/app/studio" className="text-mint-600 hover:underline">
-                    New Content
+                    新建内容
                   </Link>{" "}
-                  or select a signal in Radar.
+                  或{" "}
+                  <Link href="/app/radar" className="text-mint-600 hover:underline">
+                    去选题雷达选用线索
+                  </Link>
+                  。
                 </p>
               ) : (
                 <div className="mt-3 divide-y divide-border rounded-[10px] border border-border bg-workspace">
@@ -243,11 +253,11 @@ export default function HomePage() {
 
             <section>
               <h2 className="text-[11px] font-medium uppercase tracking-[0.14em] text-ink-muted">
-                Monitoring
+                {HOME_SECTIONS.monitoring}
               </h2>
               {!hasMonitoring ? (
                 <p className="mt-3 rounded-[10px] border border-border bg-workspace px-4 py-3 text-[13px] text-ink-secondary">
-                  Nothing scheduled or running.
+                  暂无待发布或进行中的内容。
                 </p>
               ) : (
                 <div className="mt-3 divide-y divide-border rounded-[10px] border border-border bg-workspace">
@@ -260,7 +270,7 @@ export default function HomePage() {
                       <p className="min-w-0 truncate text-sm font-medium">
                         {c.title}
                       </p>
-                      <Badge variant="default">Scheduled</Badge>
+                      <Badge variant="default">待发布</Badge>
                     </Link>
                   ))}
                   {model.runningTests.map((t) => (
@@ -273,7 +283,7 @@ export default function HomePage() {
                         {t.title}
                       </p>
                       <Badge variant="warning">
-                        Test {testStatusLabel(t.status)}
+                        测试{testStatusLabel(t.status)}
                       </Badge>
                     </Link>
                   ))}
