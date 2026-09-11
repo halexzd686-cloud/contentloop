@@ -55,6 +55,35 @@ MetalForge 链接仅作视觉/动效参考（未复制其代码）；两个组�
 
 **PASS WITH LIMITATIONS** —— 技术可行、性能干净、零依赖；Orbs 密度微调留待 M7 页面集成时的真实浏览器评审。
 
+## Visual Fidelity Pass（M7-D17.6B）
+
+针对首轮结论"Thinking Orbs 同心圆 spinner 感过重 / Spiral 像断裂圆环"的纯视觉保真重写，工程架构（Canvas 2D + RAF 生命周期 / SVG+CSS）全部保留。
+
+### Thinking Orbs — 几何与深度模型
+
+- **轨道模型**：3 个相互独立的投影轨道平面，各自有不同 tiltX / rotZ / 椭圆比率 / 半径 / 进动速度与相位漂移——不再是共享中心朝向的同心圆。静态帧即可见倾斜椭圆轨道（56px 下清晰）。
+- **粒子**：8 个受控粒子（3 primary #7C9482 + 3 structural #C8C9CB + 1 neutral #626660 + 1 唯一金色洞察点 #D4B26A），按轨道平面与相位分配，任意帧呈"平衡但不镜像"的非对称排布。
+- **深度模型**：painter 算法远→近绘制；深度同时驱动粒子尺寸与不透明度，近处 primary 粒子用深色 #5F7A68 加强。前/后粒子的大小-透明度差异在 48px 与 56px 均可感知（3× 截图确认）。
+- **轨道线**：细、低透明、Structural Silver，仅作次级结构线索；第一眼看到的是空间粒子而非"环"。
+- **光学尺寸处理**：48px（compact）省略第 3 条轨道线、降低轨道透明度、加强主粒子对比；56px 全细节，三轨道平面全部可见。
+
+### Spiral Loader — 真螺旋路径
+
+- **路径方案**：24×24 viewBox 内以代码生成阿基米德螺旋（r = a + bθ）path + 数值长度；track 为整条淡色路径，active 段（42% 弧长）以 `stroke-dashoffset` 沿螺旋行进（`spiral-travel` keyframes）。静态截图已可辨"螺旋"，不再依赖旋转伪装。
+- **光学变体**：16px = 1.4 圈 / stroke 2.4（轮廓最简最强）；24px = 1.6 圈；32px = 1.9 圈 / stroke 2.5（细节最足）。16px 在"保存中… / 导入中…"按钮上下文内清晰可读。
+- 旧的 `.spiral-loader-arc` 双弧结构与 `spiral-rotate` 已移除；CSS 契约测试同步更新为 `.spiral-loader-active` + `spiral-travel`。
+
+### 视觉验证
+
+- 生产 build + 独立临时端口截图（1440 全页 + 3× DPR 局部）：Orbs 呈 gyro 空间感、深度明确、金点唯一；Spiral 16/24/32 均为可辨螺旋、无布局抖动。
+- 自动录屏不可用（headless Chrome 无录屏能力）；手动复核：打开 `/dev/motion-spike`，观察 48/56px Orbs 的倾斜轨道进动与前后景深，以及 16px Spiral 沿螺旋行进的激活段。
+- 已知局限：2D 投影近似非真 3D；48px 轨道线刻意弱化（compact 设计决策），gyro 感主要由运动中的粒子深度传达。
+
+### Verdict
+
+- Technical：**PASS**
+- Visual Fidelity：**PASS**（Thinking Orbs 与 Spiral 均达到验收标准；48px 轨道线弱化为有意决策）
+
 ## Halftone Reveal（Entrance 角色）可行性备忘
 
 Gateway 的 Halftone Reveal 不在本任务集成范围。实施路径核查结论：
@@ -66,9 +95,9 @@ Gateway 的 Halftone Reveal 不在本任务集成范围。实施路径核查结�
 
 ## Modified files
 
-- `components/motion/thinking-orbs.tsx`（新）
-- `components/motion/spiral-loader.tsx`（新）
-- `app/globals.css`（spiral 动画 + reduced-motion 规则）
-- `app/dev/motion-spike/page.tsx`（新，dev-only 验证页，不在导航）
-- `tests/motion-spike.test.tsx`（新）
+- `components/motion/thinking-orbs.tsx`（D17.6B 重写为 gyro 多轨道平面模型）
+- `components/motion/spiral-loader.tsx`（D17.6B 重写为真阿基米德螺旋）
+- `app/globals.css`（spiral-travel 动画 + reduced-motion 规则）
+- `app/dev/motion-spike/page.tsx`（dev-only 验证页，不在导航；D17.6B 新增静态帧预览行）
+- `tests/motion-spike.test.tsx`（D17.6B 更新 CSS 契约断言）
 - `docs/progress/M7-product-alignment-audit.md`（新，Phase 0）

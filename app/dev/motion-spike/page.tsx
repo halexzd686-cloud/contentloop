@@ -4,6 +4,12 @@ import { ThinkingOrbs } from "@/components/motion/thinking-orbs";
 import { SpiralLoader } from "@/components/motion/spiral-loader";
 import { Button } from "@/components/ui/button";
 
+/** Reduced-motion preview without flipping the OS setting: the same
+ *  static gyro frame the component draws under prefers-reduced-motion. */
+function StaticOrbsPreview() {
+  return <ThinkingOrbs size={48} staticFrame />;
+}
+
 /**
  * M7 motion spike — isolated dev-only validation surface.
  * NOT in production navigation. No domain records are created.
@@ -36,16 +42,21 @@ export default function MotionSpike() {
         </h2>
         <div className="mt-2 rounded-[10px] border border-border bg-workspace px-6">
           <Row label="48px · 正常动效">
-            <ThinkingOrbs size={48} />
+            <span className="py-3">
+              <ThinkingOrbs size={48} />
+            </span>
             <span className="text-sm text-ink-secondary">正在分析线索…</span>
           </Row>
           <Row label="56px · 正常动效">
-            <ThinkingOrbs size={56} />
+            <span className="py-3">
+              <ThinkingOrbs size={56} />
+            </span>
             <span className="text-sm text-ink-secondary">正在生成内容简报…</span>
           </Row>
-          <Row label="48px · reduced-motion 说明">
+          <Row label="Reduced Motion 静态帧">
+            <StaticOrbsPreview />
             <span className="text-xs text-ink-secondary">
-              系统开启 prefers-reduced-motion 时：静态轨道帧 + 状态文字保留，无动画。
+              系统开启 prefers-reduced-motion 时：静态 gyro 帧 + 状态文字保留，无动画。
             </span>
           </Row>
         </div>

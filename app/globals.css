@@ -107,26 +107,20 @@ body {
 
 
 /* ── M7 motion system (frozen roles) ─────────────────
-   Spiral Loader: SVG rotation. Slow, deliberate, processing.
+   Spiral Loader: active segment travels along a true spiral path
+   (stroke-dashoffset), not rotation of a circular arc.
    Reduced-motion: fully static glyph (text carries state). */
-@keyframes spiral-rotate {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+@keyframes spiral-travel {
+  from { stroke-dashoffset: var(--spiral-seg); }
+  to { stroke-dashoffset: calc(-1 * var(--spiral-length)); }
 }
 
-.spiral-loader-arc {
-  transform-origin: 50% 50%;
-  animation: spiral-rotate 1.6s linear infinite;
-}
-
-.spiral-loader-arc-inner {
-  transform-origin: 50% 50%;
-  animation: spiral-rotate 2.4s linear infinite reverse;
+.spiral-loader-active {
+  animation: spiral-travel 1.7s linear infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .spiral-loader-arc,
-  .spiral-loader-arc-inner {
+  .spiral-loader-active {
     animation: none;
   }
 }

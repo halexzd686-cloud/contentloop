@@ -67,8 +67,8 @@ describe("SpiralLoader reduced-motion", () => {
     // The reduced-motion rule lives in globals.css; assert the classes
     // the rule targets are the ones the component renders.
     const css = readFileSync(join(process.cwd(), "app/globals.css"), "utf-8");
-    expect(css).toContain(".spiral-loader-arc");
+    expect(css).toContain(".spiral-loader-active");
     expect(css).toContain("prefers-reduced-motion: reduce");
-    expect(css).toContain("spiral-rotate");
+    expect(css).toContain("spiral-travel");
   });
 });
