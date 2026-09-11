@@ -92,8 +92,15 @@ export async function POST(
     try {
       provider = createDeepSeekProvider();
     } catch (err) {
+      // M4.3/M5.7: internal config detail stays server-side; the
+      // client receives the sanitized not-configured message only.
+      console.error("analyze provider init failed:", err);
       return NextResponse.json(
-        { error: err instanceof Error ? err.message : "AI not configured" },
+        {
+          error: aiUserMessage(
+            err instanceof Error ? err.message : "AI not configured"
+          ),
+        },
         { status: 503 }
       );
     }

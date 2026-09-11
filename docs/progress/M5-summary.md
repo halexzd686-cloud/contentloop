@@ -1,10 +1,20 @@
 # M5 Summary — Dogfood & Release（进行中）
 
-> Status: M5.1 **Complete**；M5.2 **Frozen**；M5.3A **Complete**；M5.3B Real Dogfood **⏳ PENDING**；M5.4 **Frozen**；M5.5 **Frozen**；M5.6 **Frozen**。下一步 M5.7 — Final Regression & V1 Release（未开始）。
+> Status: M5.1 **Complete**；M5.2 **Frozen**；M5.3A **Complete**；M5.3B Real Dogfood **⏳ PENDING**；M5.4 **Frozen**；M5.5 **Frozen**；M5.6 **Frozen**。M5.7 — Functional Final Regression & Functional Freeze（进行中）。路线图：M5.7 Functional Freeze → M6 Chinese UX Localization → M7 Visual Redesign V2 → M8 Final Product Regression & V1 Release。
 >
 > 前置：M4 系列见 `M4-summary.md`。
 
 ## Completed
+
+### M5.7 — Functional Final Regression & Functional Freeze（待 Freeze 批准）
+
+- **自动化基线**：392/392 tests、lint、typecheck、build 全绿
+- **隔离环境终审**（Docker postgres:16，用后销毁）：migrate 0000–0011 一次通过；bootstrap/demo seed 双跑幂等；`db:generate` 零漂移
+- **完整核心旅程**（隔离库 API 全链）：Signal→Analyze→Select→Create→Brief→Approve→Master→Version→Review→Scheduled→Publication→24h/72h→Analytics→Diagnosis（AI 真实提案+保存）→Test→conclude→Learning→Apply——全部契约断言通过：analyze 不改 Signal 状态、skip 必须带 reason（400）、Signal≠Content、approve→in_progress、edit-after-approve 只回 Brief 不回 Content、drag 直达 published 被 409、publishedAt 在 snapshot 后锁定（409）、单观测只允许 No clear result（win 409）、**Apply 仅创建 relation（brief/master/version/status 零变化）**
+- **发现并修复 P1**：Radar Analyze 路由在 AI provider 初始化失败时向客户端泄漏原始 `AI_API_KEY is not configured…`（M4.3 脱敏遗漏的路径）→ 已修为 sanitized copy + 内部 log；修复后实测无 key 时返回 "AI is not configured for this workspace. Your manual workflow is still available."（503），手动流程全部可用
+- **AI 不可用路径**：无 key 下手动 Signal/Content/metrics/Analytics 全部正常
+- **G-56 终决**：**B — 保持为已记录的 known limitation**（M5.3A 未自然复现、无实测数据丢失证据、save-queue 有序列化+失败重试+测试覆盖；不做推测性重写）
+- 路线图文档已修正：M5.7=Functional Freeze（非最终发布）；M6 中文本地化 / M7 视觉重设计 / M8 最终回归与发布
 
 ### M5.6 — Final Visual Pass（Frozen，最终 Human 视觉验收通过）
 
