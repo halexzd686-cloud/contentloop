@@ -105,3 +105,28 @@ body {
   color: var(--ink-primary);
 }
 
+
+/* ── M7 motion system (frozen roles) ─────────────────
+   Spiral Loader: SVG rotation. Slow, deliberate, processing.
+   Reduced-motion: fully static glyph (text carries state). */
+@keyframes spiral-rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.spiral-loader-arc {
+  transform-origin: 50% 50%;
+  animation: spiral-rotate 1.6s linear infinite;
+}
+
+.spiral-loader-arc-inner {
+  transform-origin: 50% 50%;
+  animation: spiral-rotate 2.4s linear infinite reverse;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spiral-loader-arc,
+  .spiral-loader-arc-inner {
+    animation: none;
+  }
+}
