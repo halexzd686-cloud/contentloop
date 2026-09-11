@@ -804,7 +804,7 @@ export default function StudioContentPage({
                 genuine AI request; static at all other times. */}
             <p className="mt-1.5 text-xs text-ink-secondary">
               <ShinyText
-                text="AI 提供建议 · 由你审核确认"
+                text="AI 提供建议，最终由你确认。"
                 disabled={!shinyTextActive(aiVisual)}
                 speed={1.6}
                 color="#5F625D"

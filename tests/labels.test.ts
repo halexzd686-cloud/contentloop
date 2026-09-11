@@ -28,6 +28,8 @@ import {
   METRIC_BLANK_HELPER,
   LEARNING_APPLY_HELPER,
   HOME_THESIS,
+  metricCautionLabel,
+  BUILTIN_METRIC_CAUTION_EN,
 } from "@/lib/labels";
 import { TEST_METHODS, TEST_ROLES } from "@/lib/validation/test";
 
@@ -173,5 +175,16 @@ describe("semantic boundaries (Chinese)", () => {
 
   it("Home thesis 是批准的中文陈述", () => {
     expect(HOME_THESIS).toBe("让每次表现，成为下一次创作的依据。");
+  });
+});
+
+// ─── M6 final polish: built-in caution presentation ────
+
+describe("metricCautionLabel", () => {
+  it("built-in system caution renders Chinese; custom text untouched", () => {
+    expect(metricCautionLabel(BUILTIN_METRIC_CAUTION_EN)).toBe(
+      "仅当平台数据源能够提供该指标时再启用。"
+    );
+    expect(metricCautionLabel("自定义注意事项")).toBe("自定义注意事项");
   });
 });

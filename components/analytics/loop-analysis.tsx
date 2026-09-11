@@ -174,7 +174,7 @@ export function LoopAnalysis({
   return (
     <div className="space-y-3">
       <p className="text-xs font-semibold uppercase tracking-wide text-ink-muted">
-        Loop 分析
+        Loop AI
       </p>
 
       {!hasSnapshot && (

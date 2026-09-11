@@ -203,3 +203,21 @@ export const HOME_SECTIONS = {
 
 /** 品牌陈述：语义化产品主张，非操作标签。 */
 export const HOME_THESIS = "让每次表现，成为下一次创作的依据。";
+
+// ─── Built-in system copy presented from seed data ─────
+
+/**
+ * M6: the optional-raw-metric caution is persisted seed text
+ * (data, not UI). Present it in Chinese at the display layer only;
+ * custom/user-authored cautions render as entered. Seed data and the
+ * DB are not mutated.
+ */
+export const BUILTIN_METRIC_CAUTION_EN =
+  "Only enable when this metric is available from the platform analytics source.";
+
+export const BUILTIN_METRIC_CAUTION_ZH =
+  "仅当平台数据源能够提供该指标时再启用。";
+
+export function metricCautionLabel(caution: string): string {
+  return caution === BUILTIN_METRIC_CAUTION_EN ? BUILTIN_METRIC_CAUTION_ZH : caution;
+}

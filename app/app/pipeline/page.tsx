@@ -301,11 +301,6 @@ export default function PipelinePage() {
     <div className="flex h-full flex-col p-6">
       <div className="mb-4 flex items-center gap-3">
         <h1 className="text-[24px] font-semibold leading-tight text-ink-primary">内容流程</h1>
-        <div className="flex gap-1 rounded-[8px] border border-border p-0.5">
-          <span className="rounded-md bg-mint-100 px-3 py-1 text-xs font-medium text-ink-primary">
-            内容流程
-          </span>
-        </div>
         {dragError && (
           <div className="ml-auto flex items-center gap-2 rounded-[8px] border border-danger/20 bg-danger/5 px-3 py-1.5">
             <p className="text-xs text-danger">{dragError}</p>

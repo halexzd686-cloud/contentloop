@@ -16,7 +16,7 @@ import {
   buildFormulaPreview,
   type MetricFormat,
 } from "@/lib/metrics/engine";
-import { platformLabel } from "@/lib/labels";
+import { platformLabel, metricCautionLabel } from "@/lib/labels";
 
 /**
  * Settings → Metrics — M2.2 Metric Definition Engine.
@@ -200,7 +200,7 @@ export default function SettingsPage() {
                       </p>
                       {d.caution && (
                         <p className="mt-0.5 text-xs text-ink-secondary">
-                          ⚠ {d.caution}
+                          ⚠ {metricCautionLabel(d.caution)}
                         </p>
                       )}
                     </div>

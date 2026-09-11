@@ -270,7 +270,7 @@ export default function HomePage() {
                       <p className="min-w-0 truncate text-sm font-medium">
                         {c.title}
                       </p>
-                      <Badge variant="default">待发布</Badge>
+                      <Badge variant="default" className="shrink-0 whitespace-nowrap">待发布</Badge>
                     </Link>
                   ))}
                   {model.runningTests.map((t) => (
