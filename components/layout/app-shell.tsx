@@ -1,8 +1,8 @@
 import { Sidebar } from "./sidebar";
 
 /**
- * ContentLoop App Shell
- * Sidebar + Main Content layout
+ * ContentLoop App Shell — M7 Phase A
+ * Editorial Rail + Paper workspace, 1px structural divider, no shadows.
  */
 export function AppShell({ children }: { children: React.ReactNode }) {
   return (
