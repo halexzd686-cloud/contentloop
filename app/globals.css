@@ -111,8 +111,12 @@ body {
    (stroke-dashoffset), not rotation of a circular arc.
    Reduced-motion: fully static glyph (text carries state). */
 @keyframes spiral-travel {
-  from { stroke-dashoffset: var(--spiral-seg); }
-  to { stroke-dashoffset: calc(-1 * var(--spiral-length)); }
+  /* Constants, not var(): the active path uses pathLength=100, so the
+     offsets are size-independent. (Chromium drops var()-based keyframes —
+     the segment became invisible. See M7-motion-spike.md.) Travel =
+     exactly one dash period (42+142) for a seamless loop. */
+  from { stroke-dashoffset: 42px; }
+  to { stroke-dashoffset: -142px; }
 }
 
 .spiral-loader-active {

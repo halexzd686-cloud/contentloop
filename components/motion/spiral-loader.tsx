@@ -24,31 +24,21 @@ function variantFor(size: number) {
 }
 
 /** Build an Archimedean spiral path in a 24×24 viewBox. */
-function spiralPath(turns: number): { d: string; length: number } {
+function spiralPath(turns: number): string {
   const cx = 12;
   const cy = 12;
   const a0 = 0.9; // inner radius
   const b = (11.2 - a0) / (turns * Math.PI * 2);
   const steps = Math.ceil(turns * 64);
   let d = "";
-  let length = 0;
-  let px = 0;
-  let py = 0;
   for (let i = 0; i <= steps; i++) {
     const th = (i / steps) * turns * Math.PI * 2;
     const r = a0 + b * th;
     const x = cx + Math.cos(th) * r;
     const y = cy + Math.sin(th) * r;
-    if (i === 0) {
-      d = `M ${x.toFixed(2)} ${y.toFixed(2)}`;
-    } else {
-      d += ` L ${x.toFixed(2)} ${y.toFixed(2)}`;
-      length += Math.hypot(x - px, y - py);
-    }
-    px = x;
-    py = y;
+    d += i === 0 ? `M ${x.toFixed(2)} ${y.toFixed(2)}` : ` L ${x.toFixed(2)} ${y.toFixed(2)}`;
   }
-  return { d, length };
+  return d;
 }
 
 export function SpiralLoader({
@@ -58,15 +48,14 @@ export function SpiralLoader({
   size?: number;
   className?: string;
 }) {
-  const { d, length, stroke } = useMemo(() => {
+  const { d, stroke } = useMemo(() => {
     const v = variantFor(size);
-    const s = spiralPath(v.turns);
-    return { d: s.d, length: s.length, stroke: v.stroke };
+    return { d: spiralPath(v.turns), stroke: v.stroke };
   }, [size]);
 
-  // active segment: ~42% of the path, traveling inward→outward
-  const seg = length * 0.42;
-
+  // pathLength=100 normalizes dash math: active segment = 42% of the
+  // path, keyframes use size-independent constants (see globals.css).
+  // var()-in-keyframes proved unreliable in Chromium — do not reintroduce.
   return (
     <svg
       width={size}
@@ -79,8 +68,6 @@ export function SpiralLoader({
         display: "inline-block",
         verticalAlign: "middle",
         flexShrink: 0,
-        ["--spiral-length" as never]: `${length.toFixed(1)}`,
-        ["--spiral-seg" as never]: `${seg.toFixed(1)}`,
       }}
     >
       {/* track: full spiral, faint structural */}
@@ -95,11 +82,12 @@ export function SpiralLoader({
       {/* active segment travels along the spiral path */}
       <path
         d={d}
+        pathLength={100}
         fill="none"
         stroke={ACTIVE}
         strokeWidth={stroke}
         strokeLinecap="round"
-        strokeDasharray={`${seg.toFixed(1)} ${(length + seg).toFixed(1)}`}
+        strokeDasharray="42 142"
         className="spiral-loader-active"
       />
     </svg>

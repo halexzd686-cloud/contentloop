@@ -69,13 +69,16 @@ MetalForge 链接仅作视觉/动效参考（未复制其代码）；两个组�
 
 ### Spiral Loader — 真螺旋路径
 
-- **路径方案**：24×24 viewBox 内以代码生成阿基米德螺旋（r = a + bθ）path + 数值长度；track 为整条淡色路径，active 段（42% 弧长）以 `stroke-dashoffset` 沿螺旋行进（`spiral-travel` keyframes）。静态截图已可辨"螺旋"，不再依赖旋转伪装。
+- **路径方案**：24×24 viewBox 内以代码生成阿基米德螺旋（r = a + bθ）path；track 为整条淡色路径，active 段（42% 弧长）以 `stroke-dashoffset` 沿螺旋行进（`spiral-travel` keyframes）。静态截图已可辨"螺旋"，不再依赖旋转伪装。
+- **激活段归一化**：active path 使用 `pathLength={100}`，dasharray 固定 `42 142`、keyframes 固定 `42px → -142px`（行程恰为一个 dash 周期，循环无缝）。**关键 bug 修复**：初版用 `var(--spiral-seg)` 作为 keyframes 值，Chromium 不解析 var()-keyframes 导致激活段完全不可见——已改为常量并禁止回退该写法。
 - **光学变体**：16px = 1.4 圈 / stroke 2.4（轮廓最简最强）；24px = 1.6 圈；32px = 1.9 圈 / stroke 2.5（细节最足）。16px 在"保存中… / 导入中…"按钮上下文内清晰可读。
 - 旧的 `.spiral-loader-arc` 双弧结构与 `spiral-rotate` 已移除；CSS 契约测试同步更新为 `.spiral-loader-active` + `spiral-travel`。
 
 ### 视觉验证
 
 - 生产 build + 独立临时端口截图（1440 全页 + 3× DPR 局部）：Orbs 呈 gyro 空间感、深度明确、金点唯一；Spiral 16/24/32 均为可辨螺旋、无布局抖动。
+- **动效活性验证（多帧比对）**：以 `--virtual-time-budget` 在 9000/9700/10400ms 三个虚拟时间点截图逐帧比对——Orbs 粒子排布与金点位置逐帧变化（rAF 活跃）；Spiral 激活段在三个时间点处于路径不同位置（CSS 动画活跃）。证明两者都是真动效，非静态图形。
+- 排障记录：一次三帧字节级相同系僵尸 `next start` 进程（旧 build）占用验证端口导致 CSS 500 / 页面无样式，终止该自有进程后恢复——验证端口复用前须确认无旧 listener。
 - 自动录屏不可用（headless Chrome 无录屏能力）；手动复核：打开 `/dev/motion-spike`，观察 48/56px Orbs 的倾斜轨道进动与前后景深，以及 16px Spiral 沿螺旋行进的激活段。
 - 已知局限：2D 投影近似非真 3D；48px 轨道线刻意弱化（compact 设计决策），gyro 感主要由运动中的粒子深度传达。
 
