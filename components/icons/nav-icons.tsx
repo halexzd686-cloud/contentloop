@@ -2,9 +2,10 @@
  * ContentLoop Loop-trajectory navigation icon system — M7 Phase A.1
  *
  * Local, proprietary icon set replacing generic icon-library symbols.
- * Shared language: stroke 1.7, round caps/joins, one dominant path,
+ * Shared language: stroke 1.8, round caps/joins, one dominant path,
  * minimal fill, a short trajectory motif per glyph. 24×24 viewBox,
- * optically sized for 18px rendering. No gold in navigation icons.
+ * optically sized for 18px rendering (nodes ≥ r1.9 stay legible).
+ * No gold in navigation icons.
  */
 
 interface IconProps {
@@ -22,7 +23,7 @@ function Base({
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
-      strokeWidth={1.7}
+      strokeWidth={1.8}
       strokeLinecap="round"
       strokeLinejoin="round"
       className={className}
@@ -38,11 +39,11 @@ function Base({
 export function NavHomeIcon(props: IconProps) {
   return (
     <Base {...props}>
-      {/* open-top workspace frame */}
-      <path d="M5 9.5v8A1.5 1.5 0 0 0 6.5 19h11a1.5 1.5 0 0 0 1.5-1.5V13" />
+      {/* open workspace frame */}
+      <path d="M6 10v7a1.5 1.5 0 0 0 1.5 1.5h9a1.5 1.5 0 0 0 1.5-1.5v-3.5" />
       {/* return trajectory descending into the frame */}
-      <path d="M20.5 4.5c-4.6 0-8.2 2.1-9 6.1" />
-      <circle cx="11.4" cy="10.9" r="1.1" fill="currentColor" stroke="none" />
+      <path d="M20.5 4.5c-4.2 0-7.2 1.9-7.8 5.4" />
+      <circle cx="12.6" cy="10.2" r="1.5" fill="currentColor" stroke="none" />
     </Base>
   );
 }
@@ -51,12 +52,13 @@ export function NavHomeIcon(props: IconProps) {
 export function NavRadarIcon(props: IconProps) {
   return (
     <Base {...props}>
-      <circle cx="8" cy="17" r="1.3" fill="currentColor" stroke="none" />
-      {/* scanning needle */}
-      <path d="M8 17 15.2 8.8" />
-      {/* sweep arcs, asymmetric ~60° fan */}
-      <path d="M12.7 15.3A5 5 0 0 0 8.9 12.1" />
-      <path d="M16.5 13.9A9 9 0 0 0 9.6 8.1" />
+      <circle cx="7" cy="17" r="1.6" fill="currentColor" stroke="none" />
+      {/* scanning needle with signal tip */}
+      <path d="M7 17 13.4 9.9" />
+      <circle cx="14.2" cy="8.9" r="1.2" fill="currentColor" stroke="none" />
+      {/* sweep arcs, asymmetric fan */}
+      <path d="M12.2 15.1A5.5 5.5 0 0 0 7.5 11.5" />
+      <path d="M15.9 13.7A9.5 9.5 0 0 0 7.8 7.6" />
     </Base>
   );
 }
@@ -66,11 +68,11 @@ export function NavStudioIcon(props: IconProps) {
   return (
     <Base {...props}>
       {/* document */}
-      <path d="M7 3.5h6.5L18 8v12.5a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1v-16a1 1 0 0 1 1-1Z" />
-      <path d="M13.5 3.5V8H18" />
+      <path d="M7.5 4H13l4 4.5V20a1 1 0 0 1-1 1H7.5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z" />
+      <path d="M13 4v4.5h4" />
       {/* trajectory entering and continuing through the document */}
-      <path d="M2.5 15.5c3.5 0 4.5 2 8 2s5.3-1.4 8.4-4.3" />
-      <circle cx="19.1" cy="12.9" r="1" fill="currentColor" stroke="none" />
+      <path d="M3 15c3 0 4 1.8 7 1.8 2.6 0 4.4-1.2 7-3.8" />
+      <circle cx="17.4" cy="12.7" r="1.3" fill="currentColor" stroke="none" />
     </Base>
   );
 }
@@ -79,10 +81,10 @@ export function NavStudioIcon(props: IconProps) {
 export function NavPipelineIcon(props: IconProps) {
   return (
     <Base {...props}>
-      <path d="M5 16c2.6 0 3.4-8 7-8s4.4 6 7 6" />
-      <circle cx="5" cy="16" r="1.5" fill="currentColor" stroke="none" />
-      <circle cx="12" cy="8" r="1.5" fill="currentColor" stroke="none" />
-      <circle cx="19" cy="14" r="1.5" fill="currentColor" stroke="none" />
+      <path d="M4.5 14.5c2.5 0 3.5-3.5 7.5-3.5s4.5 3 7.5 3" />
+      <circle cx="4.5" cy="14.5" r="2" fill="currentColor" stroke="none" />
+      <circle cx="12" cy="11" r="2" fill="currentColor" stroke="none" />
+      <circle cx="19.5" cy="14" r="2" fill="currentColor" stroke="none" />
     </Base>
   );
 }
@@ -92,13 +94,13 @@ export function NavAnalyticsIcon(props: IconProps) {
   return (
     <Base {...props}>
       {/* forward trajectory through the evidence nodes */}
-      <path d="M6 17c2.8 0 2.8-6 5-6s3 2.9 6.2 2.1" />
-      <circle cx="6" cy="17" r="1.4" fill="currentColor" stroke="none" />
-      <circle cx="11" cy="11" r="1.4" fill="currentColor" stroke="none" />
-      <circle cx="17.4" cy="13" r="1.4" fill="currentColor" stroke="none" />
+      <path d="M5.5 16.5c2.8 0 2.7-6 5.5-6s3.6 2.6 6.5 2" />
+      <circle cx="5.5" cy="16.5" r="1.9" fill="currentColor" stroke="none" />
+      <circle cx="11" cy="10.5" r="1.9" fill="currentColor" stroke="none" />
+      <circle cx="17.5" cy="12.5" r="1.9" fill="currentColor" stroke="none" />
       {/* return trajectory folding back — the loop */}
-      <path d="M17.4 13c.6 4-2.4 6.7-7.6 7" />
-      <circle cx="9.5" cy="20" r="1" fill="currentColor" stroke="none" />
+      <path d="M17.5 12.5c.7 3.8-2.3 6.3-7.2 6.5" />
+      <circle cx="9.9" cy="19" r="1.2" fill="currentColor" stroke="none" />
     </Base>
   );
 }
@@ -107,12 +109,12 @@ export function NavAnalyticsIcon(props: IconProps) {
 export function NavSettingsIcon(props: IconProps) {
   return (
     <Base {...props}>
-      <path d="M4 7h16" />
+      <path d="M4 6.5h16" />
       <path d="M4 12h16" />
-      <path d="M4 17h16" />
-      <circle cx="9.5" cy="7" r="1.8" fill="currentColor" stroke="none" />
-      <circle cx="14.5" cy="12" r="1.8" fill="currentColor" stroke="none" />
-      <circle cx="8" cy="17" r="1.8" fill="currentColor" stroke="none" />
+      <path d="M4 17.5h16" />
+      <circle cx="9.5" cy="6.5" r="2.2" fill="currentColor" stroke="none" />
+      <circle cx="15" cy="12" r="2.2" fill="currentColor" stroke="none" />
+      <circle cx="7.5" cy="17.5" r="2.2" fill="currentColor" stroke="none" />
     </Base>
   );
 }

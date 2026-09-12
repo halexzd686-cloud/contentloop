@@ -139,4 +139,71 @@ M7 视觉重设计第一阶段：全局 M7 token 层、Editorial Rail（App Shel
 
 ## Phase A verdict
 
-**PASS**
+**PASS**（工程合规）→ 人工视觉验收未过 → 见下方 Phase A.1 修正
+
+## Phase A.1 Visual Fidelity Correction
+
+### 为何初版未通过人工视觉验收
+
+初版满足文本/数值合规，但真实浏览器视觉偏离已批准的高保真方向：Evidence Mark 读起来像上升增长曲线；halftone 像弥散背景点场；Gateway 视觉锚点过小过弱；导航图标仍是通用图标库符号；活跃 rail 太弱；紧凑 wordmark 光学重量不足；Home 头部残留已移除的展示元素。
+
+### Evidence Mark 几何变更
+
+- 单调上升 Bezier → **折叠/开放轨迹**（Catmull-Rom 过五节点）：Signal 顶部 → Content → Publication（最右环点）→ **折返**下左 → Evidence → Learning（更低水平线）→ 开放尾迹向右溶解
+- 两次显著变向（Publication 折返、Learning 转右），非单调、非增长曲线、非闭环
+- 节点层级重做：Signal 小银点 / Content 绿环 / Publication 银环 / **Evidence = 绿核 + 金环 + 金色 halftone 爆发（视觉重心）** / Learning 绿点 + 淡环（非最高点/最右点）
+- 标签（参考图授权）：Signal/Content/Publication/Evidence/Learning，Cormorant italic 13.5px 设计单位，Neutral 灰 / Evidence 用暗金 #AE8A44，次级克制
+- 尾迹：Learning 之后 9 个渐隐点（绿→银），开放溶解，非实线
+
+### Halftone 密度变更
+
+- 从均匀网格点场 → **语义密度**：`regionWeight(t)` 沿轨迹加权（Signal 稀疏 0.22，Evidence 峰值 1.0），拒绝采样 + 法向偏移 `pow(rand,1.7)` 快速衰减
+- Evidence 周围 120 点金色径向爆发（随半径衰减）
+- 仅 22 个极淡环境点防止裁切感；右侧区域不再被均匀填充
+
+### 光学尺度修正（Gateway）
+
+- Wordmark 40px → **72px**（参考图光学重量为准，不盲从数值）
+- Portal Button 206×50 → **280×60**，文字 16px，r=8px；与 wordmark 间距 96px
+- Checkbox 行 13px → 14px
+- Evidence Mark 容器 620px → **700px**，成为真正的品牌锚点
+
+### 自定义导航图标
+
+- 新增 `components/icons/nav-icons.tsx`：六个本地 Loop 轨迹语言 SVG（24 viewBox / stroke 1.8 / 圆帽 / 节点 ≥r1.9 保证 18px 可读）
+- 首页 = 开放工作区框 + 返回轨迹；选题雷达 = 信号点 + 扫描针 + 扇形弧（非靶心）；内容工作台 = 文档 + 穿越轨迹（非铅笔）；内容流程 = 三节点 + 一条连续缓波路径（非看板）；数据复盘 = 证据节点 + 回环轨迹（Loop DNA 最强）；设置 = 三条参数轨道 + 控制节点（非齿轮）
+- Sidebar 不再引入 lucide 导航图标
+
+### 活跃标记修正
+
+- 20px → **24px × 2px** primary rail，与图标/文字中线对齐；无色块、无 pill、无 glow——编辑级索引标记
+
+### Wordmark 修正（Shell）
+
+- 24px → **26px** Cormorant Semibold，光学重量对齐参考图；不分色、不全大写
+
+### Home 头部清理
+
+- 移除重复的"工作区" eyebrow 与"让每次表现…" slogan；头部仅剩 **首页**
+- **Home 正文未重设计**（待处理/继续创作/跟进中 卡片/密度/列宽全部保持旧呈现，Phase B 范围）
+
+### 对比截图
+
+- `.shots/a1-gateway-{1280,1440,1920}.png` vs Reference A
+- `.shots/a1-shell-{1280,1440,1920}.png` + `a1-shell-3x.png` vs Reference B
+- 显式回答：mark 不再像增长图表 ✅；Evidence 是视觉重心 ✅；halftone 聚集语义结构 ✅；左右锚点足够强 ✅；页面仍极简 ✅；图标具专有感 ✅；活跃标记意图清晰 ✅；wordmark 光学重量足够 ✅；sidebar 仍克制 ✅；无伪 SaaS 元素 ✅；Home 头部仅剩首页 ✅
+
+### 测试 / 构建
+
+- 408/408 ✅（无域测试改动）/ lint ✅ / typecheck ✅ / build ✅
+
+### 与参考图的残余差异
+
+1. 1280 下 Publication 标签贴近右缘（可读但紧）；1920 余量正常
+2. Halftone 爆发的径向"弧线感"弱于参考图（参考为更规则的同心弧排布）
+3. 选题雷达图标在 18px 下弧线较淡，针形主导
+4. Reference B 中的顶栏/头像/问候/收起按钮为任务书 §14 明确禁止项，未实现（有意差异）
+
+### Phase A.1 verdict
+
+**PASS**（视觉已实质逼近批准方向，残余差异均为次级细节或有意取舍）→ 待人工最终验收

@@ -66,28 +66,30 @@ export function Gateway() {
   return (
     <div className="flex min-h-screen bg-cl-paper">
       {/* Left ~42% — wordmark, portal, preference. Generous negative space. */}
-      <section className="flex flex-[42] flex-col justify-center pl-[9%] pr-8">
-        <div className="-mt-20">
-          <h1 className="font-brand text-[40px] font-semibold leading-none tracking-[0.01em] text-ink-primary">
+      <section className="flex flex-[42] flex-col justify-center pl-[8%] pr-8">
+        <div className="-mt-24">
+          {/* Optical scale per approved reference: the wordmark is the
+              primary brand anchor — do not shrink for "minimalism". */}
+          <h1 className="font-brand text-[72px] font-semibold leading-none tracking-[0.005em] text-ink-primary">
             ContentLoop
           </h1>
 
-          <div className="mt-[104px]">
+          <div className="mt-[96px]">
             <Link
               href="/app"
-              className="group inline-flex h-[50px] w-[206px] items-center justify-between rounded-[6px] bg-cl-primary px-6 text-[15px] font-medium text-white/95 transition-colors duration-150 hover:bg-[#6F8779]"
+              className="group inline-flex h-[60px] w-[280px] items-center justify-between rounded-[8px] bg-cl-primary px-7 text-[16px] font-medium text-white/95 transition-colors duration-150 hover:bg-[#6F8779]"
             >
               进入 ContentLoop
               {/* Real next-stage transition → restrained directional terminal */}
               <ArrowRight
-                className="h-4 w-4 opacity-70 transition-transform duration-150 group-hover:translate-x-0.5"
+                className="h-[18px] w-[18px] opacity-70 transition-transform duration-150 group-hover:translate-x-0.5"
                 strokeWidth={1.75}
                 aria-hidden
               />
             </Link>
           </div>
 
-          <label className="mt-5 inline-flex cursor-pointer items-center gap-2.5 text-[13px] text-cl-neutral">
+          <label className="mt-6 inline-flex cursor-pointer items-center gap-2.5 text-[14px] text-cl-neutral">
             <span className="relative inline-flex h-4 w-4 items-center justify-center">
               <input
                 type="checkbox"
@@ -106,9 +108,10 @@ export function Gateway() {
         </div>
       </section>
 
-      {/* Right ~58% — Loop Evidence Mark, part of the canvas, no panel */}
+      {/* Right ~58% — Loop Evidence Mark, part of the canvas, no panel.
+          Major brand anchor: allowed to occupy real visual territory. */}
       <section className="flex flex-[58] items-center justify-center">
-        <EvidenceMark className="h-full w-full max-h-[620px] max-w-[620px]" />
+        <EvidenceMark className="h-full w-full max-h-[700px] max-w-[700px]" />
       </section>
     </div>
   );
