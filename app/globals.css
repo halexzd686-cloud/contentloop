@@ -11,52 +11,40 @@
  */
 
 :root {
-  /* ── M7 Branded Tokens (Metallic Editorial Intelligence) ── */
-  --cl-primary: #7C9482;        /* current / selected / progress / primary action */
-  --cl-gold: #D4B26A;           /* evidence / attention / insight / focus */
-  --cl-silver: #C8C9CB;         /* structural line / inactive icon / divider / track */
-  --cl-neutral: #626660;        /* metadata / helper / secondary info */
-  --cl-ink-strong: #20231F;     /* strong ink */
-  --cl-paper: #F5F6F3;          /* workspace paper */
-  --cl-surface: #FBFBF8;        /* document surface */
-  --cl-overlay: #FFFFFF;        /* overlay */
-  --cl-sidebar: #EDEFEA;        /* very light silver-derived rail surface */
+  /* ── Background System ────────────────────────────── */
+  --canvas: #F1EFE8;           /* M5.6: warm paper with presence — white workspace visibly sits on it */
+  --workspace: #FFFFFF;        /* Studio center, Analytics data, Settings forms, Modals */
+  --surface-subtle: #ECEAE2;   /* M5.6: inset/supporting surfaces read clearly */
 
-  /* ── Legacy aliases re-pointed at the M7 palette ──────
-     Phase A keeps existing token names so page bodies
-     (redesigned in Phase B) stay functional. */
-  --canvas: var(--cl-paper);
-  --workspace: var(--cl-surface);
-  --surface-subtle: #EBECE7;
+  /* ── Ink Palette ──────────────────────────────────── */
+  --ink-primary: #181A18;      /* Page title, body main, core data, active nav */
+  --ink-secondary: #5F625D;    /* Descriptions, secondary metrics, card metadata */
+  --ink-muted: #92968F;        /* Time, source, helper text, placeholder */
+  --ink-faint: #B8BBB5;        /* Disabled, empty metadata, decorative dividers */
 
-  --ink-primary: var(--cl-ink-strong);
-  --ink-secondary: var(--cl-neutral);
-  --ink-muted: #8B8E87;
-  --ink-faint: #B9BBB4;
-
-  --mint-600: var(--cl-primary);
-  --mint-500: #93AA98;
-  --mint-300: #C4CFC7;
-  --mint-100: #E9ECE8;
+  /* ── Accent: Mint ─────────────────────────────────── */
+  --mint-600: #4E9F84;         /* Primary action, active state, selected */
+  --mint-500: #68B79B;
+  --mint-300: #A9D9C7;
+  --mint-100: #E7F3EE;         /* Mint background tint */
 
   /* ── Semantic Colors ──────────────────────────────── */
-  --success: var(--cl-primary);  /* completed, approved, published, active */
-  --warning: var(--cl-gold);     /* attention, evidence missing, pending */
-  --danger: #B85B57;             /* overdue, failed, blocking risk, delete — preserved */
-  --neutral-status: #858982;     /* default / inactive status */
+  --success: #4E9F84;          /* Above baseline, completed, approved, published */
+  --warning: #C38A3A;          /* Needs review, evidence missing, pending */
+  --danger: #B85B57;           /* Overdue, failed, blocking risk, delete */
+  --neutral-status: #858982;   /* Default / inactive status */
 
-  /* ── Border (structural silver at reduced opacity) ── */
-  --border: rgba(200, 201, 203, 0.65);
-  --border-strong: var(--cl-silver);
+  /* ── Border ───────────────────────────────────────── */
+  --border: #D6D8CF;
+  --border-strong: #C7CAC3;
 
-  /* ── Radius (M7: 3/5/7/9) ─────────────────────────── */
-  --radius-checkbox: 3px;
-  --radius-button: 6px;
-  --radius-input: 6px;
-  --radius-card: 7px;
-  --radius-card-large: 9px;
-  --radius-modal: 9px;
-  --radius-media: 9px;
+  /* ── Radius ───────────────────────────────────────── */
+  --radius-button: 8px;
+  --radius-input: 8px;
+  --radius-card: 10px;
+  --radius-card-large: 12px;
+  --radius-modal: 14px;
+  --radius-media: 16px;
   --radius-pill: 999px;
 
   /* ── Motion Durations ─────────────────────────────── */
@@ -64,18 +52,13 @@
   --duration-normal: 260ms;    /* 220–300ms: tab, drawer, card transition, diff */
   --duration-expressive: 500ms;/* 400–650ms: page entrance, echo, halftone, success */
 
-  /* ── Typography (stacks provided by next/font in layout.tsx) ── */
-  --font-sans: var(--font-noto-sans), system-ui, -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
-  --font-serif: var(--font-noto-serif), "Georgia", serif;
-  --font-brand: var(--font-cormorant), var(--font-noto-serif), serif;
+  /* ── Typography ───────────────────────────────────── */
+  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
+  --font-serif: "Instrument Serif", "Georgia", serif;
 
-  /* ── Sidebar (Editorial Rail) ─────────────────────── */
-  --sidebar-width: 196px;
-}
-@media (min-width: 1440px) {
-  :root {
-    --sidebar-width: 216px;
-  }
+  /* ── Sidebar ──────────────────────────────────────── */
+  --sidebar-collapsed: 68px;
+  --sidebar-expanded: 224px;
 }
 
 @theme inline {
@@ -102,20 +85,8 @@
   --color-border: var(--border);
   --color-border-strong: var(--border-strong);
 
-  /* M7 branded tokens */
-  --color-cl-primary: var(--cl-primary);
-  --color-cl-gold: var(--cl-gold);
-  --color-cl-silver: var(--cl-silver);
-  --color-cl-neutral: var(--cl-neutral);
-  --color-cl-ink-strong: var(--cl-ink-strong);
-  --color-cl-paper: var(--cl-paper);
-  --color-cl-surface: var(--cl-surface);
-  --color-cl-overlay: var(--cl-overlay);
-  --color-cl-sidebar: var(--cl-sidebar);
-
   --font-sans: var(--font-sans);
   --font-serif: var(--font-serif);
-  --font-brand: var(--font-brand);
 }
 
 /* ── Base ──────────────────────────────────────────── */
@@ -132,12 +103,6 @@ body {
 ::selection {
   background: var(--mint-300);
   color: var(--ink-primary);
-}
-
-/* ── M7 Focus: 2px gold with visible offset ────────── */
-:focus-visible {
-  outline: 2px solid var(--cl-gold);
-  outline-offset: 2px;
 }
 
 

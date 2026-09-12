@@ -1,112 +1,124 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import {
+  Home,
+  Radar,
+  PenTool,
+  KanbanSquare,
+  BarChart3,
+  Settings,
+  ChevronsLeft,
+  ChevronsRight,
+} from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { NAV_LABELS } from "@/lib/labels";
-import {
-  NavHomeIcon,
-  NavRadarIcon,
-  NavStudioIcon,
-  NavPipelineIcon,
-  NavAnalyticsIcon,
-  NavSettingsIcon,
-} from "@/components/icons/nav-icons";
 
 /**
- * ContentLoop Editorial Rail — M7 Phase A.1
+ * ContentLoop Sidebar — design.md §9, §40
  *
- * Fixed 6 navigation items, full height, no manual collapse.
- * Width: 196px @1280 → 216px @1440+ (via --sidebar-width).
- * Icons: local Loop-trajectory icon set (components/icons/nav-icons).
- * Active = 24px 2px primary rail marker + primary icon + strong 600 label.
- * No active background blocks, no pills, no bottom account area.
- * 设置 is separated from the five workflow pages by spacing only.
+ * Fixed 6 navigation items. No additional top-level entries.
+ * Collapsed: 68px (icons only)
+ * Expanded: 216–224px (icons + labels)
+ * Active: mint indicator + slight surface change + stronger text
  */
 
-const WORKFLOW_ITEMS = [
-  { label: NAV_LABELS.home, href: "/app", icon: NavHomeIcon },
-  { label: NAV_LABELS.radar, href: "/app/radar", icon: NavRadarIcon },
-  { label: NAV_LABELS.studio, href: "/app/studio", icon: NavStudioIcon },
-  { label: NAV_LABELS.pipeline, href: "/app/pipeline", icon: NavPipelineIcon },
-  { label: NAV_LABELS.analytics, href: "/app/analytics", icon: NavAnalyticsIcon },
+const NAV_ITEMS = [
+  { label: NAV_LABELS.home, href: "/app", icon: Home },
+  { label: NAV_LABELS.radar, href: "/app/radar", icon: Radar },
+  { label: NAV_LABELS.studio, href: "/app/studio", icon: PenTool },
+  { label: NAV_LABELS.pipeline, href: "/app/pipeline", icon: KanbanSquare },
+  { label: NAV_LABELS.analytics, href: "/app/analytics", icon: BarChart3 },
+  { label: NAV_LABELS.settings, href: "/app/settings", icon: Settings },
 ] as const;
 
-function NavRow({
-  item,
-  isActive,
-}: {
-  item: (typeof WORKFLOW_ITEMS)[number] | { label: string; href: string; icon: typeof NavHomeIcon };
-  isActive: boolean;
-}) {
-  return (
-    <Link
-      href={item.href}
-      aria-current={isActive ? "page" : undefined}
-      className={cn(
-        "relative flex h-10 items-center gap-3 px-5 text-[13px] transition-colors duration-150",
-        isActive
-          ? "font-semibold text-ink-primary"
-          : "text-ink-secondary hover:text-ink-primary"
-      )}
-    >
-      {/* Active marker — precise 24px × 2px editorial index rail */}
-      <span
-        aria-hidden
-        className={cn(
-          "absolute left-0 top-1/2 h-6 w-[2px] -translate-y-1/2 rounded-full bg-cl-primary transition-opacity duration-150",
-          isActive ? "opacity-100" : "opacity-0"
-        )}
-      />
-      <item.icon
-        className={cn(
-          "h-[18px] w-[18px] shrink-0",
-          isActive ? "text-cl-primary" : "text-cl-neutral"
-        )}
-      />
-      <span>{item.label}</span>
-    </Link>
-  );
-}
-
 export function Sidebar() {
+  const [collapsed, setCollapsed] = useState(false);
   const pathname = usePathname();
 
-  const isItemActive = (href: string) =>
-    href === "/app"
-      ? pathname === "/app" || pathname === "/"
-      : pathname.startsWith(href);
-
   return (
-    <aside className="flex h-screen w-[var(--sidebar-width)] shrink-0 flex-col border-r border-border bg-cl-sidebar">
-      {/* Wordmark — Cormorant Garamond Semibold, optical weight matched
-          to the approved reference (rendered ~26px, tight tracking) */}
-      <div className="px-5 pb-7 pt-6">
-        <span className="font-brand text-[26px] font-semibold leading-none tracking-[0.005em] text-ink-primary">
-          ContentLoop
-        </span>
+    <aside
+      className={cn(
+        "flex h-screen flex-col border-r border-border bg-workspace transition-[width] duration-200",
+        collapsed ? "w-[68px]" : "w-[224px]"
+      )}
+    >
+      {/* Logo area */}
+      <div
+        className={cn(
+          "flex h-14 items-center border-b border-border px-4",
+          collapsed && "justify-center px-2"
+        )}
+      >
+        {collapsed ? (
+          <span className="font-serif text-lg text-mint-600">C</span>
+        ) : (
+          <span className="font-serif text-lg text-ink-primary">
+            ContentLoop
+          </span>
+        )}
       </div>
 
-      {/* Workspace group */}
-      <div className="px-5 pb-2 text-[11px] font-medium tracking-[0.14em] text-ink-muted">
-        工作区
-      </div>
+      {/* Navigation */}
+      <nav className="flex-1 space-y-1 px-2 py-3">
+        {NAV_ITEMS.map((item) => {
+          const isActive =
+            item.href === "/app"
+              ? pathname === "/app" || pathname === "/"
+              : pathname.startsWith(item.href);
 
-      <nav aria-label="主导航" className="flex flex-1 flex-col gap-0.5">
-        {WORKFLOW_ITEMS.map((item) => (
-          <NavRow key={item.href} item={item} isActive={isItemActive(item.href)} />
-        ))}
-
-        {/* Settings — anchored to the bottom of the rail (approved
-            reference), separated by space, not a divider or card */}
-        <div className="mt-auto pb-7 pt-6">
-          <NavRow
-            item={{ label: NAV_LABELS.settings, href: "/app/settings", icon: NavSettingsIcon }}
-            isActive={isItemActive("/app/settings")}
-          />
-        </div>
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={cn(
+                "flex items-center gap-3 rounded-[8px] px-3 py-2 text-sm transition-colors duration-150",
+                collapsed && "justify-center px-2",
+                isActive
+                  ? "bg-mint-100 text-ink-primary font-medium"
+                  : "text-ink-secondary hover:bg-surface-subtle hover:text-ink-primary"
+              )}
+              title={collapsed ? item.label : undefined}
+            >
+              <item.icon
+                className={cn(
+                  "h-5 w-5 shrink-0",
+                  isActive ? "text-mint-600" : "text-ink-muted"
+                )}
+              />
+              {!collapsed && <span>{item.label}</span>}
+              {!collapsed && isActive && (
+                <div className="ml-auto h-1.5 w-1.5 rounded-full bg-mint-600" />
+              )}
+            </Link>
+          );
+        })}
       </nav>
+
+      {/* Bottom section */}
+      <div className="border-t border-border p-2">
+        {/* Collapse toggle */}
+        <button
+          onClick={() => setCollapsed(!collapsed)}
+          className={cn(
+            "flex w-full items-center gap-3 rounded-[8px] px-3 py-2 text-sm text-ink-muted hover:bg-surface-subtle hover:text-ink-primary transition-colors duration-150",
+            collapsed && "justify-center px-2"
+          )}
+          title={collapsed ? "展开" : "收起"}
+        >
+          {collapsed ? (
+            <ChevronsRight className="h-4 w-4" />
+          ) : (
+            <>
+              <ChevronsLeft className="h-4 w-4" />
+              <span>收起</span>
+            </>
+          )}
+        </button>
+      </div>
     </aside>
   );
 }
