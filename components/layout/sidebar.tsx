@@ -2,41 +2,42 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  Home,
-  Radar,
-  PenTool,
-  KanbanSquare,
-  BarChart3,
-  Settings,
-} from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { NAV_LABELS } from "@/lib/labels";
+import {
+  NavHomeIcon,
+  NavRadarIcon,
+  NavStudioIcon,
+  NavPipelineIcon,
+  NavAnalyticsIcon,
+  NavSettingsIcon,
+} from "@/components/icons/nav-icons";
 
 /**
- * ContentLoop Editorial Rail — M7 Phase A
+ * ContentLoop Editorial Rail — M7 Phase A.1
  *
  * Fixed 6 navigation items, full height, no manual collapse.
  * Width: 196px @1280 → 216px @1440+ (via --sidebar-width).
- * Active = 2px primary left rail + primary icon + strong 600 label.
+ * Icons: local Loop-trajectory icon set (components/icons/nav-icons).
+ * Active = 24px 2px primary rail marker + primary icon + strong 600 label.
  * No active background blocks, no pills, no bottom account area.
  * 设置 is separated from the five workflow pages by spacing only.
  */
 
 const WORKFLOW_ITEMS = [
-  { label: NAV_LABELS.home, href: "/app", icon: Home },
-  { label: NAV_LABELS.radar, href: "/app/radar", icon: Radar },
-  { label: NAV_LABELS.studio, href: "/app/studio", icon: PenTool },
-  { label: NAV_LABELS.pipeline, href: "/app/pipeline", icon: KanbanSquare },
-  { label: NAV_LABELS.analytics, href: "/app/analytics", icon: BarChart3 },
+  { label: NAV_LABELS.home, href: "/app", icon: NavHomeIcon },
+  { label: NAV_LABELS.radar, href: "/app/radar", icon: NavRadarIcon },
+  { label: NAV_LABELS.studio, href: "/app/studio", icon: NavStudioIcon },
+  { label: NAV_LABELS.pipeline, href: "/app/pipeline", icon: NavPipelineIcon },
+  { label: NAV_LABELS.analytics, href: "/app/analytics", icon: NavAnalyticsIcon },
 ] as const;
 
 function NavRow({
   item,
   isActive,
 }: {
-  item: (typeof WORKFLOW_ITEMS)[number] | { label: string; href: string; icon: typeof Home };
+  item: (typeof WORKFLOW_ITEMS)[number] | { label: string; href: string; icon: typeof NavHomeIcon };
   isActive: boolean;
 }) {
   return (
@@ -50,11 +51,11 @@ function NavRow({
           : "text-ink-secondary hover:text-ink-primary"
       )}
     >
-      {/* Active rail — 2px primary trajectory marker */}
+      {/* Active marker — precise 24px × 2px editorial index rail */}
       <span
         aria-hidden
         className={cn(
-          "absolute left-0 top-1/2 h-5 w-[2px] -translate-y-1/2 rounded-full bg-cl-primary transition-opacity duration-150",
+          "absolute left-0 top-1/2 h-6 w-[2px] -translate-y-1/2 rounded-full bg-cl-primary transition-opacity duration-150",
           isActive ? "opacity-100" : "opacity-0"
         )}
       />
@@ -63,8 +64,6 @@ function NavRow({
           "h-[18px] w-[18px] shrink-0",
           isActive ? "text-cl-primary" : "text-cl-neutral"
         )}
-        strokeWidth={1.75}
-        aria-hidden
       />
       <span>{item.label}</span>
     </Link>
@@ -81,9 +80,10 @@ export function Sidebar() {
 
   return (
     <aside className="flex h-screen w-[var(--sidebar-width)] shrink-0 flex-col border-r border-border bg-cl-sidebar">
-      {/* Wordmark — Cormorant Garamond Semibold, compact shell size */}
-      <div className="px-5 pb-6 pt-6">
-        <span className="font-brand text-2xl font-semibold tracking-[0.01em] text-ink-primary">
+      {/* Wordmark — Cormorant Garamond Semibold, optical weight matched
+          to the approved reference (rendered ~26px, tight tracking) */}
+      <div className="px-5 pb-7 pt-6">
+        <span className="font-brand text-[26px] font-semibold leading-none tracking-[0.005em] text-ink-primary">
           ContentLoop
         </span>
       </div>
@@ -101,7 +101,7 @@ export function Sidebar() {
         {/* Settings — separated by spacing, not a heavy divider */}
         <div className="mt-6">
           <NavRow
-            item={{ label: NAV_LABELS.settings, href: "/app/settings", icon: Settings }}
+            item={{ label: NAV_LABELS.settings, href: "/app/settings", icon: NavSettingsIcon }}
             isActive={isItemActive("/app/settings")}
           />
         </div>

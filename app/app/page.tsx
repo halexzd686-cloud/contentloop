@@ -18,16 +18,17 @@ import {
   testStatusLabel,
   NAV_LABELS,
   HOME_SECTIONS,
-  HOME_THESIS,
 } from "@/lib/labels";
 
 /**
  * Home — M5.6 visual pass: H2 static composition.
  *
  * Work-first dashboard: Needs Attention / Continue Working /
- * Monitoring. Static serif thesis (no motion). Mint left edge =
+ * Monitoring. Mint left edge =
  * actionable-now (existing due/review semantics only). Navigation
  * only — every card links to an existing authoritative surface.
+ * M7 Phase A.1: header reduced to the page title only; body
+ * redesign remains Phase B scope.
  */
 
 export default function HomePage() {
@@ -112,19 +113,10 @@ export default function HomePage() {
 
   return (
     <div className="h-full overflow-y-auto">
-      {/* Header: eyebrow + strong title + static serif thesis in the
-          heading group (product thesis, not a watermark). */}
+      {/* Header: title only — M7 Phase A.1 removed the 工作区 eyebrow
+          and the internal thesis slogan. Body redesign is Phase B. */}
       <div className="border-b border-border px-10 pb-6 pt-8">
-        <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-ink-muted">
-          工作区
-        </p>
-        <div className="mt-2 flex items-baseline gap-4">
-          <h1 className="text-[26px] font-semibold leading-tight">{NAV_LABELS.home}</h1>
-          <span className="hidden h-5 w-px bg-border-strong sm:block" />
-          <p className="font-serif text-lg italic text-ink-secondary">
-            {HOME_THESIS}
-          </p>
-        </div>
+        <h1 className="text-[26px] font-semibold leading-tight">{NAV_LABELS.home}</h1>
       </div>
 
       {model.isEmpty ? (
