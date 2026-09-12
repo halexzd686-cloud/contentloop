@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // M7 temporary visual-verification artifacts (never committed)
+    ".shots/**",
   ]),
 ]);
 
