@@ -107,136 +107,44 @@ interface Dot {
   threshold: number;
 }
 
-function buildField(pts: { x: number; y: number }[]): Dot[] {
-  const rand = rng(11);
+/* Direction A — geometric order only. Dots exist exclusively as perfect
+   concentric dotted rings: 3 gold rings around Evidence (the visual
+   center of gravity), 1 faint silver ring around Learning. No spray,
+   no cloud, no jitter, no wallpaper. */
+function buildField(): Dot[] {
   const dots: Dot[] = [];
-  const pp = (t: number) =>
-    pts[Math.min(pts.length - 1, Math.max(0, Math.round(t * (pts.length - 1))))];
 
-  /* 1. Spray fan: Signal → Content, widening cone, sparse at Signal */
-  for (let i = 0; i < 140; i++) {
-    const t = Math.pow(rand(), 1.3) * 0.25;
-    if (rand() > 0.1 + 0.9 * (t / 0.25)) continue;
-    const p = pp(t);
-    const p2 = pp(Math.min(1, t + 0.01));
-    let nx = -(p2.y - p.y);
-    let ny = p2.x - p.x;
-    const nl = Math.hypot(nx, ny) || 1;
-    nx /= nl;
-    ny /= nl;
-    if (ny < 0) {
-      nx = -nx;
-      ny = -ny;
-    }
-    const side = rand() < 0.8 ? 1 : -1;
-    const dist = Math.pow(rand(), 1.5) * (16 + 100 * (t / 0.25));
-    const close = 1 - dist / 120;
-    dots.push({
-      x: p.x + nx * dist * side + (rand() - 0.5) * 14,
-      y: p.y + ny * dist * side + (rand() - 0.5) * 14,
-      r: 1.1 + close * 1.6,
-      a: 0.12 + Math.max(0, close) * 0.42,
-      color: close > 0.55 ? GREEN : SILVER,
-      threshold: 0.14 + 0.5 * t + rand() * 0.06,
-    });
-  }
-
-  /* 2. Spray under Content → Publication sweep */
-  for (let i = 0; i < 180; i++) {
-    const t = 0.25 + rand() * 0.27;
-    const p = pp(t);
-    const p2 = pp(Math.min(1, t + 0.01));
-    let nx = -(p2.y - p.y);
-    let ny = p2.x - p.x;
-    const nl = Math.hypot(nx, ny) || 1;
-    nx /= nl;
-    ny /= nl;
-    if (ny < 0) {
-      nx = -nx;
-      ny = -ny;
-    }
-    const side = rand() < 0.72 ? 1 : -1;
-    const dist = Math.pow(rand(), 1.45) * 88;
-    const close = 1 - dist / 94;
-    dots.push({
-      x: p.x + nx * dist * side + (rand() - 0.5) * 14,
-      y: p.y + ny * dist * side + (rand() - 0.5) * 14,
-      r: 1.1 + close * 1.5,
-      a: 0.1 + Math.max(0, close) * 0.38,
-      color: close > 0.55 ? GREEN : SILVER,
-      threshold: 0.14 + 0.5 * t + rand() * 0.06,
-    });
-  }
-
-  /* 3. Publication cloud */
-  for (let i = 0; i < 60; i++) {
-    const ang = rand() * Math.PI * 2;
-    const rad = Math.pow(rand(), 1.25) * 105;
-    const fade = 1 - rad / 115;
-    dots.push({
-      x: NODES[2].x + Math.cos(ang) * rad + 28,
-      y: NODES[2].y + Math.sin(ang) * rad + 22,
-      r: 1 + rand() * 1.4,
-      a: 0.08 + Math.max(0, fade) * 0.3,
-      color: fade > 0.5 ? GREEN : SILVER,
-      threshold: 0.3 + rand() * 0.15,
-    });
-  }
-
-  /* 4. Evidence sunburst — concentric golden arcs + spokes */
-  for (let k = 0; k < 10; k++) {
-    const rad = 40 + k * 13.5;
-    const n = Math.max(10, Math.floor((2 * Math.PI * rad) / 15));
+  const ringOfDots = (
+    cx: number,
+    cy: number,
+    radius: number,
+    color: string,
+    alpha: number,
+    dotR: number,
+    baseT: number
+  ) => {
+    const n = Math.max(12, Math.floor((2 * Math.PI * radius) / 16));
     for (let j = 0; j < n; j++) {
-      const ang = (j / n) * Math.PI * 2 + (rand() - 0.5) * 0.05;
-      const fade = 1 - k / 11;
+      const ang = (j / n) * Math.PI * 2;
       dots.push({
-        x: EVIDENCE.x + Math.cos(ang) * rad,
-        y: EVIDENCE.y + Math.sin(ang) * rad,
-        r: 1.9 - k * 0.09,
-        a: 0.18 + fade * 0.5,
-        color: GOLD,
-        threshold: 0.62 + k * 0.024 + rand() * 0.04,
+        x: cx + Math.cos(ang) * radius,
+        y: cy + Math.sin(ang) * radius,
+        r: dotR,
+        a: alpha,
+        color,
+        // dots resolve clockwise as the ring forms
+        threshold: baseT + (j / n) * 0.08,
       });
     }
-  }
-  for (let s = 0; s < 22; s++) {
-    const ang = (s / 22) * Math.PI * 2 + 0.07;
-    for (let d = 48; d < 165; d += 17) {
-      if (rand() < 0.42) continue;
-      dots.push({
-        x: EVIDENCE.x + Math.cos(ang) * d,
-        y: EVIDENCE.y + Math.sin(ang) * d,
-        r: 1.2,
-        a: 0.12 + (1 - d / 185) * 0.3,
-        color: GOLD,
-        threshold: 0.62 + rand() * 0.2,
-      });
-    }
-  }
+  };
 
-  /* 5. Spray along Evidence → Learning */
-  for (let i = 0; i < 60; i++) {
-    const t = 0.72 + rand() * 0.26;
-    const p = pp(t);
-    const p2 = pp(Math.min(1, t + 0.01));
-    let nx = -(p2.y - p.y);
-    let ny = p2.x - p.x;
-    const nl = Math.hypot(nx, ny) || 1;
-    nx /= nl;
-    ny /= nl;
-    const side = rand() < 0.5 ? 1 : -1;
-    const dist = Math.pow(rand(), 1.4) * 55;
-    const close = 1 - dist / 60;
-    dots.push({
-      x: p.x + nx * dist * side + (rand() - 0.5) * 10,
-      y: p.y + ny * dist * side + (rand() - 0.5) * 10,
-      r: 1 + close * 1.2,
-      a: 0.08 + Math.max(0, close) * 0.3,
-      color: close > 0.5 ? GREEN : SILVER,
-      threshold: 0.4 + 0.4 * (t - 0.72) + rand() * 0.08,
-    });
-  }
+  /* Evidence: three gold rings, the only strong halftone structure */
+  ringOfDots(EVIDENCE.x, EVIDENCE.y, 36, GOLD, 0.55, 1.9, 0.62);
+  ringOfDots(EVIDENCE.x, EVIDENCE.y, 52, GOLD, 0.42, 1.8, 0.68);
+  ringOfDots(EVIDENCE.x, EVIDENCE.y, 68, GOLD, 0.3, 1.6, 0.74);
+
+  /* Learning: one faint structural silver ring */
+  ringOfDots(LEARNING.x, LEARNING.y, 26, SILVER, 0.35, 1.5, 0.78);
 
   return dots;
 }
@@ -403,7 +311,7 @@ export function EvidenceMark({ className = "" }: { className?: string }) {
     if (!ctx) return;
 
     const pts = catmull(NODES, 60);
-    const dots = buildField(pts);
+    const dots = buildField();
     const tail = tailDots(rng(23));
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
