@@ -11,9 +11,15 @@ import { useEffect, useRef } from "react";
  * the Evidence node resolves strongest (gold), Learning continues into a
  * fading open tail. Total reveal ≈ 1.6s, then the mark becomes static.
  *
- * Canvas 2D, zero dependencies. Reduced motion: final frame immediately
- * (short opacity fade). Halftone is supporting structure, not the dominant
- * visual; nothing stays permanently animated.
+ * Canvas 2D, zero dependencies. Reduced motion: final frame immediately.
+ * Halftone is supporting structure, not the dominant visual; nothing stays
+ * permanently animated.
+ *
+ * Implementation notes:
+ * - Canvas fills its wrapper via CSS (w/h 100%); only the backing store is
+ *   sized in JS. Never set canvas.style — that feeds back into layout and
+ *   loops ResizeObserver.
+ * - RO callbacks are rAF-debounced.
  */
 
 const GREEN = "#7C9482";
@@ -33,7 +39,7 @@ const NODE_T = [0.08, 0.34, 0.58, 0.80, 0.95] as const;
 const EVIDENCE_IDX = 3;
 const LEARNING_IDX = 4;
 
-/** Open continuation tail: fading dots beyond Learning, along the curve's exit direction. */
+/** Open continuation tail: fading dots beyond Learning, along the exit direction. */
 const TAIL_DOTS = 5;
 
 function bezier(t: number) {
@@ -103,9 +109,20 @@ function buildField(): HalftoneDot[] {
   return dots;
 }
 
-function draw(ctx: CanvasRenderingContext2D, size: number, dots: HalftoneDot[], t: number) {
-  ctx.clearRect(0, 0, size, size);
-  const S = size;
+function draw(
+  ctx: CanvasRenderingContext2D,
+  W: number,
+  H: number,
+  dots: HalftoneDot[],
+  t: number
+) {
+  ctx.clearRect(0, 0, W, H);
+  const S = Math.min(W, H);
+  const ox = (W - S) / 2;
+  const oy = (H - S) / 2;
+  const X = (v: number) => ox + v * S;
+  const Y = (v: number) => oy + v * S;
+  const U = S / 400; // unit scale (designed against 400px)
 
   /* ── Halftone field (supporting structure) ── */
   for (const d of dots) {
@@ -117,7 +134,7 @@ function draw(ctx: CanvasRenderingContext2D, size: number, dots: HalftoneDot[], 
     ctx.globalAlpha = baseA * appear;
     ctx.fillStyle = near ? GREEN : SILVER;
     ctx.beginPath();
-    ctx.arc(d.x * S, d.y * S, baseR * (S / 400), 0, Math.PI * 2);
+    ctx.arc(X(d.x), Y(d.y), baseR * U, 0, Math.PI * 2);
     ctx.fill();
   }
 
@@ -126,15 +143,15 @@ function draw(ctx: CanvasRenderingContext2D, size: number, dots: HalftoneDot[], 
   if (pathP > 0) {
     ctx.globalAlpha = 0.9;
     ctx.strokeStyle = GREEN;
-    ctx.lineWidth = 2 * (S / 400);
+    ctx.lineWidth = 2 * U;
     ctx.lineCap = "round";
     ctx.beginPath();
-    const steps = Math.max(2, Math.floor(pathP * 72));
-    for (let i = 0; i <= steps; i++) {
-      const p = bezier((i / 72) * 1); // full param range, clipped by steps
-      if ((i / 72) > pathP) break;
-      if (i === 0) ctx.moveTo(p.x * S, p.y * S);
-      else ctx.lineTo(p.x * S, p.y * S);
+    for (let i = 0; i <= 72; i++) {
+      const pt = i / 72;
+      if (pt > pathP) break;
+      const p = bezier(pt);
+      if (i === 0) ctx.moveTo(X(p.x), Y(p.y));
+      else ctx.lineTo(X(p.x), Y(p.y));
     }
     ctx.stroke();
   }
@@ -150,13 +167,11 @@ function draw(ctx: CanvasRenderingContext2D, size: number, dots: HalftoneDot[], 
     const uy = dir.y / len;
     for (let i = 1; i <= TAIL_DOTS; i++) {
       const dist = 0.05 + i * 0.055;
-      const x = (p3.x + ux * dist) * S;
-      const y = (p3.y + uy * dist) * S;
       const fade = (1 - i / (TAIL_DOTS + 1)) * 0.5;
       ctx.globalAlpha = fade * tailP;
       ctx.fillStyle = SILVER;
       ctx.beginPath();
-      ctx.arc(x, y, (2.2 - i * 0.25) * (S / 400), 0, Math.PI * 2);
+      ctx.arc(X(p3.x + ux * dist), Y(p3.y + uy * dist), (2.2 - i * 0.25) * U, 0, Math.PI * 2);
       ctx.fill();
     }
   }
@@ -166,11 +181,11 @@ function draw(ctx: CanvasRenderingContext2D, size: number, dots: HalftoneDot[], 
     const appear = smoothstep(t, 0.3 + i * 0.12, 0.44 + i * 0.12);
     if (appear <= 0) return;
     const p = bezier(nt);
-    const x = p.x * S;
-    const y = p.y * S;
+    const x = X(p.x);
+    const y = Y(p.y);
     const isEvidence = i === EVIDENCE_IDX;
     const isLearning = i === LEARNING_IDX;
-    const r = (isEvidence ? 7 : isLearning ? 5.5 : 4.5) * (S / 400) * (0.6 + 0.4 * appear);
+    const r = (isEvidence ? 7 : isLearning ? 5.5 : 4.5) * U * (0.6 + 0.4 * appear);
 
     ctx.globalAlpha = appear;
     ctx.fillStyle = isEvidence ? GOLD : GREEN;
@@ -184,9 +199,9 @@ function draw(ctx: CanvasRenderingContext2D, size: number, dots: HalftoneDot[], 
       if (ringP > 0) {
         ctx.globalAlpha = 0.75 * ringP;
         ctx.strokeStyle = GOLD;
-        ctx.lineWidth = 1.4 * (S / 400);
+        ctx.lineWidth = 1.4 * U;
         ctx.beginPath();
-        ctx.arc(x, y, r + 5 * (S / 400) * ringP, 0, Math.PI * 2);
+        ctx.arc(x, y, r + 5 * U * ringP, 0, Math.PI * 2);
         ctx.stroke();
       }
     }
@@ -210,59 +225,82 @@ export function EvidenceMark({ className = "" }: { className?: string }) {
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
 
-    let size = 0;
     let raf = 0;
+    let roRaf = 0;
     let start = 0;
-    let done = false;
+    let currentT = reduced || document.hidden ? 1 : 0;
+    let done = currentT === 1;
+    let bw = 0;
+    let bh = 0;
 
-    const paint = (t: number) => {
-      if (size <= 0) return;
+    const paint = () => {
+      if (bw <= 0 || bh <= 0) return;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      draw(ctx, size, dots, t);
+      draw(ctx, bw, bh, dots, currentT);
+    };
+
+    const resize = () => {
+      const rect = wrap.getBoundingClientRect();
+      const w = Math.round(rect.width);
+      const h = Math.round(rect.height);
+      if (w <= 0 || h <= 0 || (w === bw && h === bh)) return;
+      bw = w;
+      bh = h;
+      canvas.width = Math.round(w * dpr);
+      canvas.height = Math.round(h * dpr);
+      paint();
     };
 
     const tick = (now: number) => {
       if (!start) start = now;
-      const t = Math.min(1, (now - start) / REVEAL_MS);
-      paint(t);
-      if (t >= 1) {
+      currentT = Math.min(1, (now - start) / REVEAL_MS);
+      paint();
+      if (currentT >= 1) {
         done = true;
         return; // stop — the mark becomes static, no background loop
       }
       raf = requestAnimationFrame(tick);
     };
 
-    const resize = () => {
-      const rect = wrap.getBoundingClientRect();
-      size = Math.min(rect.width, rect.height);
-      if (size <= 0) return;
-      canvas.width = Math.round(size * dpr);
-      canvas.height = Math.round(size * dpr);
-      canvas.style.width = `${size}px`;
-      canvas.style.height = `${size}px`;
-      if (done || reduced || document.hidden) paint(1);
-    };
+    // Completion guarantee: rAF can be starved (hidden tabs, throttled
+    // compositing, headless captures). The timer ensures the mark always
+    // resolves to its final static state even when frames never fire.
+    const finishTimer = window.setTimeout(() => {
+      currentT = 1;
+      done = true;
+      cancelAnimationFrame(raf);
+      paint();
+    }, REVEAL_MS + 120);
 
+    // Size once synchronously, then keep RO callbacks rAF-debounced so
+    // canvas backing-store writes never trigger a ResizeObserver loop.
     resize();
-    const ro = new ResizeObserver(resize);
+    const ro = new ResizeObserver(() => {
+      cancelAnimationFrame(roRaf);
+      roRaf = requestAnimationFrame(resize);
+    });
     ro.observe(wrap);
 
-    if (reduced || document.hidden) {
-      paint(1);
-      done = true;
-    } else {
+    if (!done) {
       raf = requestAnimationFrame(tick);
     }
 
     return () => {
       cancelAnimationFrame(raf);
+      cancelAnimationFrame(roRaf);
+      clearTimeout(finishTimer);
       ro.disconnect();
     };
   }, []);
 
   return (
-    <div ref={wrapRef} className={`flex items-center justify-center ${className}`}>
-      <canvas ref={canvasRef} role="img" aria-label="ContentLoop 品牌轨迹：线索、内容、发布、证据、经验，延伸至开放的未来" />
+    <div ref={wrapRef} className={className}>
+      <canvas
+        ref={canvasRef}
+        className="block h-full w-full"
+        role="img"
+        aria-label="ContentLoop 品牌轨迹：线索、内容、发布、证据、经验，延伸至开放的未来"
+      />
     </div>
   );
 }
