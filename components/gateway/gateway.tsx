@@ -70,26 +70,26 @@ export function Gateway() {
         <div className="-mt-24">
           {/* Optical scale per approved reference: the wordmark is the
               primary brand anchor — do not shrink for "minimalism". */}
-          <h1 className="font-brand text-[72px] font-semibold leading-none tracking-[0.005em] text-ink-primary">
+          <h1 className="font-brand text-[88px] font-semibold leading-none tracking-[0.005em] text-ink-primary">
             ContentLoop
           </h1>
 
           <div className="mt-[96px]">
             <Link
               href="/app"
-              className="group inline-flex h-[60px] w-[280px] items-center justify-between rounded-[8px] bg-cl-primary px-7 text-[16px] font-medium text-white/95 transition-colors duration-150 hover:bg-[#6F8779]"
+              className="group inline-flex h-[70px] w-[328px] items-center justify-center gap-4 rounded-[9px] bg-cl-primary px-8 text-[17px] font-medium text-white/95 transition-colors duration-150 hover:bg-[#6F8779]"
             >
               进入 ContentLoop
               {/* Real next-stage transition → restrained directional terminal */}
               <ArrowRight
-                className="h-[18px] w-[18px] opacity-70 transition-transform duration-150 group-hover:translate-x-0.5"
+                className="h-[19px] w-[19px] opacity-70 transition-transform duration-150 group-hover:translate-x-0.5"
                 strokeWidth={1.75}
                 aria-hidden
               />
             </Link>
           </div>
 
-          <label className="mt-6 inline-flex cursor-pointer items-center gap-2.5 text-[14px] text-cl-neutral">
+          <label className="mt-8 inline-flex cursor-pointer items-center gap-2.5 text-[14px] text-cl-neutral">
             <span className="relative inline-flex h-4 w-4 items-center justify-center">
               <input
                 type="checkbox"
@@ -109,9 +109,9 @@ export function Gateway() {
       </section>
 
       {/* Right ~58% — Loop Evidence Mark, part of the canvas, no panel.
-          Major brand anchor: allowed to occupy real visual territory. */}
+          Major brand anchor: occupies most of the right region. */}
       <section className="flex flex-[58] items-center justify-center">
-        <EvidenceMark className="h-full w-full max-h-[700px] max-w-[700px]" />
+        <EvidenceMark className="h-full w-full max-h-[820px] max-w-[760px]" />
       </section>
     </div>
   );

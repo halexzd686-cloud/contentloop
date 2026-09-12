@@ -207,3 +207,16 @@ M7 视觉重设计第一阶段：全局 M7 token 层、Editorial Rail（App Shel
 ### Phase A.1 verdict
 
 **PASS**（视觉已实质逼近批准方向，残余差异均为次级细节或有意取舍）→ 待人工最终验收
+
+### Phase A.1 pass 2 — 高保真对齐修正（用户初审驳回后）
+
+初审结论：pass 1 仅结构沾边，与参考高保真模板差距大。pass 2 逐元素按参考图重测复刻：
+
+- **节点坐标重测**：Signal(0.44,0.09) → Content(0.59,0.26) → Publication(0.80,0.335) → Evidence(0.67,0.54) → Learning(0.61,0.75)，Publication 折返 + Learning 转右的双折 S 形
+- **Evidence 金色同心弧爆发**：11 圈点状同心弧（半径 0.042→0.177，点数随周长、alpha/尺寸随圈衰减），参考图的标志性 "sunburst" 元素；核心为深绿 #4F6257
+- **Halftone 图案语言**：上段扇形喷溅（Signal→Publication 单侧偏下、锥形渐宽、Signal 端稀疏）+ Publication 局部点云 + Learning 光晕散布 + 16 环境点；不再均匀贴线
+- **尾迹**：Learning 之后 8 点水平渐隐点列（绿→银、间距渐宽）；Learning 标签移到尾迹线上方避免遮挡
+- **Gateway 光学尺度再修正**：wordmark 72→**88px**；Portal Button → **328×70** / 17px / r9 / 居中箭头；按钮→checkbox 间距 32px；Mark 容器 → 760×820
+- **Shell**：设置项锚定侧栏**底部**（参考图 B）；wordmark 26px、24px×2px 活跃 rail 保持
+- 截图：`.shots/a5-gateway-{1280,1440,1920}.png` / `.shots/a5-shell-{1280,1440,1920}.png`
+- 回归：408/408 ✅ lint ✅ typecheck ✅ build ✅

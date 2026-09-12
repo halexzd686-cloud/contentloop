@@ -98,8 +98,9 @@ export function Sidebar() {
           <NavRow key={item.href} item={item} isActive={isItemActive(item.href)} />
         ))}
 
-        {/* Settings — separated by spacing, not a heavy divider */}
-        <div className="mt-6">
+        {/* Settings — anchored to the bottom of the rail (approved
+            reference), separated by space, not a divider or card */}
+        <div className="mt-auto pb-7 pt-6">
           <NavRow
             item={{ label: NAV_LABELS.settings, href: "/app/settings", icon: NavSettingsIcon }}
             isActive={isItemActive("/app/settings")}
