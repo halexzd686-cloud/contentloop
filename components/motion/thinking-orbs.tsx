@@ -3,62 +3,69 @@
 import { useEffect, useRef } from "react";
 
 /**
- * ThinkingOrbs — ContentLoop AI reasoning motion (M7 visual fidelity pass).
+ * ThinkingOrbs — ContentLoop AI reasoning motion (M7, human-approved V2).
  *
- * Canvas 2D gyro: multiple projected 3D-style orbital PLANES, each with
- * distinct tilt / ellipse ratio / orientation / precession. 8 controlled
- * particles distributed across planes; z-depth drives size + opacity +
- * color strength (painter's algorithm, far drawn first). One rare gold
- * insight particle. Orbit strokes are thin, faint, structural — the eye
- * reads moving spatial particles, not rings.
+ * Canvas 2D gyro instrument per the MetalForge thinking-orbs reference
+ * (style=gyro, speed=1, dots=1, perspective=1, depthSize=1, depthFade=1),
+ * approved in /dev/orbs-compare review:
+ * - machined orbit rings in one deep sage hue (#8B978F), continuously
+ *   depth-graded (far dim / near strong, no two-tone seams)
+ * - global yaw precession: the whole assembly rotates as ONE gyro
+ * - center axis hub anchors the composition
+ * - particles are translucent beads: far ones dim + desaturate into
+ *   structural silver, near ones soften to #5F7A68 (front alpha ≤ ~0.76)
+ * - one gold insight node, resolving a gold ring at the front of its orbit
  *
- * Unchanged engineering contract: zero per-frame React renders, RAF
- * cleanup, DPR ≤ 2, offscreen/hidden pause, reduced-motion static frame.
+ * Engineering contract: zero per-frame React renders, RAF cleanup,
+ * DPR ≤ 2, offscreen/hidden pause, reduced-motion static frame.
  */
 
-const COLORS = {
+const C = {
   primary: "#7C9482",
-  primaryDeep: "#5F7A68", // front-particle strength
+  primaryDeep: "#5F7A68", // front-of-depth primary — soft, not saturated
   structural: "#C8C9CB",
+  structuralDim: "#D6D7D9",
   insight: "#D4B26A",
   neutral: "#626660",
+  ring: "#8B978F", // deep sage-gray machined track — one hue, depth-graded
 };
 
+const YAW_SPEED = 0.22; // global gyro precession (rad/s, calm per reference)
+
 interface Plane {
-  tiltX: number; // plane tilt around X (drives depth)
-  rotZ: number; // plane orientation on screen
-  ratio: number; // ellipse ratio (not circles)
-  radius: number; // orbital radius factor
-  precession: number; // gyro drift speed
-  drift: number; // slow orientation drift
+  tiltX: number;
+  rotZ: number;
+  ratio: number;
+  radius: number;
+  ringAlpha: number;
 }
 
 interface Particle {
   plane: number;
   phase: number;
   speed: number;
-  size: number; // base radius factor
+  size: number;
   color: string;
-  deepColor?: string; // front-of-depth stronger color
+  deepColor?: string;
+  isInsight?: boolean;
 }
 
-// Distinct gyro planes — deliberately non-concentric in orientation.
 const PLANES: Plane[] = [
-  { tiltX: -0.52, rotZ: 0.24, ratio: 0.86, radius: 0.94, precession: 0.10, drift: 0.016 },
-  { tiltX: 0.44, rotZ: -0.62, ratio: 0.62, radius: 0.74, precession: -0.13, drift: -0.012 },
-  { tiltX: 0.18, rotZ: 1.05, ratio: 0.78, radius: 0.55, precession: 0.16, drift: 0.02 },
+  { tiltX: -0.55, rotZ: 0.24, ratio: 0.88, radius: 0.94, ringAlpha: 0.5 },
+  { tiltX: 0.46, rotZ: -0.62, ratio: 0.6, radius: 0.72, ringAlpha: 0.42 },
+  { tiltX: 0.16, rotZ: 1.08, ratio: 0.8, radius: 0.52, ringAlpha: 0.36 },
 ];
 
 const PARTICLES: Particle[] = [
-  { plane: 0, phase: 0.0, speed: 0.92, size: 0.082, color: COLORS.primary, deepColor: COLORS.primaryDeep },
-  { plane: 0, phase: 2.3, speed: 0.92, size: 0.062, color: COLORS.structural },
-  { plane: 0, phase: 4.4, speed: 1.12, size: 0.056, color: COLORS.neutral },
-  { plane: 1, phase: 0.9, speed: -1.05, size: 0.074, color: COLORS.primary, deepColor: COLORS.primaryDeep },
-  { plane: 1, phase: 3.1, speed: -0.88, size: 0.058, color: COLORS.structural },
-  { plane: 2, phase: 1.7, speed: 1.28, size: 0.066, color: COLORS.primary, deepColor: COLORS.primaryDeep },
-  { plane: 2, phase: 5.2, speed: 1.28, size: 0.052, color: COLORS.structural },
+  { plane: 0, phase: 0.0, speed: 0.85, size: 0.085, color: C.primary, deepColor: C.primaryDeep },
+  { plane: 0, phase: 2.4, speed: 0.85, size: 0.06, color: C.structural },
+  { plane: 0, phase: 4.5, speed: 1.05, size: 0.055, color: C.neutral },
+  { plane: 1, phase: 0.9, speed: -0.95, size: 0.076, color: C.primary, deepColor: C.primaryDeep },
+  { plane: 1, phase: 3.1, speed: -0.8, size: 0.058, color: C.structural },
+  { plane: 2, phase: 1.7, speed: 1.15, size: 0.068, color: C.primary, deepColor: C.primaryDeep },
+  { plane: 2, phase: 5.0, speed: 1.15, size: 0.052, color: C.structural },
   // the single exceptional insight node
-  { plane: 1, phase: 5.6, speed: -0.7, size: 0.072, color: COLORS.insight },
+  { plane: 1, phase: 5.6, speed: -0.62, size: 0.075, color: C.insight, isInsight: true },
 ];
 
 export function ThinkingOrbs({
@@ -68,7 +75,6 @@ export function ThinkingOrbs({
 }: {
   size?: number;
   className?: string;
-  /** Force the reduced-motion static frame (spike/preview contexts). */
   staticFrame?: boolean;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -82,7 +88,6 @@ export function ThinkingOrbs({
     const reduced =
       staticFrame ||
       window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    // Optical correction: 48px simplifies strokes + strengthens contrast
     const compact = size <= 48;
 
     let raf = 0;
@@ -99,74 +104,122 @@ export function ThinkingOrbs({
       if (reduced) drawFrame(0.7);
     };
 
-    /** Project a particle through its plane at time t → screen + depth. */
-    const project = (p: Particle, t: number) => {
-      const plane = PLANES[p.plane];
-      const tiltX = plane.tiltX + t * plane.precession;
-      const rotZ = plane.rotZ + t * plane.drift;
-      const a = p.phase + t * p.speed;
+    /** Project a unit-ellipse point through plane + global yaw. */
+    const projectPoint = (
+      plane: Plane,
+      angle: number,
+      yaw: number
+    ): { x: number; y: number; z: number } => {
+      const ex = Math.cos(angle);
+      const ey = Math.sin(angle) * plane.ratio;
+      // plane tilt around X → depth
+      const y1 = ey * Math.cos(plane.tiltX);
+      const z1 = ey * Math.sin(plane.tiltX);
+      // plane orientation on screen
+      const xr = ex * Math.cos(plane.rotZ) - y1 * Math.sin(plane.rotZ);
+      const zr = z1;
+      const yr = ex * Math.sin(plane.rotZ) + y1 * Math.cos(plane.rotZ);
+      // global yaw precession: rotate (x, z) around Y
+      const cy = Math.cos(yaw);
+      const sy = Math.sin(yaw);
+      return {
+        x: xr * cy + zr * sy,
+        y: yr,
+        z: -xr * sy + zr * cy,
+      };
+    };
 
-      // point on ellipse (unit)
-      const x = Math.cos(a);
-      const y = Math.sin(a) * plane.ratio;
-      // tilt around X → depth
-      const y1 = y * Math.cos(tiltX);
-      const z = y * Math.sin(tiltX);
-      // orient on screen
-      const xs = x * Math.cos(rotZ) - y1 * Math.sin(rotZ);
-      const ys = x * Math.sin(rotZ) + y1 * Math.cos(rotZ);
-      return { x: xs, y: ys, z, plane };
+    /** Draw one plane's ring as depth-graded segments — single hue,
+        continuous far-dim → near-strong gradient, no seams. */
+    const drawRing = (plane: Plane, yaw: number) => {
+      const c = size / 2;
+      const R = plane.radius * c * 0.94;
+      const N = 72;
+      const base = compact ? plane.ringAlpha * 0.8 : plane.ringAlpha;
+      ctx.lineCap = "round";
+      for (let i = 0; i < N; i++) {
+        const a0 = (i / N) * Math.PI * 2;
+        const a1 = ((i + 1) / N) * Math.PI * 2;
+        const p0 = projectPoint(plane, a0, yaw);
+        const p1 = projectPoint(plane, a1, yaw);
+        const depth = ((p0.z + p1.z) / 2 + 1) / 2; // 0 far … 1 near
+        ctx.beginPath();
+        ctx.moveTo(c + p0.x * R, c + p0.y * R);
+        ctx.lineTo(c + p1.x * R, c + p1.y * R);
+        ctx.strokeStyle = C.ring;
+        ctx.globalAlpha = base * (0.45 + depth * 0.85);
+        ctx.lineWidth = (compact ? 0.9 : 1.05) + depth * (compact ? 0.3 : 0.4);
+        ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
     };
 
     const drawFrame = (t: number) => {
       const c = size / 2;
       ctx.clearRect(0, 0, size, size);
+      const yaw = t * YAW_SPEED;
 
-      // orbit tracks: thin, faint, secondary
-      for (let i = 0; i < PLANES.length; i++) {
-        if (compact && i === 2) continue; // 48px: simplest track set
-        const plane = PLANES[i];
-        const tiltX = plane.tiltX + t * plane.precession;
-        const rotZ = plane.rotZ + t * plane.drift;
-        ctx.save();
-        ctx.translate(c, c);
-        ctx.rotate(rotZ);
-        ctx.beginPath();
-        ctx.ellipse(
-          0, 0,
-          plane.radius * c * 0.94,
-          Math.max(1.2, plane.radius * c * 0.94 * plane.ratio * Math.cos(tiltX)),
-          0, 0, Math.PI * 2
-        );
-        ctx.strokeStyle = COLORS.structural;
-        ctx.globalAlpha = compact ? 0.16 : 0.2;
-        ctx.lineWidth = compact ? 0.6 : 0.75;
-        ctx.stroke();
-        ctx.restore();
-        ctx.globalAlpha = 1;
+      // rings: single depth-graded pass (uniform hue, no seams)
+      for (const plane of PLANES) {
+        if (compact && plane === PLANES[2]) continue;
+        drawRing(plane, yaw);
       }
 
-      // particles, far → near (painter's algorithm)
-      const projected = PARTICLES.map((p) => ({ p, ...project(p, t) }))
-        .sort((a, b) => a.z - b.z);
+      // center axis hub — the instrument's anchor
+      ctx.beginPath();
+      ctx.arc(c, c, Math.max(1.4, size * 0.032), 0, Math.PI * 2);
+      ctx.fillStyle = C.primary;
+      ctx.globalAlpha = 0.85;
+      ctx.fill();
+      ctx.globalAlpha = 1;
 
-      for (const { p, x, y, z, plane } of projected) {
-        const depth = (z + 1) / 2; // 0 far … 1 near
-        const scale = (compact ? 0.45 : 0.42) + depth * (compact ? 1.05 : 1.0);
-        const alpha = 0.16 + depth * 0.84;
+      // particles, far → near
+      const projected = PARTICLES.map((p) => {
+        const plane = PLANES[p.plane];
+        const proj = projectPoint(plane, p.phase + t * p.speed, yaw);
+        return { p, plane, ...proj };
+      }).sort((a, b) => a.z - b.z);
+
+      for (const { p, plane, x, y, z } of projected) {
+        const depth = (z + 1) / 2;
+        const scale = 0.38 + depth * 1.18;
+        const alpha = 0.08 + depth * 0.68;
+        const R = plane.radius * c * 0.94;
+        const px = c + x * R;
+        const py = c + y * R;
+        const r = Math.max(0.9, p.size * size * scale);
+
+        // far particles desaturate into structural silver (insight keeps gold)
+        let fill: string;
+        if (p.isInsight) {
+          fill = C.insight;
+        } else if (depth < 0.42) {
+          fill = C.structuralDim;
+        } else if (p.deepColor && depth > 0.7) {
+          fill = p.deepColor;
+        } else {
+          fill = p.color;
+        }
+
         ctx.beginPath();
-        ctx.arc(
-          c + x * plane.radius * c * 0.94,
-          c + y * plane.radius * c * 0.94,
-          Math.max(0.9, p.size * size * scale),
-          0, Math.PI * 2
-        );
+        ctx.arc(px, py, r, 0, Math.PI * 2);
         ctx.globalAlpha = alpha;
-        ctx.fillStyle =
-          p.deepColor && depth > 0.72 ? p.deepColor : p.color;
+        ctx.fillStyle = fill;
         ctx.fill();
         ctx.globalAlpha = 1;
+
+        // insight node: a resolving gold ring at the front of its orbit
+        if (p.isInsight && depth > 0.68) {
+          ctx.beginPath();
+          ctx.arc(px, py, r + size * 0.045 * depth, 0, Math.PI * 2);
+          ctx.strokeStyle = C.insight;
+          ctx.globalAlpha = (depth - 0.68) * 2.2 * 0.75;
+          ctx.lineWidth = Math.max(0.8, size * 0.018);
+          ctx.stroke();
+          ctx.globalAlpha = 1;
+        }
       }
+
     };
 
     const loop = (now: number) => {

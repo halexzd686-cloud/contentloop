@@ -87,6 +87,19 @@ MetalForge 链接仅作视觉/动效参考（未复制其代码）；两个组�
 - Technical：**PASS**
 - Visual Fidelity：**PASS**（Thinking Orbs 与 Spiral 均达到验收标准；48px 轨道线弱化为有意决策）
 
+## Thinking Orbs V2 Promotion（人工验收通过）
+
+原 V1 在 Studio Loop AI 上下文中被用户判定"缺乏设计感"。V2 在 `/dev/orbs-compare` 对照评审后获批并转正（替换 `components/motion/thinking-orbs.tsx`，草稿与对照页已移除）。
+
+- 轨道环：单色调深鼠尾草灰 `#8B978F`，按弧段深度连续渐变（远淡近浓，无双色接缝——初版两遍绘制曾产生"一半一半"接缝，已修正）
+- 新增全局 yaw 进动（0.22 rad/s）：整个装配体作为一只陀螺旋转，环与粒子同投影
+- 新增中心轴心点
+- 粒子为半透明珠：远点消色为结构银，近点柔化为 `#5F7A68`，前缘 alpha 封顶 ~0.76（用户要求降饱和）
+- 金色洞察点在轨道前侧解析金环
+- 工程契约不变：零每帧 React 渲染、RAF cleanup、DPR≤2、离屏/后台暂停、reduced-motion 静态帧
+
+验证：对照页双帧 md5 不同（动效活性）；398/398 tests、lint、typecheck、build 全绿。
+
 ## Halftone Reveal（Entrance 角色）可行性备忘
 
 Gateway 的 Halftone Reveal 不在本任务集成范围。实施路径核查结论：
