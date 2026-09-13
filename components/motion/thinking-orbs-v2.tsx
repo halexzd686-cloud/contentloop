@@ -29,6 +29,8 @@ const C = {
   structuralDim: "#D6D7D9",
   insight: "#D4B26A",
   neutral: "#626660",
+  ring: "#99A39B", // deeper sage-gray — machined track, never floaty
+  ringFront: "#7E8C84", // front arc, deepest structural tone
 };
 
 const YAW_SPEED = 0.22; // global gyro precession (rad/s, calm per reference)
@@ -159,13 +161,13 @@ export function ThinkingOrbsV2({
           pen = false;
         }
       }
-      ctx.strokeStyle = C.structural;
+      ctx.strokeStyle = onlyFrontArc ? C.ringFront : C.ring;
       ctx.globalAlpha = onlyFrontArc
-        ? plane.ringAlpha + 0.22
+        ? Math.min(0.88, plane.ringAlpha + 0.34)
         : compact
-          ? plane.ringAlpha * 0.55
-          : plane.ringAlpha * 0.7;
-      ctx.lineWidth = onlyFrontArc ? (compact ? 0.9 : 1.1) : compact ? 0.8 : 1;
+          ? plane.ringAlpha * 0.72
+          : plane.ringAlpha * 0.85;
+      ctx.lineWidth = onlyFrontArc ? (compact ? 1 : 1.2) : compact ? 0.9 : 1.1;
       ctx.lineCap = "round";
       ctx.stroke();
       ctx.globalAlpha = 1;
