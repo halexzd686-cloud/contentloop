@@ -24,7 +24,7 @@ import { useEffect, useRef } from "react";
 
 const C = {
   primary: "#7C9482",
-  primaryDeep: "#4F6B5A", // front-of-depth primary (darker than v1)
+  primaryDeep: "#5F7A68", // front-of-depth primary — soft, not saturated
   structural: "#C8C9CB",
   structuralDim: "#D6D7D9",
   insight: "#D4B26A",
@@ -185,7 +185,7 @@ export function ThinkingOrbsV2({
       for (const { p, plane, x, y, z } of projected) {
         const depth = (z + 1) / 2;
         const scale = 0.38 + depth * 1.18;
-        const alpha = 0.1 + depth * 0.9;
+        const alpha = 0.08 + depth * 0.68;
         const R = plane.radius * c * 0.94;
         const px = c + x * R;
         const py = c + y * R;
