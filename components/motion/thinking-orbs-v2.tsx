@@ -29,8 +29,7 @@ const C = {
   structuralDim: "#D6D7D9",
   insight: "#D4B26A",
   neutral: "#626660",
-  ring: "#99A39B", // deeper sage-gray — machined track, never floaty
-  ringFront: "#7E8C84", // front arc, deepest structural tone
+  ring: "#8B978F", // deep sage-gray machined track — one hue, depth-graded
 };
 
 const YAW_SPEED = 0.22; // global gyro precession (rad/s, calm per reference)
@@ -132,44 +131,28 @@ export function ThinkingOrbsV2({
       };
     };
 
-    /** Draw one plane's ring, optionally only the near-depth arc. */
-    const drawRing = (
-      plane: Plane,
-      yaw: number,
-      onlyFrontArc: boolean
-    ) => {
+    /** Draw one plane's ring as depth-graded segments — single hue,
+        continuous far-dim → near-strong gradient, no seams. */
+    const drawRing = (plane: Plane, yaw: number) => {
       const c = size / 2;
       const R = plane.radius * c * 0.94;
       const N = 72;
-      ctx.beginPath();
-      let pen = false;
-      for (let i = 0; i <= N; i++) {
-        const a = (i / N) * Math.PI * 2;
-        const p = projectPoint(plane, a, yaw);
-        const depth = (p.z + 1) / 2;
-        const use = onlyFrontArc ? depth > 0.52 : true;
-        if (use) {
-          const px = c + p.x * R;
-          const py = c + p.y * R;
-          if (!pen) {
-            ctx.moveTo(px, py);
-            pen = true;
-          } else {
-            ctx.lineTo(px, py);
-          }
-        } else {
-          pen = false;
-        }
-      }
-      ctx.strokeStyle = onlyFrontArc ? C.ringFront : C.ring;
-      ctx.globalAlpha = onlyFrontArc
-        ? Math.min(0.88, plane.ringAlpha + 0.34)
-        : compact
-          ? plane.ringAlpha * 0.72
-          : plane.ringAlpha * 0.85;
-      ctx.lineWidth = onlyFrontArc ? (compact ? 1 : 1.2) : compact ? 0.9 : 1.1;
+      const base = compact ? plane.ringAlpha * 0.8 : plane.ringAlpha;
       ctx.lineCap = "round";
-      ctx.stroke();
+      for (let i = 0; i < N; i++) {
+        const a0 = (i / N) * Math.PI * 2;
+        const a1 = ((i + 1) / N) * Math.PI * 2;
+        const p0 = projectPoint(plane, a0, yaw);
+        const p1 = projectPoint(plane, a1, yaw);
+        const depth = ((p0.z + p1.z) / 2 + 1) / 2; // 0 far … 1 near
+        ctx.beginPath();
+        ctx.moveTo(c + p0.x * R, c + p0.y * R);
+        ctx.lineTo(c + p1.x * R, c + p1.y * R);
+        ctx.strokeStyle = C.ring;
+        ctx.globalAlpha = base * (0.45 + depth * 0.85);
+        ctx.lineWidth = (compact ? 0.9 : 1.05) + depth * (compact ? 0.3 : 0.4);
+        ctx.stroke();
+      }
       ctx.globalAlpha = 1;
     };
 
@@ -178,10 +161,10 @@ export function ThinkingOrbsV2({
       ctx.clearRect(0, 0, size, size);
       const yaw = t * YAW_SPEED;
 
-      // pass 1: full rings (faint structure)
+      // rings: single depth-graded pass (uniform hue, no seams)
       for (const plane of PLANES) {
         if (compact && plane === PLANES[2]) continue;
-        drawRing(plane, yaw, false);
+        drawRing(plane, yaw);
       }
 
       // center axis hub — the instrument's anchor
@@ -239,11 +222,6 @@ export function ThinkingOrbsV2({
         }
       }
 
-      // pass 3: front arc of the rings repainted over far particles
-      for (const plane of PLANES) {
-        if (compact && plane === PLANES[2]) continue;
-        drawRing(plane, yaw, true);
-      }
     };
 
     const loop = (now: number) => {
