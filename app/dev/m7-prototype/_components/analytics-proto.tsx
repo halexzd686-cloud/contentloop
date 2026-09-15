@@ -122,6 +122,8 @@ export function AnalyticsProto() {
         <div className="flex min-h-0 flex-1">
           {/* ── Evidence report (~70%) ── */}
           <div className="flex-1 overflow-y-auto px-7 py-5">
+            {cp === "24h" && (
+              <>
             <Sec title={`表现事实 · ${cp}`} note="录入于 2026/8/31 20:14" />
             <div style={{ borderTop: "1px solid rgba(200,201,203,0.65)" }}>
               <div className="px-1 pb-1.5 pt-3 text-[11px] font-semibold tracking-[0.14em]" style={{ color: INK2 }}>原始指标</div>
@@ -195,6 +197,46 @@ export function AnalyticsProto() {
                 应用到下一条内容
               </div>
             </div>
+              </>
+            )}
+
+            {/* ── 72h：待录入状态（§61 未到时间不隐藏 / §63 留空=尚未录入≠0） ── */}
+            {cp === "72h" && (
+              <>
+                <Sec title="表现事实 · 72h" note="目标录入时间 2026/9/2 20:14" />
+                <div className="mt-4 rounded-[5px] px-6 py-8 text-center" style={{ background: "#FBFBF8", border: "1px dashed #C8C9CB" }}>
+                  <p className="text-[13.5px] font-semibold">尚未到 72h 数据录入时间</p>
+                  <p className="mt-2 text-xs leading-[1.7]" style={{ color: INK2 }}>
+                    这里显示的是“待录入”，不是 0——72h 指标会在到期后可录入。<br />
+                    基线对照与诊断将在有当前值后出现。
+                  </p>
+                  <div className="mt-4 flex justify-center">
+                    <button className="inline-flex h-[30px] items-center rounded-[5px] px-[11px] text-xs font-medium opacity-50" style={{ border: "1px solid #C8C9CB", color: "#20231F" }} disabled>
+                      录入 72h 数据（未到时间）
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* ── 手动补充：manual checkpoint 录入入口 ── */}
+            {cp === "手动补充" && (
+              <>
+                <Sec title="表现事实 · 手动观察点" note="由你定义时间点" />
+                <div className="mt-4 rounded-[5px] px-6 py-8 text-center" style={{ background: "#FBFBF8", border: "1px dashed #C8C9CB" }}>
+                  <p className="text-[13.5px] font-semibold">还没有手动观察点的数据</p>
+                  <p className="mt-2 text-xs leading-[1.7]" style={{ color: INK2 }}>
+                    除 24h / 72h 外，你可以在任意时间点补录一条指标快照——<br />
+                    例如一周后复核评论率走向。空白表示尚未录入，不显示 0。
+                  </p>
+                  <div className="mt-4 flex justify-center">
+                    <button className="inline-flex h-[30px] items-center rounded-[5px] px-[11px] text-xs font-medium" style={{ border: "1px solid #C8C9CB", color: "#20231F", background: "transparent" }}>
+                      补充一条手动数据
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
 
           {/* ── Loop AI inspector (~30%) ── */}
@@ -204,6 +246,14 @@ export function AnalyticsProto() {
               <span className="inline-block h-1 w-1 rounded-full" style={{ background: "#D4B26A" }} />
               AI 提供建议，最终由你确认。
             </div>
+            {cp !== "24h" ? (
+              <p className="mt-5 text-xs leading-[1.7]" style={{ color: INK2 }}>
+                {cp === "72h"
+                  ? "72h 数据录入后，Loop AI 才能对该观察点生成诊断。"
+                  : "补充手动观察点数据后，Loop AI 才能生成诊断。"}
+              </p>
+            ) : (
+              <>
             {[
               { t: "发生了什么", body: "播放放量高于往期，但评论入口偏弱——传播在发生，对话没有跟上。" },
             ].map((d) => (
@@ -240,6 +290,8 @@ export function AnalyticsProto() {
                 放弃
               </button>
             </div>
+              </>
+            )}
           </div>
         </div>
       </div>
