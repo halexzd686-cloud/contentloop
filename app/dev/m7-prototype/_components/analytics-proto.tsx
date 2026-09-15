@@ -101,7 +101,7 @@ export function AnalyticsProto() {
             </span>
           </div>
           <div className="mt-3.5 flex gap-6" style={{ borderBottom: "1px solid rgba(200,201,203,0.65)" }}>
-            {["24h 数据", "72h 数据", "手动补充"].map((t) => {
+            {["24h 数据", "72h 数据"].map((t) => {
               const key = t.replace(" 数据", "");
               const on = cp === key;
               return (
@@ -218,25 +218,6 @@ export function AnalyticsProto() {
                 </div>
               </>
             )}
-
-            {/* ── 手动补充：manual checkpoint 录入入口 ── */}
-            {cp === "手动补充" && (
-              <>
-                <Sec title="表现事实 · 手动观察点" note="由你定义时间点" />
-                <div className="mt-4 rounded-[5px] px-6 py-8 text-center" style={{ background: "#FBFBF8", border: "1px dashed #C8C9CB" }}>
-                  <p className="text-[13.5px] font-semibold">还没有手动观察点的数据</p>
-                  <p className="mt-2 text-xs leading-[1.7]" style={{ color: INK2 }}>
-                    除 24h / 72h 外，你可以在任意时间点补录一条指标快照——<br />
-                    例如一周后复核评论率走向。空白表示尚未录入，不显示 0。
-                  </p>
-                  <div className="mt-4 flex justify-center">
-                    <button className="inline-flex h-[30px] items-center rounded-[5px] px-[11px] text-xs font-medium" style={{ border: "1px solid #C8C9CB", color: "#20231F", background: "transparent" }}>
-                      补充一条手动数据
-                    </button>
-                  </div>
-                </div>
-              </>
-            )}
           </div>
 
           {/* ── Loop AI inspector (~30%) ── */}
@@ -246,13 +227,12 @@ export function AnalyticsProto() {
               <span className="inline-block h-1 w-1 rounded-full" style={{ background: "#D4B26A" }} />
               AI 提供建议，最终由你确认。
             </div>
-            {cp !== "24h" ? (
+            {cp === "72h" && (
               <p className="mt-5 text-xs leading-[1.7]" style={{ color: INK2 }}>
-                {cp === "72h"
-                  ? "72h 数据录入后，Loop AI 才能对该观察点生成诊断。"
-                  : "补充手动观察点数据后，Loop AI 才能生成诊断。"}
+                72h 数据录入后，Loop AI 才能对该观察点生成诊断。
               </p>
-            ) : (
+            )}
+            {cp === "24h" && (
               <>
             {[
               { t: "发生了什么", body: "播放放量高于往期，但评论入口偏弱——传播在发生，对话没有跟上。" },
