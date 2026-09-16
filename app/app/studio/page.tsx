@@ -145,7 +145,7 @@ export default function StudioPage() {
       {/* Index Tabs */}
       <div className="px-8">
         <div
-          className="flex max-w-[1080px] gap-6"
+          className="flex gap-6"
           style={{ borderBottom: "1px solid rgba(200,201,203,0.65)" }}
         >
           {(["active", "archived"] as const).map((v) => {
@@ -214,7 +214,7 @@ export default function StudioPage() {
             )}
           </div>
         ) : (
-          <div className="max-w-[1080px]">
+          <div>
             {error && (
               <div className="mt-4 rounded-[8px] border border-danger/20 bg-danger/5 p-3 text-xs text-danger">
                 {error}
@@ -269,39 +269,43 @@ export default function StudioPage() {
                   </div>
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
-                  <Badge variant={STATUS_VARIANT[c.status] || "default"}>
-                    {contentStatusLabel(c.status)}
-                  </Badge>
-                  {archived ? (
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      disabled={busy}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        restore(c.id);
-                      }}
-                    >
-                      恢复
-                    </Button>
-                  ) : (
-                    c.status !== "published" && (
+                  {/* Fixed action slot keeps the status badge column
+                      aligned whether or not a hover action exists. */}
+                  <span className="flex w-[60px] justify-end">
+                    {archived ? (
                       <Button
-                        variant="ghost"
+                        variant="secondary"
                         size="sm"
                         disabled={busy}
-                        className="opacity-0 transition-opacity duration-150 group-hover:opacity-100"
                         onClick={(e) => {
                           e.preventDefault();
                           e.stopPropagation();
-                          setArchiveTarget(c);
+                          restore(c.id);
                         }}
                       >
-                        归档
+                        恢复
                       </Button>
-                    )
-                  )}
+                    ) : (
+                      c.status !== "published" && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          disabled={busy}
+                          className="opacity-0 transition-opacity duration-150 group-hover:opacity-100"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setArchiveTarget(c);
+                          }}
+                        >
+                          归档
+                        </Button>
+                      )
+                    )}
+                  </span>
+                  <Badge variant={STATUS_VARIANT[c.status] || "default"}>
+                    {contentStatusLabel(c.status)}
+                  </Badge>
                 </div>
               </Link>
             ))}
