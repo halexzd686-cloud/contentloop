@@ -206,29 +206,30 @@ export default function RadarPage() {
 
   return (
     <div className="flex h-full flex-col">
-      {/* Header */}
-      <div className="flex items-center justify-between border-b border-border bg-workspace px-8 pb-5 pt-6">
+      {/* Header: title + real status summary + add */}
+      <div
+        className="flex items-end justify-between px-8 pb-[18px] pt-6"
+        style={{ borderBottom: "1px solid rgba(200,201,203,0.65)" }}
+      >
         <div>
-          <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-ink-muted">
-            选题情报
-          </p>
-          <h1 className="mt-1 text-[24px] font-semibold leading-tight text-ink-primary">
+          <h1 className="text-[24px] font-semibold leading-tight text-ink-primary">
             {NAV_LABELS.radar}
           </h1>
-          <p className="mt-1 text-sm text-ink-secondary">
-            什么值得做？
-          </p>
-          <p className="mt-0.5 text-xs text-ink-secondary">
-            线索是值得评估的选题来源——一个链接或一个想法。
+          <p className="mt-1.5 text-[12.5px]" style={{ color: "#626660" }}>
+            {counts.total || 0} 条线索 · {counts.selected || 0} 条已选用 ·{" "}
+            {(counts.new || 0) + (counts.reviewing || 0)} 条待评估
           </p>
         </div>
         <AddSignalDialog onCreated={() => fetchRef.current()} />
       </div>
 
-      {/* Main content: 65% Feed + 35% Quick Review */}
+      {/* Main content: 55% Research Index + 45% Review Sheet */}
       <div className="flex flex-1 overflow-hidden">
         {/* Signals Feed */}
-        <div className="w-[65%] overflow-y-auto border-r border-border p-6">
+        <div
+          className="w-[55%] overflow-y-auto px-6 py-4"
+          style={{ borderRight: "1px solid rgba(200,201,203,0.65)" }}
+        >
           <SignalFilters
             activeStatus={statusFilter}
             onStatusChange={setStatusFilter}
@@ -237,14 +238,14 @@ export default function RadarPage() {
             counts={counts}
           />
 
-          <div className="mt-4 space-y-3">
+          <div className="mt-1">
             {loading && signals.length === 0 ? (
               // M7: fountain transition indicator (喷泉动效 + 页面名)
               <div className="flex min-h-[40vh] items-center justify-center">
                 <FountainLoader size={30} label="正在加载选题雷达" />
               </div>
             ) : error ? (
-              <div className="rounded-[10px] border border-danger/20 bg-danger/5 p-6 text-center">
+              <div className="mt-4 rounded-[10px] border border-danger/20 bg-danger/5 p-6 text-center">
                 <p className="text-sm text-danger">{error}</p>
                 <Button
                   variant="secondary"
@@ -270,10 +271,11 @@ export default function RadarPage() {
                 </div>
               </div>
             ) : (
-              signals.map((signal) => (
+              signals.map((signal, i) => (
                 <SignalCard
                   key={signal.id}
                   signal={signal}
+                  index={i + 1}
                   onStatusChange={handleStatusChange}
                   updating={updatingId === signal.id}
                   selected={selectedSignalId === signal.id}
@@ -284,8 +286,8 @@ export default function RadarPage() {
           </div>
         </div>
 
-        {/* Quick Review */}
-        <div className="w-[35%] overflow-y-auto bg-workspace p-6">
+        {/* Review Sheet */}
+        <div className="w-[45%] overflow-y-auto bg-workspace">
           <QuickReview
             signal={selectedSignal}
             onSkip={handleSkip}

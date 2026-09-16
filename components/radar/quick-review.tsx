@@ -7,12 +7,6 @@ import { Button } from "@/components/ui/button";
 import { SkipDialog } from "@/components/radar/skip-dialog";
 import { CreateContentDialog } from "@/components/radar/create-content-dialog";
 import {
-  Globe,
-  Lightbulb,
-  Newspaper,
-  Users,
-  Building,
-  HelpCircle,
   ExternalLink,
   ArrowRight,
   Sparkles,
@@ -23,10 +17,11 @@ import { DotTexture } from "@/components/reactbits/dot-texture";
 import { ThinkingOrbs } from "@/components/motion/thinking-orbs";
 
 /**
- * Quick Review Panel — design.md §33.3
- * Shows signal detail + AI analysis + decision actions (Skip / Create Content).
- * Analysis fields show empty state when null — never mock data.
- * M1.2B: Analyze Signal (new/reviewing only); AI suggests, human decides.
+ * Quick Review — M7 P4: Review Sheet.
+ * Playfair score numeral + primary rule (approved F3+D), hairline
+ * sections, numbered angle rows with selected rail. All analysis
+ * fields keep null-truth: unanalyzed shows explicit empty state,
+ * never mock data. AI suggests, human decides.
  */
 
 // ─── Types ─────────────────────────────────────────────
@@ -66,16 +61,13 @@ interface Signal {
 
 // ─── Config ────────────────────────────────────────────
 
-const SOURCE_TYPE_CONFIG: Record<
-  string,
-  { label: string; icon: React.ComponentType<{ className?: string }> }
-> = {
-  official: { label: "官方", icon: Building },
-  community: { label: "社区", icon: Users },
-  competitor: { label: "竞品", icon: Globe },
-  news: { label: "资讯", icon: Newspaper },
-  idea: { label: "想法", icon: Lightbulb },
-  other: { label: "其他", icon: HelpCircle },
+const SOURCE_TYPE_LABELS: Record<string, string> = {
+  official: "官方",
+  community: "社区",
+  competitor: "竞品",
+  news: "资讯",
+  idea: "想法",
+  other: "其他",
 };
 
 const SKIP_REASON_LABELS: Record<string, string> = {
@@ -104,24 +96,37 @@ const EVIDENCE_SOURCE_LABELS: Record<string, string> = {
   model_inference: "AI 推断",
 };
 
+const HAIRLINE = "1px solid rgba(200,201,203,0.4)";
+const RULE = "1px solid rgba(200,201,203,0.65)";
+
 // ─── Small pieces ──────────────────────────────────────
+
+function SectionRule() {
+  return (
+    <hr className="my-[15px]" style={{ border: "none", borderTop: RULE }} />
+  );
+}
 
 function EmptyField({ label }: { label: string }) {
   return (
-    <div>
-      <p className="text-xs font-medium text-ink-muted">{label}</p>
-      <p className="mt-1 text-sm text-ink-faint">
-        尚未生成 AI 分析。
-      </p>
+    <div className="py-[6px]" style={{ borderBottom: HAIRLINE }}>
+      <span className="text-[13px] text-ink-primary">{label}</span>
+      <span className="ml-2 text-xs text-ink-faint">尚未生成 AI 分析</span>
     </div>
   );
 }
 
-function ScoreValue({ value }: { value: number | null }) {
+function DimRow({ label, value }: { label: string; value: number | null }) {
   return (
-    <span className="text-sm text-ink-primary">
-      {value === null ? "N/A" : value}
-    </span>
+    <div
+      className="flex items-baseline justify-between py-[6px] text-[13px]"
+      style={{ borderBottom: HAIRLINE }}
+    >
+      <span className="text-ink-primary">{label}</span>
+      <span className="text-[13.5px] font-semibold tabular-nums text-ink-primary">
+        {value === null ? "N/A" : value}
+      </span>
+    </div>
   );
 }
 
@@ -157,8 +162,8 @@ export function QuickReview({
     return (
       <div className="flex h-full items-center justify-center">
         <div className="relative max-w-[260px] px-6 py-10 text-center">
-          {/* M5.6: compact intentional empty state — the pane itself
-              stays a normal surface; restrained editorial texture only. */}
+          {/* Restrained editorial texture; static under
+              prefers-reduced-motion. */}
           <DotTexture className="pointer-events-none absolute inset-x-0 top-0 h-16 opacity-60" />
           <p className="relative text-sm font-medium text-ink-secondary">
             快速评估
@@ -171,10 +176,9 @@ export function QuickReview({
     );
   }
 
-  const sourceConfig = signal.sourceType
-    ? SOURCE_TYPE_CONFIG[signal.sourceType]
+  const sourceLabel = signal.sourceType
+    ? SOURCE_TYPE_LABELS[signal.sourceType] || signal.sourceType
     : null;
-  const SourceIcon = sourceConfig?.icon || HelpCircle;
 
   const canAct = signal.status === "new" || signal.status === "reviewing";
   const isSelected = signal.status === "selected";
@@ -183,6 +187,10 @@ export function QuickReview({
   const analyzed = signal.analyzedAt !== null;
   const insufficient =
     analyzed && signal.analysisConfidence === "insufficient_evidence";
+
+  const timeMeta = signal.publishedAt
+    ? `发布于 ${new Date(signal.publishedAt).toLocaleDateString()}`
+    : `添加于 ${new Date(signal.createdAt).toLocaleDateString()}`;
 
   async function handleSkip(reason: string) {
     setActionLoading(true);
@@ -232,259 +240,313 @@ export function QuickReview({
   }
 
   return (
-    <div className="flex h-full flex-col">
-      {/* Header */}
-      <div className="flex items-center justify-between border-b border-border pb-3">
-        <h2 className="text-sm font-semibold text-ink-primary">
-          快速评估
-        </h2>
-        <button
-          onClick={onClose}
-          className="text-xs text-ink-muted hover:text-ink-primary"
+    <div className="flex h-full flex-col px-[26px] py-5">
+      {/* Sheet header */}
+      <div className="flex items-baseline justify-between">
+        <span
+          className="text-[11px] font-medium tracking-[0.14em]"
+          style={{ color: "#8B8E87" }}
         >
-          关闭
-        </button>
+          快速评估
+        </span>
+        <span className="flex items-center gap-3">
+          <span
+            className="flex items-center gap-1.5 text-[11px]"
+            style={{ color: "#8B8E87" }}
+          >
+            <span
+              className="inline-block h-1 w-1 rounded-full"
+              style={{ background: "#D4B26A" }}
+            />
+            AI 分析 · 由你确认
+          </span>
+          <button
+            onClick={onClose}
+            className="text-[11px] text-ink-muted hover:text-ink-primary"
+          >
+            关闭
+          </button>
+        </span>
       </div>
 
-      <div className="flex-1 space-y-5 overflow-y-auto pt-4">
-        {/* Signal Info */}
-        <div>
-          <div className="mb-2 flex items-center gap-2">
-            {sourceConfig && (
-              <span className="inline-flex items-center gap-1 text-xs text-ink-muted">
-                <SourceIcon className="h-3 w-3" />
-                {sourceConfig.label}
-              </span>
-            )}
-            <Badge
-              variant={
-                signal.status === "selected" ? "mint" : "default"
-              }
-            >
-              {signalStatusLabel(signal.status)}
-            </Badge>
-          </div>
-          <h3 className="text-base font-semibold text-ink-primary leading-snug">
-            {signal.title}
-          </h3>
-          {signal.sourceUrl && (
-            <a
-              href={signal.sourceUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-1 inline-flex items-center gap-1 text-xs text-mint-600 hover:underline"
-            >
-              <ExternalLink className="h-3 w-3" />
-              查看来源
-            </a>
-          )}
-          <p className="mt-1 text-xs text-ink-muted">
-            {signal.publishedAt
-              ? `发布于 ${new Date(signal.publishedAt).toLocaleDateString()}`
-              : `添加于 ${new Date(signal.createdAt).toLocaleDateString()}`}
-          </p>
-        </div>
-
+      <div className="flex-1 overflow-y-auto">
+        {/* Title + meta */}
+        <h2 className="mt-2 text-[17px] font-semibold leading-relaxed text-ink-primary">
+          {signal.title}
+        </h2>
+        <p className="mt-[5px] text-xs" style={{ color: "#626660" }}>
+          {[sourceLabel, timeMeta].filter(Boolean).join(" · ")}
+          {" · "}
+          {signalStatusLabel(signal.status)}
+        </p>
+        {signal.sourceUrl && (
+          <a
+            href={signal.sourceUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-1 inline-flex items-center gap-1 text-xs text-mint-600 hover:underline"
+          >
+            <ExternalLink className="h-3 w-3" />
+            查看来源
+          </a>
+        )}
         {signal.summary && (
-          <div>
-            <p className="text-xs font-medium text-ink-muted">摘要</p>
-            <p className="mt-1 text-sm text-ink-secondary">{signal.summary}</p>
-          </div>
+          <p className="mt-2 text-[13px] leading-[1.6]" style={{ color: "#626660" }}>
+            {signal.summary}
+          </p>
         )}
 
-        {/* ─── AI Analysis ─── */}
-        <div className="space-y-4 border-t border-border pt-4">
-          <div className="flex items-center justify-between">
-            <p className="text-xs font-semibold uppercase tracking-wide text-ink-muted">
-              AI 分析
-            </p>
-            {analyzed && signal.analysisConfidence && (
-              <Badge
-                variant={
-                  CONFIDENCE_CONFIG[signal.analysisConfidence]?.variant ||
-                  "default"
-                }
-              >
-                {confidenceLabel(signal.analysisConfidence)}
-              </Badge>
-            )}
-          </div>
+        <SectionRule />
 
-          {analyzeError && (
-            <div className="rounded-[8px] border border-danger/20 bg-danger/5 p-3">
-              <p className="text-xs text-danger">{analyzeError}</p>
-              {canAct && (
-                <button
-                  onClick={handleAnalyze}
-                  disabled={analyzing}
-                  className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-mint-600 hover:underline disabled:opacity-50"
+        {/* Score — Playfair Display numeral + primary rule (F3+D) */}
+        {!analyzed ? (
+          <div>
+            <EmptyField label="选题评分" />
+            <EmptyField label="为什么值得做" />
+            <EmptyField label="受众匹配" />
+            <EmptyField label="内容风险" />
+            <EmptyField label="可选角度" />
+          </div>
+        ) : insufficient ? (
+          <p className="text-sm text-ink-faint">
+            信息不足，暂无法评分。可补充线索信息后重新分析。
+          </p>
+        ) : (
+          <>
+            <div className="flex items-end gap-4">
+              <span className="inline-flex flex-col">
+                <span
+                  className="text-ink-primary"
+                  style={{
+                    fontFamily: "var(--font-playfair), serif",
+                    fontWeight: 600,
+                    fontSize: 46,
+                    lineHeight: 1,
+                  }}
                 >
-                  <RefreshCw className="h-3 w-3" />
-                  重试
-                </button>
+                  {signal.topicScore === null ? "N/A" : signal.topicScore}
+                </span>
+                <span
+                  className="mt-2 w-full"
+                  style={{ borderTop: "1.5px solid #7C9482" }}
+                />
+              </span>
+              <span className="pb-[5px] text-xs" style={{ color: "#8B8E87" }}>
+                选题评分<span> / 100</span>
+              </span>
+              {signal.analysisConfidence && (
+                <span className="ml-auto pb-[5px]">
+                  <Badge
+                    variant={
+                      CONFIDENCE_CONFIG[signal.analysisConfidence]?.variant ||
+                      "default"
+                    }
+                  >
+                    {confidenceLabel(signal.analysisConfidence)}
+                  </Badge>
+                </span>
               )}
             </div>
-          )}
+            <div className="mt-3">
+              <DimRow label="受众匹配" value={signal.audienceFitScore} />
+              <DimRow label="时机" value={signal.timingScore} />
+              <DimRow label="内容潜力" value={signal.contentPotentialScore} />
+            </div>
 
-          {!analyzed ? (
-            <>
-              <EmptyField label="选题评分" />
-              <EmptyField label="为什么值得做" />
-              <EmptyField label="受众匹配" />
-              <EmptyField label="内容风险" />
-              <EmptyField label="可选角度" />
-            </>
-          ) : (
-            <>
-              {/* Topic Score */}
-              <div>
-                <p className="text-xs font-medium text-ink-muted">选题评分</p>
-                <p className="mt-0.5 text-[11px] text-ink-secondary">
-                  选题评分综合受众匹配、时机和内容潜力。
-                </p>
-                {insufficient ? (
-                  <p className="mt-1 text-sm text-ink-faint">
-                    信息不足，暂无法评分。
-                  </p>
-                ) : (
-                  <div className="mt-1.5 space-y-1">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs text-ink-muted">综合</span>
-                      <span className="text-sm font-semibold text-ink-primary">
-                        {signal.topicScore === null ? "N/A" : signal.topicScore}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs text-ink-muted">受众匹配</span>
-                      <ScoreValue value={signal.audienceFitScore} />
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs text-ink-muted">时机</span>
-                      <ScoreValue value={signal.timingScore} />
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs text-ink-muted">
-                        内容潜力
-                      </span>
-                      <ScoreValue value={signal.contentPotentialScore} />
-                    </div>
-                  </div>
-                )}
-              </div>
+            <SectionRule />
 
-              {/* Text fields */}
-              <div>
-                <p className="text-xs font-medium text-ink-muted">
-                  为什么值得做
-                </p>
-                <p className="mt-1 text-sm text-ink-secondary">
-                  {signal.whyItMatters || "N/A"}
-                </p>
+            {/* Why it matters */}
+            <div>
+              <div className="text-[13.5px] font-semibold text-ink-primary">
+                为什么值得做
               </div>
+              <p
+                className="mt-[7px] text-[13.5px] leading-[1.65]"
+                style={{ color: "#626660" }}
+              >
+                {signal.whyItMatters || "N/A"}
+              </p>
+            </div>
+
+            <SectionRule />
+
+            {/* Audience / Risk */}
+            <div className="grid grid-cols-2 gap-5">
               <div>
-                <p className="text-xs font-medium text-ink-muted">
+                <div
+                  className="text-xs font-semibold"
+                  style={{ color: "#626660" }}
+                >
                   受众匹配
-                </p>
-                <p className="mt-1 text-sm text-ink-secondary">
+                </div>
+                <p
+                  className="mt-1.5 text-[13px] leading-[1.6]"
+                  style={{ color: "#626660" }}
+                >
                   {signal.audienceMatch || "N/A"}
                 </p>
               </div>
               <div>
-                <p className="text-xs font-medium text-ink-muted">
+                <div
+                  className="text-xs font-semibold"
+                  style={{ color: "#626660" }}
+                >
                   内容风险
-                </p>
-                <p className="mt-1 text-sm text-ink-secondary">
+                </div>
+                <p
+                  className="mt-1.5 text-[13px] leading-[1.6]"
+                  style={{ color: "#626660" }}
+                >
                   {signal.contentRisk || "N/A"}
                 </p>
               </div>
+            </div>
 
-              {/* Possible Angles */}
-              <div>
-                <p className="text-xs font-medium text-ink-muted">
-                  可选角度
-                </p>
-                {signal.possibleAngles && signal.possibleAngles.length > 0 ? (
-                  <ul className="mt-1 list-disc space-y-1 pl-4 text-sm text-ink-secondary">
-                    {signal.possibleAngles.map((angle, i) => (
-                      <li key={i}>{angle}</li>
+            <SectionRule />
+
+            {/* Possible angles — numbered rows, selected rail */}
+            <div>
+              <div className="mb-1.5 text-[13.5px] font-semibold text-ink-primary">
+                可选角度
+              </div>
+              {signal.possibleAngles && signal.possibleAngles.length > 0 ? (
+                signal.possibleAngles.map((angle, i) => {
+                  const sel = signal.selectedAngle === angle;
+                  return (
+                    <div
+                      key={i}
+                      className="relative flex gap-3.5 px-2 py-2"
+                      style={{
+                        borderBottom: HAIRLINE,
+                        background: sel
+                          ? "rgba(124,148,130,0.07)"
+                          : undefined,
+                      }}
+                    >
+                      {sel && (
+                        <span
+                          className="absolute left-0 top-1/2 h-[22px] w-[2px] -translate-y-1/2 rounded-full"
+                          style={{ background: "#7C9482" }}
+                        />
+                      )}
+                      <span
+                        className="w-5 shrink-0 text-[14px]"
+                        style={{
+                          fontFamily: "var(--font-cormorant), serif",
+                          color: "#8B8E87",
+                        }}
+                      >
+                        {String(i + 1).padStart(2, "0")}
+                      </span>
+                      <div className="text-[13.5px] leading-[1.55] text-ink-primary">
+                        {angle}
+                      </div>
+                    </div>
+                  );
+                })
+              ) : (
+                <p className="text-[13px] text-ink-faint">暂无建议角度。</p>
+              )}
+            </div>
+
+            {/* Evidence */}
+            {signal.analysisEvidence && signal.analysisEvidence.length > 0 && (
+              <>
+                <SectionRule />
+                <div>
+                  <div
+                    className="mb-1.5 text-xs font-semibold"
+                    style={{ color: "#626660" }}
+                  >
+                    证据
+                  </div>
+                  <ul className="space-y-1.5">
+                    {signal.analysisEvidence.map((item, i) => (
+                      <li
+                        key={i}
+                        className="text-xs"
+                        style={{ color: "#626660" }}
+                      >
+                        <span className="mr-1.5 inline-block rounded bg-surface-subtle px-1.5 py-0.5 text-[10px] font-medium text-ink-muted">
+                          {EVIDENCE_SOURCE_LABELS[item.source] || item.source}
+                        </span>
+                        {item.claim}
+                      </li>
                     ))}
                   </ul>
-                ) : (
-                  <p className="mt-1 text-sm text-ink-faint">
-                    暂无建议角度。
-                  </p>
-                )}
-              </div>
+                </div>
+              </>
+            )}
+          </>
+        )}
 
-              {/* Evidence */}
-              {signal.analysisEvidence &&
-                signal.analysisEvidence.length > 0 && (
-                  <div>
-                    <p className="text-xs font-medium text-ink-muted">
-                      证据
-                    </p>
-                    <ul className="mt-1 space-y-1.5">
-                      {signal.analysisEvidence.map((item, i) => (
-                        <li key={i} className="text-xs text-ink-secondary">
-                          <span className="mr-1.5 inline-block rounded bg-surface-subtle px-1.5 py-0.5 text-[10px] font-medium text-ink-muted">
-                            {EVIDENCE_SOURCE_LABELS[item.source] ||
-                              item.source}
-                          </span>
-                          {item.claim}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-            </>
-          )}
-        </div>
+        {analyzeError && (
+          <div className="mt-4 rounded-[8px] border border-danger/20 bg-danger/5 p-3">
+            <p className="text-xs text-danger">{analyzeError}</p>
+            {canAct && (
+              <button
+                onClick={handleAnalyze}
+                disabled={analyzing}
+                className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-mint-600 hover:underline disabled:opacity-50"
+              >
+                <RefreshCw className="h-3 w-3" />
+                重试
+              </button>
+            )}
+          </div>
+        )}
 
         {/* Skipped state */}
         {isSkipped && signal.skipReason && (
-          <div className="rounded-[8px] border border-danger/20 bg-danger/5 p-3">
-            <p className="text-xs font-medium text-ink-muted">跳过原因</p>
-            <p className="mt-1 text-sm text-ink-primary">
-              {SKIP_REASON_LABELS[signal.skipReason] || signal.skipReason}
-            </p>
-          </div>
+          <>
+            <SectionRule />
+            <div className="rounded-[8px] border border-danger/20 bg-danger/5 p-3">
+              <p className="text-xs font-medium text-ink-muted">跳过原因</p>
+              <p className="mt-1 text-sm text-ink-primary">
+                {SKIP_REASON_LABELS[signal.skipReason] || signal.skipReason}
+              </p>
+            </div>
+          </>
         )}
 
         {/* Selected state */}
         {isSelected && (
-          <div className="rounded-[8px] border border-mint-600/20 bg-mint-100 p-3 space-y-2">
-            <p className="text-xs font-medium text-mint-600">已选用</p>
-            {signal.selectedAngle && (
-              <p className="text-sm text-ink-primary">
-                选定角度：{signal.selectedAngle}
-              </p>
-            )}
-            {signal.primaryPlatform && (
-              <p className="text-sm text-ink-secondary">
-                主要平台：{platformLabel(signal.primaryPlatform)}
-              </p>
-            )}
-            {createdContentId && (
-              <p className="mt-2 text-sm font-medium text-mint-600">
-                内容已创建。
-              </p>
-            )}
-            {(signal.contentId || createdContentId) && (
-              <Link
-                href={`/app/studio/${signal.contentId || createdContentId}`}
-                className="mt-1 inline-flex items-center gap-1 text-sm font-medium text-mint-600 hover:underline"
-              >
-                打开内容
-                <ArrowRight className="h-3 w-3" />
-              </Link>
-            )}
-          </div>
+          <>
+            <SectionRule />
+            <div className="space-y-2 rounded-[8px] border border-mint-600/20 bg-mint-100 p-3">
+              <p className="text-xs font-medium text-mint-600">已选用</p>
+              {signal.selectedAngle && (
+                <p className="text-sm text-ink-primary">
+                  选定角度：{signal.selectedAngle}
+                </p>
+              )}
+              {signal.primaryPlatform && (
+                <p className="text-sm text-ink-secondary">
+                  主要平台：{platformLabel(signal.primaryPlatform)}
+                </p>
+              )}
+              {createdContentId && (
+                <p className="mt-2 text-sm font-medium text-mint-600">
+                  内容已创建。
+                </p>
+              )}
+              {(signal.contentId || createdContentId) && (
+                <Link
+                  href={`/app/studio/${signal.contentId || createdContentId}`}
+                  className="mt-1 inline-flex items-center gap-1 text-sm font-medium text-mint-600 hover:underline"
+                >
+                  打开内容
+                  <ArrowRight className="h-3 w-3" />
+                </Link>
+              )}
+            </div>
+          </>
         )}
       </div>
 
       {/* Actions */}
       {canAct && (
-        <div className="space-y-2 border-t border-border pt-4">
+        <div className="space-y-3 pt-4" style={{ borderTop: RULE }}>
           {/* M7: click → button hides, only Thinking Orbs remains */}
           {analyzing ? (
             <div className="flex flex-col items-center gap-2 py-2">
@@ -503,19 +565,18 @@ export function QuickReview({
               {analyzed ? "重新 AI 分析" : "AI 分析线索"}
             </Button>
           )}
-          <div className="flex gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
+          <div className="flex items-center justify-between">
+            <button
               onClick={() => setSkipOpen(true)}
               disabled={actionLoading || analyzing}
+              className="text-[12.5px] disabled:opacity-50"
+              style={{ color: "#626660" }}
             >
-              跳过
-            </Button>
+              跳过线索
+            </button>
             <Button
               variant="primary"
               size="sm"
-              className="flex-1"
               onClick={() => setCreateOpen(true)}
               disabled={actionLoading || analyzing}
             >

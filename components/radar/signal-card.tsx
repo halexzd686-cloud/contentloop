@@ -1,31 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  ChevronDown,
-  Globe,
-  Lightbulb,
-  Newspaper,
-  Users,
-  Building,
-  HelpCircle,
-} from "lucide-react";
-import { cn } from "@/lib/utils";
+import { ChevronDown } from "lucide-react";
 import { signalStatusLabel } from "@/lib/labels";
 
 /**
- * Signal Card — design.md §33.2
- * Medium density. Shows: source type, title, time, summary, status.
- * Topic Score: null → not displayed (never 0).
- * Click to select for Quick Review.
+ * Signal Row — M7 P4: research-index row (replaces card).
+ * Cormorant index number + title + meta + status dot; selected
+ * state = 2px primary left rail + tint. Status transitions
+ * (new ↔ reviewing) preserved as a hover-revealed action.
+ * Topic Score: null → "未评分" (never 0).
  */
 
 // ─── Types ─────────────────────────────────────────────
@@ -48,28 +33,22 @@ interface Signal {
   createdAt: string;
 }
 
-// ─── Source Type Config ────────────────────────────────
+// ─── Config ────────────────────────────────────────────
 
-const SOURCE_TYPE_CONFIG: Record<
-  string,
-  { label: string; icon: React.ComponentType<{ className?: string }> }
-> = {
-  official: { label: "官方", icon: Building },
-  community: { label: "社区", icon: Users },
-  competitor: { label: "竞品", icon: Globe },
-  news: { label: "资讯", icon: Newspaper },
-  idea: { label: "想法", icon: Lightbulb },
-  other: { label: "其他", icon: HelpCircle },
+const SOURCE_TYPE_LABELS: Record<string, string> = {
+  official: "官方",
+  community: "社区",
+  competitor: "竞品",
+  news: "资讯",
+  idea: "想法",
+  other: "其他",
 };
 
-const STATUS_VARIANT: Record<
-  string,
-  "default" | "mint"
-> = {
-  new: "default",
-  reviewing: "default",
-  selected: "mint",
-  skipped: "default",
+const STATUS_DOT: Record<string, string> = {
+  new: "#C8C9CB",
+  reviewing: "#7C9482",
+  selected: "#D4B26A",
+  skipped: "#8B8E87",
 };
 
 // ─── Status Menu (M1.1: new ↔ reviewing only) ─────────
@@ -85,7 +64,6 @@ function StatusMenu({
 }) {
   const [open, setOpen] = useState(false);
 
-  // M1.1: only allow toggling between new and reviewing
   const availableActions =
     currentStatus === "new"
       ? [{ status: "reviewing" as const, label: "开始评估" }]
@@ -96,16 +74,19 @@ function StatusMenu({
   if (availableActions.length === 0) return null;
 
   return (
-    <div className="relative" onClick={(e) => e.stopPropagation()}>
+    <div
+      className="relative opacity-0 transition-opacity duration-150 group-hover:opacity-100"
+      onClick={(e) => e.stopPropagation()}
+    >
       <Button
         variant="ghost"
         size="sm"
         onClick={() => setOpen(!open)}
         disabled={disabled}
-        className="text-xs"
+        className="h-6 px-1.5 text-[11px] text-ink-muted"
       >
         更新状态
-        <ChevronDown className="ml-1 h-3 w-3" />
+        <ChevronDown className="ml-0.5 h-3 w-3" />
       </Button>
       {open && (
         <>
@@ -133,82 +114,83 @@ function StatusMenu({
   );
 }
 
-// ─── Signal Card ───────────────────────────────────────
+// ─── Signal Row ────────────────────────────────────────
 
 export function SignalCard({
   signal,
+  index,
   onStatusChange,
   updating,
   selected,
   onSelect,
 }: {
   signal: Signal;
+  index: number;
   onStatusChange: (id: string, status: "new" | "reviewing") => void;
   updating: boolean;
   selected: boolean;
   onSelect: (id: string) => void;
 }) {
-  const sourceConfig = signal.sourceType
-    ? SOURCE_TYPE_CONFIG[signal.sourceType]
+  const sourceLabel = signal.sourceType
+    ? SOURCE_TYPE_LABELS[signal.sourceType] || signal.sourceType
     : null;
-  const SourceIcon = sourceConfig?.icon || HelpCircle;
   const timeDisplay = signal.publishedAt
     ? new Date(signal.publishedAt).toLocaleDateString()
     : new Date(signal.createdAt).toLocaleDateString();
+  // Data truth: only formally analyzed signals may show a score
+  const scoreText =
+    signal.analyzedAt !== null && signal.topicScore !== null
+      ? `评分 ${signal.topicScore}`
+      : "未评分";
+  const meta = [sourceLabel, timeDisplay, scoreText].filter(Boolean).join(" · ");
 
   return (
-    <Card
-      className={cn(
-        "cursor-pointer transition-colors duration-150 hover:border-border-strong",
-        selected && "border-mint-600 border-l-2 border-l-mint-600 bg-mint-100/30"
-      )}
+    <div
+      className="group relative flex cursor-pointer items-center gap-4 px-3 py-[13px] transition-colors duration-150 hover:bg-[rgba(124,148,130,0.05)]"
+      style={{
+        borderBottom: "1px solid rgba(200,201,203,0.4)",
+        background: selected ? "rgba(124,148,130,0.07)" : undefined,
+      }}
       onClick={() => onSelect(signal.id)}
     >
-      <CardHeader className="pb-3">
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex-1 min-w-0">
-            <div className="mb-1.5 flex items-center gap-2">
-              {sourceConfig && (
-                <span className="inline-flex items-center gap-1 text-xs text-ink-muted">
-                  <SourceIcon className="h-3 w-3" />
-                  {sourceConfig.label}
-                </span>
-              )}
-              <span className="text-xs text-ink-muted">{timeDisplay}</span>
-            </div>
-            <CardTitle className="text-[15px] leading-snug">
-              {signal.title}
-            </CardTitle>
-          </div>
-          <Badge variant={STATUS_VARIANT[signal.status] || "default"}>
-            {signalStatusLabel(signal.status)}
-          </Badge>
-        </div>
-      </CardHeader>
-      {signal.summary && (
-        <CardContent className="pt-0 pb-3">
-          <p className="text-sm text-ink-secondary line-clamp-2">
-            {signal.summary}
-          </p>
-        </CardContent>
+      {selected && (
+        <span
+          className="absolute left-0 top-1/2 h-6 w-[2px] -translate-y-1/2 rounded-full"
+          style={{ background: "#7C9482" }}
+        />
       )}
-      <CardContent className="pt-0">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            {/* Data truth: only formally analyzed signals may show a score */}
-            {signal.analyzedAt !== null && signal.topicScore !== null && (
-              <span className="text-xs text-ink-muted">
-                选题评分：{signal.topicScore}
-              </span>
-            )}
-          </div>
-          <StatusMenu
-            currentStatus={signal.status}
-            onStatusChange={(status) => onStatusChange(signal.id, status)}
-            disabled={updating}
-          />
+      <span
+        className="w-5 shrink-0 text-[14px]"
+        style={{
+          fontFamily: "var(--font-cormorant), serif",
+          color: "#8B8E87",
+        }}
+      >
+        {String(index).padStart(2, "0")}
+      </span>
+      <div className="min-w-0 flex-1">
+        <div className="truncate text-[14.5px] font-semibold text-ink-primary">
+          {signal.title}
         </div>
-      </CardContent>
-    </Card>
+        <div className="mt-1 truncate text-xs" style={{ color: "#626660" }}>
+          {meta}
+        </div>
+      </div>
+      <StatusMenu
+        currentStatus={signal.status}
+        onStatusChange={(status) => onStatusChange(signal.id, status)}
+        disabled={updating}
+      />
+      <span
+        className="flex shrink-0 items-center gap-1.5 text-xs"
+        style={{ color: "#626660" }}
+      >
+        <span
+          className="inline-block h-[5px] w-[5px] rounded-full"
+          style={{ background: STATUS_DOT[signal.status] || "#8B8E87" }}
+        />
+        {signalStatusLabel(signal.status)}
+      </span>
+    </div>
   );
 }

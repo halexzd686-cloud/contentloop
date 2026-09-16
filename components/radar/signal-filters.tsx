@@ -1,12 +1,12 @@
 "use client";
 
-import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { signalStatusLabel } from "@/lib/labels";
 
 /**
- * Signal Filters — simple tabs + search
+ * Signal Filters — M7 P4: Index Tabs + inline search.
+ * Text tabs with 2px primary underline (same language as Home),
+ * hairline base rule, minimal borderless search on the right.
  * No saved views, no advanced filters, no pagination.
  */
 
@@ -34,42 +34,52 @@ export function SignalFilters({
   counts,
 }: SignalFiltersProps) {
   return (
-    <div className="space-y-3">
-      {/* Search */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-muted" />
-        <Input
-          placeholder="搜索线索…"
-          value={search}
-          onChange={(e) => onSearchChange(e.target.value)}
-          className="pl-9"
-        />
-      </div>
-
-      {/* Status tabs */}
-      <div className="flex gap-1">
+    <div
+      className="flex items-center justify-between gap-4"
+      style={{ borderBottom: "1px solid rgba(200,201,203,0.65)" }}
+    >
+      {/* Index Tabs */}
+      <div className="flex gap-6">
         {FILTER_TABS.map((tab) => {
-          const isActive = activeStatus === tab.key;
-          const count = tab.key === "" ? counts.total : counts[tab.key];
-
+          const on = activeStatus === tab.key;
+          const count = tab.key === "" ? counts.total : (counts[tab.key] ?? 0);
           return (
             <button
               key={tab.key}
               onClick={() => onStatusChange(tab.key)}
-              className={cn(
-                "rounded-[8px] px-3 py-1.5 text-sm transition-colors duration-150",
-                isActive
-                  ? "bg-mint-100 text-mint-600 font-medium"
-                  : "text-ink-secondary hover:bg-surface-subtle hover:text-ink-primary"
-              )}
+              className="relative pb-2 text-[13px]"
+              style={{
+                color: on ? "#20231F" : "#626660",
+                fontWeight: on ? 600 : 400,
+              }}
             >
               {tab.label}
-              {count !== undefined && count > 0 && (
-                <span className="ml-1.5 text-xs opacity-70">{count}</span>
+              <span
+                className="ml-[3px] text-[11px] tabular-nums"
+                style={{ color: "#8B8E87" }}
+              >
+                {count}
+              </span>
+              {on && (
+                <span
+                  className="absolute inset-x-0 bottom-0 h-[2px]"
+                  style={{ background: "#7C9482" }}
+                />
               )}
             </button>
           );
         })}
+      </div>
+
+      {/* Inline search */}
+      <div className="relative flex items-center pb-2">
+        <Search className="pointer-events-none absolute left-0 h-3.5 w-3.5 text-ink-muted" />
+        <input
+          placeholder="搜索线索…"
+          value={search}
+          onChange={(e) => onSearchChange(e.target.value)}
+          className="w-36 bg-transparent pl-5 text-xs text-ink-primary placeholder:text-ink-muted focus:w-44 focus:outline-none transition-[width] duration-200"
+        />
       </div>
     </div>
   );
