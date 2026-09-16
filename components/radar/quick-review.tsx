@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { signalStatusLabel, confidenceLabel, platformLabel } from "@/lib/labels";
 import { DotTexture } from "@/components/reactbits/dot-texture";
+import { ThinkingOrbs } from "@/components/motion/thinking-orbs";
 
 /**
  * Quick Review Panel — design.md §33.3
@@ -484,20 +485,24 @@ export function QuickReview({
       {/* Actions */}
       {canAct && (
         <div className="space-y-2 border-t border-border pt-4">
-          <Button
-            variant="secondary"
-            size="sm"
-            className="w-full"
-            onClick={handleAnalyze}
-            disabled={analyzing || actionLoading}
-          >
-            <Sparkles className="mr-1 h-3 w-3" />
-            {analyzing
-              ? "AI 正在分析线索…"
-              : analyzed
-                ? "重新 AI 分析"
-                : "AI 分析线索"}
-          </Button>
+          {/* M7: click → button hides, only Thinking Orbs remains */}
+          {analyzing ? (
+            <div className="flex flex-col items-center gap-2 py-2">
+              <ThinkingOrbs size={48} />
+              <p className="text-xs text-ink-secondary">正在分析线索…</p>
+            </div>
+          ) : (
+            <Button
+              variant="secondary"
+              size="sm"
+              className="w-full"
+              onClick={handleAnalyze}
+              disabled={actionLoading}
+            >
+              <Sparkles className="mr-1 h-3 w-3" />
+              {analyzed ? "重新 AI 分析" : "AI 分析线索"}
+            </Button>
+          )}
           <div className="flex gap-2">
             <Button
               variant="ghost"

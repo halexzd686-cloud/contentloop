@@ -606,15 +606,17 @@ export function usePlatformsPanel({
             </p>
             {!locked && (
               <div className="mt-4 flex gap-2">
-                <Button
-                  variant="primary"
-                  size="sm"
-                  onClick={adapt}
-                  disabled={adapting}
-                >
-                  <Sparkles className="mr-1 h-3 w-3" />
-                  {adapting ? "适配中…" : "AI 适配平台版本"}
-                </Button>
+                {/* M7: click → button hides, only Thinking Orbs remains */}
+                {!adapting && (
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={adapt}
+                  >
+                    <Sparkles className="mr-1 h-3 w-3" />
+                    AI 适配平台版本
+                  </Button>
+                )}
                 <Button
                   variant="secondary"
                   size="sm"

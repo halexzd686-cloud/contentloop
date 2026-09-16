@@ -209,16 +209,18 @@ export function LoopAnalysis({
           <p className="text-[11px] text-ink-faint">
             证据采集于诊断时。基线值为诊断时的数值。
           </p>
-          <Button
-            variant="secondary"
-            size="sm"
-            className="w-full"
-            onClick={generate}
-            disabled={generating}
-          >
-            <Sparkles className="mr-1 h-3 w-3" />
-            {generating ? "AI 正在分析表现…" : "重新分析"}
-          </Button>
+          {/* M7: click → button hides, only Thinking Orbs remains */}
+          {!generating && (
+            <Button
+              variant="secondary"
+              size="sm"
+              className="w-full"
+              onClick={generate}
+            >
+              <Sparkles className="mr-1 h-3 w-3" />
+              重新分析
+            </Button>
+          )}
           {/* M7: AI reasoning = Thinking Orbs (approved V2) */}
           {generating && (
             <div className="flex flex-col items-center gap-2 py-2">
@@ -246,16 +248,18 @@ export function LoopAnalysis({
             结构化诊断：发生了什么 → 证据 → 可能原因 → 置信度 →
             下一步建议。AI 提供建议，由你确认。
           </p>
-          <Button
-            variant="secondary"
-            size="sm"
-            className="w-full"
-            onClick={generate}
-            disabled={generating}
-          >
-            <Sparkles className="mr-1 h-3 w-3" />
-            {generating ? "AI 正在分析表现…" : "AI 分析表现"}
-          </Button>
+          {/* M7: click → button hides, only Thinking Orbs remains */}
+          {!generating && (
+            <Button
+              variant="secondary"
+              size="sm"
+              className="w-full"
+              onClick={generate}
+            >
+              <Sparkles className="mr-1 h-3 w-3" />
+              AI 分析表现
+            </Button>
+          )}
           {/* M7: AI reasoning = Thinking Orbs (approved V2) */}
           {generating && (
             <div className="flex flex-col items-center gap-2 py-2">

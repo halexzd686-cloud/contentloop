@@ -829,16 +829,19 @@ export default function StudioContentPage({
             </div>
           ) : (
           <div className="mt-3 space-y-3">
-            <Button
-              variant="secondary"
-              size="sm"
-              className="w-full"
-              onClick={handleGenerate}
-              disabled={generating || approved || proposalPending}
-            >
-              <Sparkles className="mr-1 h-3 w-3" />
-              {generating ? "生成草稿中…" : "AI 生成简报草稿"}
-            </Button>
+            {/* M7: click → button hides, only Thinking Orbs remains */}
+            {!generating && (
+              <Button
+                variant="secondary"
+                size="sm"
+                className="w-full"
+                onClick={handleGenerate}
+                disabled={approved || proposalPending}
+              >
+                <Sparkles className="mr-1 h-3 w-3" />
+                AI 生成简报草稿
+              </Button>
+            )}
             {/* M7: AI reasoning = Thinking Orbs (approved V2) */}
             {generating && (
               <div className="flex flex-col items-center gap-2 py-2">
