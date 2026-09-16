@@ -174,9 +174,17 @@ export function LoopAnalysis({
 
   return (
     <div className="space-y-3">
-      <p className="text-xs font-semibold uppercase tracking-wide text-ink-muted">
-        Loop AI
-      </p>
+      <div className="text-[13px] font-semibold text-ink-primary">Loop AI</div>
+      <div
+        className="flex items-center gap-1.5 text-[11.5px]"
+        style={{ color: "#8B8E87" }}
+      >
+        <span
+          className="inline-block h-1 w-1 rounded-full"
+          style={{ background: "#D4B26A" }}
+        />
+        AI 提供建议，最终由你确认。
+      </div>
 
       {!hasSnapshot && (
         <p className="text-xs text-ink-secondary">

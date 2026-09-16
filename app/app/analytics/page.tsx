@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { FountainLoader } from "@/components/motion/fountain-loader";
 import { RefreshCw } from "lucide-react";
@@ -107,6 +106,35 @@ function formatCaptureDelta(minutes: number | null): string {
   if (Math.abs(hours) < 48) return `${sign}${hours.toFixed(1)} 小时（相对目标）`;
   return `${sign}${(hours / 24).toFixed(1)} 天（相对目标）`;
 }
+
+// ─── M7 section chrome (approved analytics-final-v2) ───
+
+function Motif({ gold }: { gold?: boolean }) {
+  const c = gold ? "#D4B26A" : "#7C9482";
+  return (
+    <svg width="22" height="10" viewBox="0 0 22 10" aria-hidden>
+      <line x1="0" y1="5" x2="12" y2="5" stroke={c} strokeWidth="2" strokeLinecap="round" />
+      <circle cx="18" cy="5" r="3" fill={c} />
+    </svg>
+  );
+}
+
+function Sec({ title, note, gold }: { title: string; note?: string; gold?: boolean }) {
+  return (
+    <div className="mb-1 flex items-center gap-2">
+      <Motif gold={gold} />
+      <span className="text-[15px] font-semibold text-ink-primary">{title}</span>
+      {note && (
+        <span className="ml-auto text-xs" style={{ color: "#626660" }}>
+          {note}
+        </span>
+      )}
+    </div>
+  );
+}
+
+const HAIRLINE = "1px solid rgba(200,201,203,0.4)";
+const RULE = "1px solid rgba(200,201,203,0.65)";
 
 export default function AnalyticsPage() {
   const [index, setIndex] = useState<IndexPublication[]>([]);
@@ -288,58 +316,75 @@ export default function AnalyticsPage() {
     return scope.metrics[key] ?? null;
   }
 
-  function renderMetricRow(m: MetricValue) {
+  /** Fact ledger row — M7: hairline ledger, current value strongest. */
+  function renderFactRow(m: MetricValue) {
+    return (
+      <div
+        key={m.key}
+        className="grid items-baseline gap-4 px-1 py-2.5"
+        style={{
+          gridTemplateColumns: m.formulaPreview ? "1fr auto auto" : "1fr auto",
+          borderBottom: HAIRLINE,
+        }}
+      >
+        <span className="text-[13px] text-ink-primary">{m.label}</span>
+        {m.formulaPreview && (
+          <span className="text-xs" style={{ color: "#626660" }}>
+            {m.formulaPreview}
+          </span>
+        )}
+        <span className="text-right text-[14.5px] font-semibold tabular-nums text-ink-primary">
+          {formatMetricValue(m.format, m.value)}
+        </span>
+      </div>
+    );
+  }
+
+  /** Baseline comparison row — M7: 当前值 / 账号中位数 / 方向中位数 + n=. */
+  function renderBaselineRow(m: MetricValue) {
     const account = detail ? baselineFor(detail.accountBaseline, m.key) : null;
     const pillar = detail ? baselineFor(detail.pillarBaseline, m.key) : null;
     const accCmp = account ? calculateComparison(m.value, account.median) : null;
     const pilCmp = pillar ? calculateComparison(m.value, pillar.median) : null;
     return (
-      <tr key={m.key} className="border-t border-border">
-        <td className="px-3 py-2.5">
-          <span className="text-sm text-ink-secondary">{m.label}</span>
-          {m.formulaPreview && (
-            <p className="mt-0.5 text-[11px] text-ink-muted">{m.formulaPreview}</p>
-          )}
-        </td>
-        {/* M5.6 evidence hierarchy: Current strongest, medians quiet */}
-        <td className="px-3 py-2.5 text-right text-base font-semibold tabular-nums text-ink-primary">
+      <div
+        key={m.key}
+        className="grid items-baseline gap-2.5 px-1 py-[9px] text-[12.5px]"
+        style={{ gridTemplateColumns: "1.2fr 1fr 1fr 1fr", borderBottom: HAIRLINE }}
+      >
+        <span className="text-ink-primary">{m.label}</span>
+        <span className="text-right text-[13.5px] font-semibold tabular-nums text-ink-primary">
           {formatMetricValue(m.format, m.value)}
-        </td>
-        <td className="px-3 py-2.5 text-right">
+        </span>
+        <span className="text-right tabular-nums" style={{ color: "#626660" }}>
           {account ? (
             <>
-              <span className="text-[13px] tabular-nums text-ink-secondary">
-                {formatMetricValue(m.format, account.median)}
-              </span>
-              <span className="ml-2 text-[11px] text-ink-muted">n={account.sampleCount}</span>
-              <span className="ml-2 text-xs text-ink-secondary">
+              {formatMetricValue(m.format, account.median)}{" "}
+              <span className="text-[11.5px]">n={account.sampleCount}</span>
+              <span className="ml-1.5 text-[11.5px]">
                 {formatDelta(m.format, accCmp?.absoluteDelta ?? null)}
               </span>
             </>
           ) : (
-            <span className="text-xs text-ink-muted">N/A</span>
+            "N/A"
           )}
-        </td>
-        <td className="px-3 py-2.5 text-right">
+        </span>
+        <span className="text-right tabular-nums" style={{ color: "#626660" }}>
           {detail?.pillarBaseline && "unavailable" in detail.pillarBaseline ? (
-            <span className="text-xs text-ink-muted">
-              方向基线不可用——未设置内容方向
-            </span>
+            <span className="text-[11.5px]">未设置内容方向</span>
           ) : pillar ? (
             <>
-              <span className="text-[13px] tabular-nums text-ink-secondary">
-                {formatMetricValue(m.format, pillar.median)}
-              </span>
-              <span className="ml-2 text-[11px] text-ink-muted">n={pillar.sampleCount}</span>
-              <span className="ml-2 text-xs text-ink-secondary">
+              {formatMetricValue(m.format, pillar.median)}{" "}
+              <span className="text-[11.5px]">n={pillar.sampleCount}</span>
+              <span className="ml-1.5 text-[11.5px]">
                 {formatDelta(m.format, pilCmp?.absoluteDelta ?? null)}
               </span>
             </>
           ) : (
-            <span className="text-xs text-ink-muted">N/A</span>
+            "N/A"
           )}
-        </td>
-      </tr>
+        </span>
+      </div>
     );
   }
 
@@ -366,15 +411,10 @@ export default function AnalyticsPage() {
 
   return (
     <div className="flex h-full">
-      {/* Main: index + fact/baseline/comparison */}
-      <div className="flex-1 overflow-y-auto p-6">
+      {/* Main: index + fact/baseline evidence report */}
+      <div className="flex-1 overflow-y-auto px-7 py-5">
         <div className="flex items-center justify-between">
-          <div>
-            <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-ink-muted">
-              表现复盘
-            </p>
-            <h1 className="mt-1 text-[24px] font-semibold leading-tight text-ink-primary">数据复盘</h1>
-          </div>
+          <h1 className="text-[24px] font-semibold leading-tight text-ink-primary">数据复盘</h1>
           <Button variant="secondary" size="sm" onClick={() => setImportOpen(true)}>
             导入数据
           </Button>
@@ -389,108 +429,145 @@ export default function AnalyticsPage() {
           </div>
         ) : (
           <>
-            {/* Publication index */}
-            <div className="mt-4 space-y-2">
-              {index.map((p) => (
-                <button
-                  key={p.publicationId}
-                  onClick={() => {
-                    const cp: Checkpoint = p.has72h ? "72h" : "24h";
-                    select(p.publicationId, cp);
-                  }}
-                  className={`w-full rounded-[8px] border p-3 text-left transition-colors ${
-                    selected?.publicationId === p.publicationId
-                      ? "border-mint-600 bg-mint-100/50"
-                      : "border-border bg-workspace hover:border-ink-faint"
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-ink-primary">
-                      {p.finalTitle}
+            {/* Publication index — M7 numbered rows with selected rail */}
+            <div className="mt-4" style={{ borderTop: RULE }}>
+              {index.map((p, i) => {
+                const sel = selected?.publicationId === p.publicationId;
+                return (
+                  <button
+                    key={p.publicationId}
+                    onClick={() => {
+                      const cp: Checkpoint = p.has72h ? "72h" : "24h";
+                      select(p.publicationId, cp);
+                    }}
+                    className="relative flex w-full items-center gap-4 px-3 py-[13px] text-left transition-colors duration-150 hover:bg-[rgba(124,148,130,0.05)]"
+                    style={{
+                      borderBottom: HAIRLINE,
+                      background: sel ? "rgba(124,148,130,0.07)" : undefined,
+                    }}
+                  >
+                    {sel && (
+                      <span
+                        className="absolute left-0 top-1/2 h-6 w-[2px] -translate-y-1/2 rounded-full"
+                        style={{ background: "#7C9482" }}
+                      />
+                    )}
+                    <span
+                      className="w-5 shrink-0 text-[14px]"
+                      style={{
+                        fontFamily: "var(--font-cormorant), serif",
+                        color: "#8B8E87",
+                      }}
+                    >
+                      {String(i + 1).padStart(2, "0")}
                     </span>
-                    <span className="flex items-center gap-1.5">
-                      <DemoBadge isDemo={p.isDemo} />
-                      <Badge variant="default">{platformLabel(p.platform)}</Badge>
-                    </span>
-                  </div>
-                  <div className="mt-1 flex items-center gap-3 text-xs text-ink-muted">
-                    <span>{p.contentTitle}</span>
-                    {p.pillarName && <span>· {p.pillarName}</span>}
-                    <span>· 发布于 {new Date(p.publishedAt).toLocaleDateString()}</span>
-                    {p.checkpoints.map((c) => (
-                      <span key={c.checkpoint}>
-                        {c.checkpoint}:{" "}
-                        {snapshotStatusLabel(c.status)}
-                        {c.status === "due" && (
-                          <span
-                            className="ml-1 font-medium text-mint-600"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              openSnapshotEntry(p, c.checkpoint);
-                            }}
-                          >
-                            {" "}· 录入
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="truncate text-[14.5px] font-semibold text-ink-primary">
+                          {p.finalTitle}
+                        </span>
+                        <DemoBadge isDemo={p.isDemo} />
+                      </div>
+                      <div
+                        className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs"
+                        style={{ color: "#626660" }}
+                      >
+                        <span>{platformLabel(p.platform)}</span>
+                        {p.pillarName && <span>· {p.pillarName}</span>}
+                        <span>
+                          · 发布于 {new Date(p.publishedAt).toLocaleDateString()}
+                        </span>
+                        {p.checkpoints.map((c) => (
+                          <span key={c.checkpoint}>
+                            · {c.checkpoint} {snapshotStatusLabel(c.status)}
+                            {c.status === "due" && (
+                              <span
+                                className="ml-1 font-medium text-mint-600"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openSnapshotEntry(p, c.checkpoint);
+                                }}
+                              >
+                                录入
+                              </span>
+                            )}
+                            {c.status === "submitted" && (
+                              <span
+                                className="ml-1 hover:text-ink-primary"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openSnapshotEntry(p, c.checkpoint);
+                                }}
+                              >
+                                {snapEntryLoading ===
+                                `${p.publicationId}:${c.checkpoint}`
+                                  ? "加载中…"
+                                  : "编辑"}
+                              </span>
+                            )}
+                            {snapEntryError?.key ===
+                              `${p.publicationId}:${c.checkpoint}` && (
+                              <span className="ml-1 text-danger">
+                                {snapEntryError.message}
+                                <span
+                                  className="ml-1 underline"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    openSnapshotEntry(p, c.checkpoint);
+                                  }}
+                                >
+                                  重试
+                                </span>
+                              </span>
+                            )}
                           </span>
-                        )}
-                        {c.status === "submitted" && (
-                          <span
-                            className="ml-1 text-ink-muted hover:text-ink-primary"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              openSnapshotEntry(p, c.checkpoint);
-                            }}
-                          >
-                            {" "}·{" "}
-                            {snapEntryLoading === `${p.publicationId}:${c.checkpoint}`
-                              ? "加载中…"
-                              : "编辑"}
-                          </span>
-                        )}
-                        {snapEntryError?.key === `${p.publicationId}:${c.checkpoint}` && (
-                          <span className="ml-1 text-danger">
-                            {snapEntryError.message}
-                            <span
-                              className="ml-1 underline"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                openSnapshotEntry(p, c.checkpoint);
-                              }}
-                            >
-                              重试
-                            </span>
-                          </span>
-                        )}
-                      </span>
-                    ))}
-                  </div>
-                </button>
-              ))}
+                        ))}
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
             </div>
 
-            {/* Detail */}
+            {/* Detail — M7: checkpoint Index Tabs + evidence sections */}
             {selected && (
-              <div className="mt-6 rounded-[8px] border border-border bg-workspace">
-                {/* Checkpoint tabs */}
-                <div className="flex items-center gap-1 border-b border-border px-4 py-2">
-                  {(["24h", "72h"] as Checkpoint[]).map((c) => (
-                    <button
-                      key={c}
-                      onClick={() => select(selected.publicationId, c)}
-                      className={`rounded-md px-3 py-1 text-sm ${
-                        selected.checkpoint === c
-                          ? "bg-mint-100 font-medium text-ink-primary"
-                          : "text-ink-muted hover:text-ink-primary"
-                      }`}
-                    >
-                      {c}
-                    </button>
-                  ))}
-                  <span className="ml-auto text-xs text-ink-muted">
+              <div className="mt-7">
+                {/* Checkpoint Index Tabs */}
+                <div
+                  className="flex items-center gap-6"
+                  style={{ borderBottom: RULE }}
+                >
+                  {(["24h", "72h"] as Checkpoint[]).map((c) => {
+                    const on = selected.checkpoint === c;
+                    return (
+                      <button
+                        key={c}
+                        onClick={() => select(selected.publicationId, c)}
+                        className="relative pb-2 text-[13px]"
+                        style={{
+                          color: on ? "#20231F" : "#626660",
+                          fontWeight: on ? 600 : 400,
+                        }}
+                      >
+                        {c} 数据
+                        {on && (
+                          <span
+                            className="absolute inset-x-0 -bottom-px h-[2px]"
+                            style={{ background: "#7C9482" }}
+                          />
+                        )}
+                      </button>
+                    );
+                  })}
+                  <span
+                    className="ml-auto truncate pb-2 text-xs"
+                    style={{ color: "#8B8E87" }}
+                  >
                     {selectedPub?.finalTitle}
                   </span>
                 </div>
 
-                <div className="p-4">
+                <div className="pt-4">
                   {detailLoading ? (
                     <p className="text-sm text-ink-muted">正在加载指标数据…</p>
                   ) : detailError ? (
@@ -508,7 +585,7 @@ export default function AnalyticsPage() {
                   ) : detail ? (
                     <>
                       {/* Fact header */}
-                      <div className="text-xs text-ink-muted">
+                      <div className="text-xs" style={{ color: "#626660" }}>
                         <span className="text-sm font-medium text-ink-primary">
                           {detail.fact.finalTitle}
                         </span>
@@ -526,88 +603,141 @@ export default function AnalyticsPage() {
                       )}
 
                       {!detail.fact.hasSnapshot ? (
-                        <div className="mt-6 flex flex-col items-center py-6 text-center">
-                          <p className="text-sm text-ink-secondary">
-                            还没有该数据点的指标数据。
-                          </p>
+                        /* M7: dashed pending panel — 留空=尚未录入≠0,
+                           未到时间不隐藏 */
+                        <div
+                          className="mt-4 rounded-[5px] px-6 py-8 text-center"
+                          style={{
+                            background: "#FBFBF8",
+                            border: "1px dashed #C8C9CB",
+                          }}
+                        >
                           {selectedPub?.checkpoints.find(
                             (c) => c.checkpoint === selected.checkpoint
-                          )?.status === "due" && (
-                            <Button
-                              variant="primary"
-                              size="sm"
-                              className="mt-3"
-                              onClick={() =>
-                                openSnapshotEntry(selectedPub, selected.checkpoint)
-                              }
-                            >
-                              录入 {selected.checkpoint} 数据
-                            </Button>
+                          )?.status === "due" ? (
+                            <>
+                              <p className="text-[13.5px] font-semibold text-ink-primary">
+                                还没有该数据点的指标数据
+                              </p>
+                              <p
+                                className="mt-2 text-xs leading-[1.7]"
+                                style={{ color: "#626660" }}
+                              >
+                                这里显示的是「待录入」，不是 0。基线对照与诊断将在有当前值后出现。
+                              </p>
+                              <div className="mt-4 flex justify-center">
+                                <Button
+                                  variant="primary"
+                                  size="sm"
+                                  onClick={() =>
+                                    openSnapshotEntry(selectedPub, selected.checkpoint)
+                                  }
+                                >
+                                  录入 {selected.checkpoint} 数据
+                                </Button>
+                              </div>
+                            </>
+                          ) : (
+                            <>
+                              <p className="text-[13.5px] font-semibold text-ink-primary">
+                                尚未到 {selected.checkpoint} 数据录入时间
+                              </p>
+                              <p
+                                className="mt-2 text-xs leading-[1.7]"
+                                style={{ color: "#626660" }}
+                              >
+                                这里显示的是「待录入」，不是 0——指标会在到期后可录入。
+                                <br />
+                                基线对照与诊断将在有当前值后出现。
+                              </p>
+                              <div className="mt-4 flex justify-center">
+                                <button
+                                  disabled
+                                  className="inline-flex h-[30px] items-center rounded-[5px] px-[11px] text-xs font-medium text-ink-primary opacity-50"
+                                  style={{ border: "1px solid #C8C9CB" }}
+                                >
+                                  录入 {selected.checkpoint} 数据（未到时间）
+                                </button>
+                              </div>
+                            </>
                           )}
                         </div>
                       ) : (
                         <>
-                          <p className="mt-1 text-xs text-ink-muted">
-                            目标时间：{new Date(detail.fact.targetAt).toLocaleString()} ·
-                            采集时间：{new Date(detail.fact.capturedAt!).toLocaleString()}{" "}
-                            {formatCaptureDelta(detail.fact.captureDeltaMinutes)}
-                          </p>
-
-                          {/* Metrics table */}
-                          <div className="mt-4 max-w-[980px] overflow-hidden rounded-[10px] border border-border bg-workspace">
-                            <table className="w-full">
-                              <thead>
-                                <tr className="bg-canvas text-left text-[11px] uppercase tracking-wide text-ink-muted">
-                                  <th className="px-3 py-2">指标</th>
-                                  <th className="px-3 py-2">当前值</th>
-                                  <th className="px-3 py-2">账号中位数</th>
-                                  <th className="px-3 py-2">方向中位数</th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                <tr>
-                                  <td colSpan={4} className="bg-surface-subtle px-3 py-1.5 text-[11px] font-medium uppercase tracking-[0.08em] text-ink-muted">
-                                    原始指标
-                                  </td>
-                                </tr>
-                                {raws.map(renderMetricRow)}
-                                {deriveds.length > 0 && (
-                                  <tr>
-                                    <td colSpan={4} className="bg-surface-subtle px-3 py-1.5 text-[11px] font-medium uppercase tracking-[0.08em] text-ink-muted">
-                                      派生指标
-                                    </td>
-                                  </tr>
-                                )}
-                                {deriveds.map(renderMetricRow)}
-                              </tbody>
-                            </table>
+                          {/* 表现事实 */}
+                          <div className="mt-5">
+                            <Sec
+                              title={`表现事实 · ${selected.checkpoint}`}
+                              note={`目标 ${new Date(detail.fact.targetAt).toLocaleString()} · 采集 ${new Date(detail.fact.capturedAt!).toLocaleString()} ${formatCaptureDelta(detail.fact.captureDeltaMinutes)}`}
+                            />
+                            <div style={{ borderTop: RULE }}>
+                              <div
+                                className="px-1 pb-1.5 pt-3 text-[11px] font-semibold tracking-[0.14em]"
+                                style={{ color: "#626660" }}
+                              >
+                                原始指标
+                              </div>
+                              {raws.map(renderFactRow)}
+                              {deriveds.length > 0 && (
+                                <div
+                                  className="px-1 pb-1.5 pt-3.5 text-[11px] font-semibold tracking-[0.14em]"
+                                  style={{ color: "#626660" }}
+                                >
+                                  派生指标
+                                </div>
+                              )}
+                              {deriveds.map(renderFactRow)}
+                            </div>
                           </div>
 
-                          {/* Baseline meta / failure */}
-                          <div className="mt-3 text-xs text-ink-muted">
+                          {/* 基线对照 */}
+                          <div className="mt-6">
+                            <Sec
+                              title="基线对照"
+                              note={
+                                detail.baselineError
+                                  ? undefined
+                                  : detail.accountBaseline
+                                    ? `${detail.accountBaseline.candidateCount} 条可比发布 · 中位数${
+                                        detail.accountBaseline.medianCaptureDeltaMinutes !== null
+                                          ? ` · 中位采集 ${formatCaptureDelta(detail.accountBaseline.medianCaptureDeltaMinutes)}`
+                                          : ""
+                                      }`
+                                    : `还没有历史 ${selected.checkpoint} 数据`
+                              }
+                            />
                             {detail.baselineError ? (
-                              <span className="flex items-center gap-2 text-danger">
+                              <p className="flex items-center gap-2 px-1 py-2 text-xs text-danger">
                                 基线加载失败。
-                                <button
-                                  className="underline"
-                                  onClick={retryBaseline}
-                                >
+                                <button className="underline" onClick={retryBaseline}>
                                   重试
                                 </button>
-                              </span>
-                            ) : detail.accountBaseline ? (
-                              <span>
-                                {detail.accountBaseline.candidateCount} 条可比发布
-                                {detail.accountBaseline.medianCaptureDeltaMinutes !== null &&
-                                  ` · 中位采集 ${formatCaptureDelta(detail.accountBaseline.medianCaptureDeltaMinutes)}`}
-                              </span>
+                              </p>
                             ) : (
-                              <span>还没有历史 {selected.checkpoint} 数据。</span>
+                              <div style={{ borderTop: RULE }}>
+                                <div
+                                  className="grid gap-2.5 px-1 py-2 text-[11.5px]"
+                                  style={{
+                                    gridTemplateColumns: "1.2fr 1fr 1fr 1fr",
+                                    color: "#626660",
+                                    borderBottom: RULE,
+                                  }}
+                                >
+                                  <span>指标</span>
+                                  <span className="text-right">当前值</span>
+                                  <span className="text-right">账号中位数</span>
+                                  <span className="text-right">方向中位数</span>
+                                </div>
+                                {[...raws, ...deriveds].map(renderBaselineRow)}
+                              </div>
                             )}
+                            <p
+                              className="mt-2 px-1 text-xs"
+                              style={{ color: "#626660" }}
+                            >
+                              {BASELINE_COHORT_HELPER}
+                            </p>
                           </div>
-                          <p className="mt-1 text-xs text-ink-secondary">
-                            {BASELINE_COHORT_HELPER}
-                          </p>
                         </>
                       )}
                     </>
@@ -633,8 +763,11 @@ export default function AnalyticsPage() {
         <LearningsSection />
       </div>
 
-      {/* Loop Analysis — M2.6 structured diagnosis */}
-      <div className="w-[25%] shrink-0 overflow-y-auto border-l border-border bg-canvas p-4">
+      {/* Loop AI inspector — M7: 320px document surface */}
+      <div
+        className="w-[320px] shrink-0 overflow-y-auto p-5"
+        style={{ borderLeft: RULE, background: "#FBFBF8" }}
+      >
         {detail && selected ? (
           <LoopAnalysis
             key={`${selected.publicationId}:${selected.checkpoint}`}
