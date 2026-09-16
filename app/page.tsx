@@ -1,5 +1,5 @@
-import { redirect } from "next/navigation";
+import { Gateway } from "@/components/gateway/gateway";
 
 export default function RootPage() {
-  redirect("/app");
+  return <Gateway />;
 }
