@@ -4,7 +4,8 @@ import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ThinkingOrbs } from "@/components/motion/thinking-orbs";
-import { Sparkles, RefreshCw, X } from "lucide-react";
+import { AiActionButton } from "@/components/ui/ai-action-button";
+import { RefreshCw, X } from "lucide-react";
 import type { ResolvedEvidence } from "@/lib/validation/diagnosis";
 import { confidenceLabel } from "@/lib/labels";
 
@@ -217,17 +218,9 @@ export function LoopAnalysis({
           <p className="text-[11px] text-ink-faint">
             证据采集于诊断时。基线值为诊断时的数值。
           </p>
-          {/* M7: click → button hides, only Thinking Orbs remains */}
+          {/* M7: click → morph → button gone, Thinking Orbs remains */}
           {!generating && (
-            <Button
-              variant="secondary"
-              size="sm"
-              className="w-full"
-              onClick={generate}
-            >
-              <Sparkles className="mr-1 h-3 w-3" />
-              重新分析
-            </Button>
+            <AiActionButton label="重新分析" onClick={generate} />
           )}
           {/* M7: AI reasoning = Thinking Orbs (approved V2) */}
           {generating && (
@@ -256,17 +249,9 @@ export function LoopAnalysis({
             结构化诊断：发生了什么 → 证据 → 可能原因 → 置信度 →
             下一步建议。AI 提供建议，由你确认。
           </p>
-          {/* M7: click → button hides, only Thinking Orbs remains */}
+          {/* M7: click → morph → button gone, Thinking Orbs remains */}
           {!generating && (
-            <Button
-              variant="secondary"
-              size="sm"
-              className="w-full"
-              onClick={generate}
-            >
-              <Sparkles className="mr-1 h-3 w-3" />
-              AI 分析表现
-            </Button>
+            <AiActionButton label="AI 分析表现" onClick={generate} />
           )}
           {/* M7: AI reasoning = Thinking Orbs (approved V2) */}
           {generating && (

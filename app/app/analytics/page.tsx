@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { FountainLoader } from "@/components/motion/fountain-loader";
+import { RibbonPillLoader } from "@/components/motion/ribbon-pill-loader";
 import { RefreshCw } from "lucide-react";
 import {
   formatMetricValue,
@@ -569,7 +570,10 @@ export default function AnalyticsPage() {
 
                 <div className="pt-4">
                   {detailLoading ? (
-                    <p className="text-sm text-ink-muted">正在加载指标数据…</p>
+                    /* M7: ribbon pill — data reading (not AI reasoning) */
+                    <div className="flex justify-center py-10">
+                      <RibbonPillLoader label="正在加载指标数据…" />
+                    </div>
                   ) : detailError ? (
                     <div className="flex items-center gap-3">
                       <p className="text-sm text-danger">{detailError}</p>

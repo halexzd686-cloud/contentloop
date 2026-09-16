@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ThinkingOrbs } from "@/components/motion/thinking-orbs";
-import { AiActionButton } from "@/components/studio/ai-action-button";
+import { AiActionButton } from "@/components/ui/ai-action-button";
 import { Sparkles, RefreshCw, Lock, Plus, X, FileText } from "lucide-react";
 import {
   PLATFORMS,

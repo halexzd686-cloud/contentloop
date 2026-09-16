@@ -169,3 +169,144 @@ textarea:focus-visible,
     animation: none;
   }
 }
+
+/* ── M7 A2 Magic AI action button (frozen palette only) ──
+   Aurora conic border travels behind the document face; inner aura
+   breathes; orbit glyph rotates slowly. Click morph: glyph spins up,
+   a pulse ring expands, the face collapses — then ThinkingOrbs takes
+   over (parent swaps content on onClick, fired after the morph). */
+.ai-magic-btn {
+  position: relative;
+  overflow: hidden;
+  border-radius: 9px;
+  padding: 1.5px;
+  isolation: isolate;
+  cursor: pointer;
+  transition: transform 180ms ease;
+}
+.ai-magic-btn:hover {
+  transform: translateY(-1px);
+}
+.ai-magic-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+  transform: none;
+}
+.ai-magic-btn::before {
+  content: "";
+  position: absolute;
+  inset: -120%;
+  z-index: 0;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg,
+    rgba(124, 148, 130, 0.95) 50deg,
+    rgba(212, 178, 106, 0.9) 90deg,
+    transparent 140deg,
+    transparent 220deg,
+    rgba(124, 148, 130, 0.6) 290deg,
+    transparent 340deg
+  );
+  animation: ai-aurora-rotate 2.6s linear infinite;
+}
+.ai-magic-btn__face {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  height: 43px;
+  border-radius: 8px;
+  background: linear-gradient(180deg, #ffffff 0%, #f3f5ee 100%);
+  font-size: 13px;
+  font-weight: 500;
+  color: #20231f;
+}
+.ai-magic-btn__face::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 8px;
+  background: radial-gradient(
+    150px 46px at 50% 125%,
+    rgba(124, 148, 130, 0.28),
+    transparent 70%
+  );
+  animation: ai-aura-breath 2.4s ease-in-out infinite;
+  pointer-events: none;
+}
+.ai-magic-btn__glyph {
+  animation: ai-glyph-spin 7s linear infinite;
+}
+.ai-magic-btn__burst {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 2;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid rgba(124, 148, 130, 0.7);
+  transform: translate(-50%, -50%);
+  opacity: 0;
+  pointer-events: none;
+}
+.ai-magic-btn--clicked .ai-magic-btn__burst {
+  animation: ai-burst 550ms ease-out forwards;
+}
+.ai-magic-btn--clicked::before {
+  animation:
+    ai-aurora-rotate 500ms linear infinite,
+    ai-collapse 450ms ease-in forwards;
+}
+.ai-magic-btn--clicked .ai-magic-btn__face {
+  animation: ai-collapse 450ms ease-in forwards;
+}
+.ai-magic-btn--clicked .ai-magic-btn__glyph {
+  animation: ai-glyph-spin 450ms linear infinite;
+}
+
+@keyframes ai-aurora-rotate {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes ai-aura-breath {
+  0%,
+  100% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+@keyframes ai-glyph-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes ai-burst {
+  0% {
+    opacity: 0.9;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(16);
+  }
+}
+@keyframes ai-collapse {
+  to {
+    opacity: 0;
+    transform: scale(0.72);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ai-magic-btn::before,
+  .ai-magic-btn__face::after,
+  .ai-magic-btn__glyph {
+    animation: none;
+  }
+}

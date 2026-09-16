@@ -43,7 +43,7 @@ import {
 } from "@/lib/validation/master";
 import { createSaveQueue, type SaveQueueState } from "@/lib/save-queue";
 import { briefStatusLabel, contentStatusLabel, platformLabel } from "@/lib/labels";
-import { AiActionButton } from "@/components/studio/ai-action-button";
+import { AiActionButton } from "@/components/ui/ai-action-button";
 import { ArrowLeft, RefreshCw, Check, Lock } from "lucide-react";
 
 /**

@@ -9,12 +9,12 @@ import { CreateContentDialog } from "@/components/radar/create-content-dialog";
 import {
   ExternalLink,
   ArrowRight,
-  Sparkles,
   RefreshCw,
 } from "lucide-react";
 import { signalStatusLabel, confidenceLabel, platformLabel } from "@/lib/labels";
 import { DotTexture } from "@/components/reactbits/dot-texture";
 import { ThinkingOrbs } from "@/components/motion/thinking-orbs";
+import { AiActionButton } from "@/components/ui/ai-action-button";
 
 /**
  * Quick Review — M7 P4: Review Sheet.
@@ -547,23 +547,18 @@ export function QuickReview({
       {/* Actions */}
       {canAct && (
         <div className="space-y-3 pt-4" style={{ borderTop: RULE }}>
-          {/* M7: click → button hides, only Thinking Orbs remains */}
+          {/* M7: click → morph → button gone, Thinking Orbs remains */}
           {analyzing ? (
             <div className="flex flex-col items-center gap-2 py-2">
               <ThinkingOrbs size={48} />
               <p className="text-xs text-ink-secondary">正在分析线索…</p>
             </div>
           ) : (
-            <Button
-              variant="secondary"
-              size="sm"
-              className="w-full"
+            <AiActionButton
+              label={analyzed ? "重新 AI 分析" : "AI 分析线索"}
               onClick={handleAnalyze}
               disabled={actionLoading}
-            >
-              <Sparkles className="mr-1 h-3 w-3" />
-              {analyzed ? "重新 AI 分析" : "AI 分析线索"}
-            </Button>
+            />
           )}
           <div className="flex items-center justify-between">
             <button
