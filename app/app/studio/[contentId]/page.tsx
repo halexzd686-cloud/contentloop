@@ -634,7 +634,7 @@ export default function StudioContentPage({
         {/* Document workspace */}
         <div className="flex flex-1 justify-center overflow-y-auto px-[34px] py-6">
           <div
-            className="w-full max-w-[640px] self-start rounded-[5px] px-[38px] py-8"
+            className="w-full max-w-[960px] self-start rounded-[5px] px-[38px] py-8"
             style={{
               background: "#FBFBF8",
               border: "1px solid rgba(200,201,203,0.4)",
@@ -1075,9 +1075,25 @@ function MasterWorkspace({
   // Editable
   return (
     <div>
-      <p className="mb-4 text-xs text-ink-secondary">
-        用于生成各平台版本的母稿。
+      <div className="flex items-baseline justify-between">
+        <span
+          className="text-ink-primary"
+          style={{
+            fontFamily: "var(--font-noto-serif), serif",
+            fontSize: 18,
+            fontWeight: 600,
+          }}
+        >
+          内容母稿
+        </span>
+      </div>
+      <p className="mt-1.5 text-[12.5px]" style={{ color: "#626660" }}>
+        所有平台版本的母本。模块即文稿结构。
       </p>
+      <div
+        className="mb-2 mt-3.5"
+        style={{ borderTop: "1px solid rgba(200,201,203,0.4)" }}
+      />
       <MasterEditor
         modules={modules}
         readOnly={false}

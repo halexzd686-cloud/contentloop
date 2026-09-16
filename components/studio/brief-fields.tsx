@@ -78,9 +78,9 @@ export function BriefFields({ values, onChange, readOnly }: BriefFieldsProps) {
             onChange={(e) => onChange(key, e.target.value)}
             placeholder={placeholder}
             rows={Math.max(
-              2,
+              1,
               values[key].split("\n").length,
-              Math.ceil(values[key].length / 38)
+              Math.ceil(values[key].length / 52)
             )}
             className="mt-[7px] w-full resize-none border-0 border-b bg-transparent pb-[9px] text-[14.5px] leading-[1.7] text-ink-primary placeholder:text-ink-faint focus:outline-none"
             style={{

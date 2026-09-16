@@ -18,7 +18,6 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { GripVertical, ArrowUp, ArrowDown, Trash2, Plus } from "lucide-react";
 
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   MODULE_TYPES,
@@ -111,7 +110,7 @@ export function MasterEditor({
   return (
     <div>
       <div className="mb-3 flex items-center justify-between">
-        <p className="text-xs text-ink-muted">
+        <p className="text-xs" style={{ color: "#8B8E87" }}>
           {modules.length} 个模块 · 拖动手柄调整顺序
         </p>
         <span
@@ -141,7 +140,7 @@ export function MasterEditor({
           items={modules.map((m) => m.id)}
           strategy={verticalListSortingStrategy}
         >
-          <div className="space-y-2">
+          <div>
             {modules.map((m, i) => (
               <SortableModule
                 key={m.id}
@@ -220,24 +219,30 @@ function SortableModule({
         transform: CSS.Transform.toString(transform),
         transition,
         opacity: isDragging ? 0.6 : 1,
+        borderBottom:
+          index < total - 1 ? "1px solid rgba(200,201,203,0.4)" : "none",
+        background: isDragging ? "rgba(124,148,130,0.06)" : undefined,
       }}
-      className={`rounded-[8px] border bg-workspace ${
-        isDragging ? "border-mint-600 shadow-sm" : "border-border"
-      }`}
+      className="group py-[18px]"
     >
-      <div className="flex items-center gap-1 border-b border-border px-2 py-1.5">
+      <div className="flex items-center gap-2">
         {!readOnly && (
           <button
             {...attributes}
             {...listeners}
-            className="cursor-grab touch-none text-ink-faint hover:text-ink-primary active:cursor-grabbing"
+            className="cursor-grab touch-none text-ink-faint transition-colors hover:text-ink-primary active:cursor-grabbing"
             aria-label={`拖动${MODULE_LABEL[module.type]}模块`}
           >
-            <GripVertical className="h-4 w-4" />
+            <GripVertical className="h-3.5 w-3.5" />
           </button>
         )}
-        <Badge variant="default">{MODULE_LABEL[module.type]}</Badge>
-        <div className="ml-auto flex items-center gap-0.5">
+        <span
+          className="text-xs font-semibold tracking-[0.04em]"
+          style={{ color: "#626660" }}
+        >
+          {MODULE_LABEL[module.type]}
+        </span>
+        <div className="ml-auto flex items-center gap-0.5 opacity-0 transition-opacity duration-150 group-hover:opacity-100">
           {!readOnly && (
             <>
               <button
@@ -275,13 +280,21 @@ function SortableModule({
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
         readOnly={readOnly}
-        rows={focused || module.content ? 4 : 2}
+        rows={
+          focused
+            ? Math.max(4, module.content.split("\n").length)
+            : Math.max(
+                2,
+                module.content.split("\n").length,
+                Math.ceil(module.content.length / 52)
+              )
+        }
         placeholder={
           module.type === "evidence"
             ? "只写来自真实数据的证据。没有就写：证据仍需验证。"
             : `${MODULE_LABEL[module.type]}内容…`
         }
-        className="w-full resize-y rounded-b-[8px] bg-transparent px-3 py-2 text-sm text-ink-primary placeholder:text-ink-faint focus-visible:outline-none read-only:text-ink-secondary"
+        className="mt-2 w-full resize-none border-0 bg-transparent text-[14.5px] leading-[1.7] text-ink-primary placeholder:text-ink-faint focus:outline-none read-only:text-ink-secondary"
       />
     </div>
   );
