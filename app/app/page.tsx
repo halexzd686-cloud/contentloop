@@ -5,7 +5,8 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { FountainLoader } from "@/components/motion/fountain-loader";
 import { Badge } from "@/components/ui/badge";
-import { RefreshCw, ArrowRight } from "lucide-react";
+import { NodeArrow } from "@/components/ui/node-arrow";
+import { RefreshCw } from "lucide-react";
 import {
   buildHomeModel,
   type HomeContentRow,
@@ -18,23 +19,27 @@ import {
   contentStatusLabel,
   testStatusLabel,
   NAV_LABELS,
-  HOME_SECTIONS,
-  HOME_THESIS,
 } from "@/lib/labels";
 
 /**
- * Home — M5.6 visual pass: H2 static composition.
+ * Home — M7 P3: Today Desk with Index Tabs.
  *
- * Work-first dashboard: Needs Attention / Continue Working /
- * Monitoring. Static serif thesis (no motion). Mint left edge =
- * actionable-now (existing due/review semantics only). Navigation
- * only — every card links to an existing authoritative surface.
+ * 待处理 / 继续创作 / 跟进中 switch via text tabs (2px primary
+ * underline, same language as Radar's status filter). Data layer
+ * unchanged: dueMetrics / reviewContents / continueWorking /
+ * scheduledContents / runningTests from buildHomeModel.
+ * Trajectory actions (NodeArrow) only where a real next stage
+ * exists: 录入数据 / 去审核 / 继续编辑. Header carries only 首页 —
+ * no eyebrow, slogan, greeting or KPI wall.
  */
+
+type TabKey = "attention" | "continue" | "monitoring";
 
 export default function HomePage() {
   const [model, setModel] = useState<HomeModel | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [tab, setTab] = useState<TabKey>("attention");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -97,26 +102,42 @@ export default function HomePage() {
 
   if (!model) return null;
 
-  const hasAttention =
-    model.dueMetrics.length > 0 || model.reviewContents.length > 0;
-  const hasMonitoring =
-    model.scheduledContents.length > 0 || model.runningTests.length > 0;
+  const attentionCount = model.dueMetrics.length + model.reviewContents.length;
+  const monitoringCount =
+    model.scheduledContents.length + model.runningTests.length;
+
+  const tabs: { key: TabKey; label: string; n: number }[] = [
+    { key: "attention", label: "待处理", n: attentionCount },
+    { key: "continue", label: "继续创作", n: model.continueWorking.length },
+    { key: "monitoring", label: "跟进中", n: monitoringCount },
+  ];
+
+  const dueRows = [
+    ...model.dueMetrics.map((d) => ({
+      key: `${d.publicationId}:${d.checkpoint}`,
+      href: `/app/analytics?publication=${d.publicationId}&checkpoint=${d.checkpoint}`,
+      title: d.finalTitle,
+      meta: `${platformLabel(d.platform)} · ${d.checkpoint} 数据自 ${new Date(
+        d.dueAt
+      ).toLocaleDateString()} 起待录入`,
+      action: "录入数据",
+    })),
+    ...model.reviewContents.map((c) => ({
+      key: c.id,
+      href: `/app/studio/${c.id}`,
+      title: c.title,
+      meta: "等待审核",
+      action: "去审核",
+    })),
+  ];
 
   return (
     <div className="h-full overflow-y-auto">
-      {/* Header: eyebrow + strong title + static serif thesis in the
-          heading group (product thesis, not a watermark). */}
-      <div className="border-b border-border px-10 pb-6 pt-8">
-        <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-ink-muted">
-          工作区
-        </p>
-        <div className="mt-2 flex items-baseline gap-4">
-          <h1 className="text-[26px] font-semibold leading-tight">{NAV_LABELS.home}</h1>
-          <span className="hidden h-5 w-px bg-border-strong sm:block" />
-          <p className="font-serif text-lg italic text-ink-secondary">
-            {HOME_THESIS}
-          </p>
-        </div>
+      {/* Header: only 首页 */}
+      <div className="px-10 pb-2 pt-8">
+        <h1 className="text-[26px] font-semibold leading-tight">
+          {NAV_LABELS.home}
+        </h1>
       </div>
 
       {model.isEmpty ? (
@@ -138,151 +159,173 @@ export default function HomePage() {
           </div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-6 px-10 py-8 xl:grid-cols-5">
-          {/* Primary: needs attention */}
-          <section className="xl:col-span-3">
-            <h2 className="text-[11px] font-medium uppercase tracking-[0.14em] text-ink-muted">
-              {HOME_SECTIONS.needsAttention}
-            </h2>
-            {!hasAttention ? (
-              <p className="mt-3 rounded-[10px] border border-border bg-workspace px-5 py-4 text-sm text-ink-secondary">
+        <div className="px-10 pb-10">
+          {/* Index Tabs */}
+          <div
+            className="mt-4 flex gap-6"
+            style={{ borderBottom: "1px solid rgba(200,201,203,0.65)" }}
+          >
+            {tabs.map((t) => {
+              const on = tab === t.key;
+              return (
+                <button
+                  key={t.key}
+                  onClick={() => setTab(t.key)}
+                  className="relative pb-2 text-[13px]"
+                  style={{
+                    color: on ? "#20231F" : "#626660",
+                    fontWeight: on ? 600 : 400,
+                  }}
+                >
+                  {t.label}
+                  <span
+                    className="ml-[3px] text-[11px] tabular-nums"
+                    style={{ color: "#8B8E87" }}
+                  >
+                    {t.n}
+                  </span>
+                  {on && (
+                    <span
+                      className="absolute inset-x-0 bottom-0 h-[2px]"
+                      style={{ background: "#7C9482" }}
+                    />
+                  )}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* 待处理: numbered operational rows */}
+          {tab === "attention" &&
+            (dueRows.length === 0 ? (
+              <p className="py-8 text-sm text-ink-secondary">
                 现在没有待处理事项。
               </p>
             ) : (
-              <div className="mt-3 space-y-3">
-                {model.dueMetrics.map((d) => (
+              <div>
+                {dueRows.map((r, i) => (
                   <Link
-                    key={`${d.publicationId}:${d.checkpoint}`}
-                    href={`/app/analytics?publication=${d.publicationId}&checkpoint=${d.checkpoint}`}
-                    className="block rounded-[10px] border border-border border-l-2 border-l-mint-600 bg-workspace px-5 py-4 transition-colors hover:border-border-strong"
+                    key={r.key}
+                    href={r.href}
+                    className="flex items-center gap-[18px] px-2.5 py-[15px] transition-colors duration-150 hover:bg-[rgba(124,148,130,0.05)]"
+                    style={{ borderBottom: "1px solid rgba(200,201,203,0.4)" }}
                   >
-                    <div className="flex items-center justify-between gap-4">
-                      <div className="min-w-0">
-                        <p className="truncate text-[15px] font-medium">
-                          {d.finalTitle}
-                        </p>
-                        <p className="mt-0.5 text-xs text-ink-secondary">
-                          {platformLabel(d.platform)} · {d.checkpoint} 数据自{" "}
-                          {new Date(d.dueAt).toLocaleDateString()} 起待录入
-                        </p>
+                    <span
+                      className="w-[22px] shrink-0 text-[15px]"
+                      style={{
+                        fontFamily: "var(--font-cormorant), serif",
+                        color: "#8B8E87",
+                      }}
+                    >
+                      {String(i + 1).padStart(2, "0")}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-[15px] font-semibold">
+                        {r.title}
                       </div>
-                      <span className="flex shrink-0 items-center gap-1 text-[13px] font-medium text-mint-600">
-                        录入数据 <ArrowRight className="h-3.5 w-3.5" />
-                      </span>
+                      <div className="mt-1 text-xs" style={{ color: "#626660" }}>
+                        {r.meta}
+                      </div>
                     </div>
+                    <span
+                      className="flex shrink-0 items-center gap-2.5 text-[13px] font-medium"
+                      style={{ color: "#3F7455" }}
+                    >
+                      <NodeArrow />
+                      {r.action}
+                    </span>
                   </Link>
                 ))}
-                {model.reviewContents.map((c) => (
+              </div>
+            ))}
+
+          {/* 继续创作: DraftStrip — 2px primary left rail, no card */}
+          {tab === "continue" &&
+            (model.continueWorking.length === 0 ? (
+              <p className="py-8 text-sm text-ink-secondary">
+                暂无制作中的内容。{" "}
+                <Link href="/app/studio" className="text-mint-600 hover:underline">
+                  新建内容
+                </Link>{" "}
+                或{" "}
+                <Link href="/app/radar" className="text-mint-600 hover:underline">
+                  去选题雷达选用线索
+                </Link>
+                。
+              </p>
+            ) : (
+              <div className="space-y-4 py-5">
+                {model.continueWorking.map((c) => (
+                  <div
+                    key={c.id}
+                    className="py-4 pl-[18px]"
+                    style={{ borderLeft: "2px solid #7C9482" }}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="truncate text-[16px] font-semibold">
+                        {c.title}
+                      </div>
+                      <Badge
+                        variant={c.status === "in_progress" ? "warning" : "default"}
+                      >
+                        {contentStatusLabel(c.status)}
+                      </Badge>
+                    </div>
+                    <div className="mt-4">
+                      <Link
+                        href={`/app/studio/${c.id}`}
+                        className="inline-flex items-center gap-2.5 text-[13px] font-medium"
+                        style={{ color: "#3F7455" }}
+                      >
+                        <NodeArrow />
+                        继续编辑
+                      </Link>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ))}
+
+          {/* 跟进中: monitoring rows, no trajectory actions */}
+          {tab === "monitoring" &&
+            (monitoringCount === 0 ? (
+              <p className="py-8 text-sm text-ink-secondary">
+                暂无待发布或进行中的内容。
+              </p>
+            ) : (
+              <div>
+                {model.scheduledContents.map((c) => (
                   <Link
                     key={c.id}
                     href={`/app/studio/${c.id}`}
-                    className="block rounded-[10px] border border-border border-l-2 border-l-mint-600 bg-workspace px-5 py-4 transition-colors hover:border-border-strong"
+                    className="flex items-center justify-between gap-4 px-2.5 py-3 transition-colors duration-150 hover:bg-[rgba(124,148,130,0.05)]"
+                    style={{ borderBottom: "1px solid rgba(200,201,203,0.4)" }}
                   >
-                    <div className="flex items-center justify-between gap-4">
-                      <div className="min-w-0">
-                        <p className="truncate text-[15px] font-medium">
-                          {c.title}
-                        </p>
-                        <p className="mt-0.5 text-xs text-ink-secondary">
-                          等待审核
-                        </p>
-                      </div>
-                      <span className="flex shrink-0 items-center gap-1 text-[13px] font-medium text-mint-600">
-                        去审核 <ArrowRight className="h-3.5 w-3.5" />
-                      </span>
-                    </div>
+                    <span className="min-w-0 truncate text-[14px] font-medium">
+                      {c.title}
+                    </span>
+                    <Badge variant="default" className="shrink-0 whitespace-nowrap">
+                      待发布
+                    </Badge>
+                  </Link>
+                ))}
+                {model.runningTests.map((t) => (
+                  <Link
+                    key={t.id}
+                    href="/app/analytics"
+                    className="flex items-center justify-between gap-4 px-2.5 py-3 transition-colors duration-150 hover:bg-[rgba(124,148,130,0.05)]"
+                    style={{ borderBottom: "1px solid rgba(200,201,203,0.4)" }}
+                  >
+                    <span className="min-w-0 truncate text-[14px] font-medium">
+                      {t.title}
+                    </span>
+                    <Badge variant="warning" className="shrink-0 whitespace-nowrap">
+                      测试{testStatusLabel(t.status)}
+                    </Badge>
                   </Link>
                 ))}
               </div>
-            )}
-          </section>
-
-          {/* Secondary column */}
-          <div className="space-y-8 xl:col-span-2">
-            <section>
-              <div className="flex items-baseline justify-between">
-                <h2 className="text-[11px] font-medium uppercase tracking-[0.14em] text-ink-muted">
-                  {HOME_SECTIONS.continueWorking}
-                </h2>
-                <Link
-                  href="/app/studio"
-                  className="text-xs text-mint-600 hover:underline"
-                >
-                  查看全部
-                </Link>
-              </div>
-              {model.continueWorking.length === 0 ? (
-                <p className="mt-3 rounded-[10px] border border-border bg-workspace px-4 py-3 text-[13px] text-ink-secondary">
-                  暂无制作中的内容。{" "}
-                  <Link href="/app/studio" className="text-mint-600 hover:underline">
-                    新建内容
-                  </Link>{" "}
-                  或{" "}
-                  <Link href="/app/radar" className="text-mint-600 hover:underline">
-                    去选题雷达选用线索
-                  </Link>
-                  。
-                </p>
-              ) : (
-                <div className="mt-3 divide-y divide-border rounded-[10px] border border-border bg-workspace">
-                  {model.continueWorking.map((c) => (
-                    <Link
-                      key={c.id}
-                      href={`/app/studio/${c.id}`}
-                      className="flex items-center justify-between px-4 py-3 hover:bg-canvas"
-                    >
-                      <p className="min-w-0 truncate text-sm font-medium">
-                        {c.title}
-                      </p>
-                      <Badge variant={c.status === "in_progress" ? "warning" : "default"}>
-                        {contentStatusLabel(c.status)}
-                      </Badge>
-                    </Link>
-                  ))}
-                </div>
-              )}
-            </section>
-
-            <section>
-              <h2 className="text-[11px] font-medium uppercase tracking-[0.14em] text-ink-muted">
-                {HOME_SECTIONS.monitoring}
-              </h2>
-              {!hasMonitoring ? (
-                <p className="mt-3 rounded-[10px] border border-border bg-workspace px-4 py-3 text-[13px] text-ink-secondary">
-                  暂无待发布或进行中的内容。
-                </p>
-              ) : (
-                <div className="mt-3 divide-y divide-border rounded-[10px] border border-border bg-workspace">
-                  {model.scheduledContents.map((c) => (
-                    <Link
-                      key={c.id}
-                      href={`/app/studio/${c.id}`}
-                      className="flex items-center justify-between px-4 py-3 hover:bg-canvas"
-                    >
-                      <p className="min-w-0 truncate text-sm font-medium">
-                        {c.title}
-                      </p>
-                      <Badge variant="default" className="shrink-0 whitespace-nowrap">待发布</Badge>
-                    </Link>
-                  ))}
-                  {model.runningTests.map((t) => (
-                    <Link
-                      key={t.id}
-                      href="/app/analytics"
-                      className="flex items-center justify-between px-4 py-3 hover:bg-canvas"
-                    >
-                      <p className="min-w-0 truncate text-sm font-medium">
-                        {t.title}
-                      </p>
-                      <Badge variant="warning">
-                        测试{testStatusLabel(t.status)}
-                      </Badge>
-                    </Link>
-                  ))}
-                </div>
-              )}
-            </section>
-          </div>
+            ))}
         </div>
       )}
     </div>
