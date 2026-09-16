@@ -239,11 +239,11 @@ function DraggableCard({
       {...attributes}
       {...listeners}
       onClick={() => onOpen(item)}
-      className={`mt-3 cursor-grab rounded-[5px] px-[15px] py-[13px] transition-colors hover:bg-[rgba(124,148,130,0.05)] ${
+      className={`mt-3 cursor-grab rounded-[5px] px-[15px] py-[13px] transition-colors hover:bg-[rgba(124,148,130,0.08)] ${
         isDragging ? "opacity-40" : ""
       }`}
       style={{
-        background: "#FBFBF8",
+        background: "#F5F6F3",
         border: "1px solid rgba(200,201,203,0.55)",
       }}
     >
@@ -385,6 +385,30 @@ export default function PipelinePage() {
 
   const activeItem = activeId ? items.find((i) => i.id === activeId) : null;
 
+  // Right rail (M7 B+C): pending metric entries across all publications,
+  // due first, then not-yet-due. Submitted snapshots are excluded.
+  const pendingMetrics = items
+    .flatMap((item) =>
+      item.platforms
+        .filter((p) => p.publication)
+        .flatMap((p) => {
+          const pub = p.publication!;
+          return (["24h", "72h"] as Checkpoint[]).map((c) => {
+            const has = c === "24h" ? pub.snapshot24h : pub.snapshot72h;
+            return {
+              key: `${pub.id}:${c}`,
+              item,
+              platform: p.platform,
+              pub,
+              checkpoint: c,
+              st: checkpointStatus(pub.publishedAt, c, has),
+            };
+          });
+        })
+    )
+    .filter((e) => e.st !== "submitted")
+    .sort((a, b) => (a.st === b.st ? 0 : a.st === "due" ? -1 : 1));
+
   if (loading) {
     // M7: fountain transition indicator (喷泉动效 + 页面名)
     return (
@@ -438,39 +462,133 @@ export default function PipelinePage() {
         )}
       </div>
 
-      <DndContext
-        sensors={sensors}
-        onDragStart={handleDragStart}
-        onDragEnd={handleDragEnd}
-      >
-        <div
-          className="grid flex-1 content-start justify-start gap-5 overflow-x-auto px-8 pt-5"
-          style={{ gridTemplateColumns: "repeat(5, minmax(220px, 300px))" }}
+      <div className="flex min-h-0 flex-1 gap-6 px-8 pb-8 pt-5">
+        <DndContext
+          sensors={sensors}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
         >
-          {COLUMNS.map((col) => (
-            <Column
-              key={col.key}
-              colKey={col.key}
-              label={col.label}
-              items={items.filter((i) => i.status === col.key)}
-              onOpen={setSelected}
-            />
-          ))}
-        </div>
-        <DragOverlay>
-          {activeItem && (
+          {/* Board panel (M7 direction B): the five columns live inside
+              one document object; the space outside is page margin. */}
+          <div className="min-w-0 flex-1 overflow-x-auto">
             <div
-              className="w-[240px] rounded-[5px] px-[15px] py-[13px] shadow-lg"
+              className="h-full rounded-[8px] px-[22px] py-5"
               style={{
                 background: "#FBFBF8",
-                border: "1px solid rgba(124,148,130,0.6)",
+                border: "1px solid rgba(200,201,203,0.5)",
               }}
             >
-              <CardContent item={activeItem} />
+              <div
+                className="grid content-start gap-5"
+                style={{ gridTemplateColumns: "repeat(5, minmax(200px, 1fr))" }}
+              >
+                {COLUMNS.map((col) => (
+                  <Column
+                    key={col.key}
+                    colKey={col.key}
+                    label={col.label}
+                    items={items.filter((i) => i.status === col.key)}
+                    onOpen={setSelected}
+                  />
+                ))}
+              </div>
             </div>
+          </div>
+          <DragOverlay>
+            {activeItem && (
+              <div
+                className="w-[240px] rounded-[5px] px-[15px] py-[13px] shadow-lg"
+                style={{
+                  background: "#FBFBF8",
+                  border: "1px solid rgba(124,148,130,0.6)",
+                }}
+              >
+                <CardContent item={activeItem} />
+              </div>
+            )}
+          </DragOverlay>
+        </DndContext>
+
+        {/* Right rail (M7 direction C): pending metric entries */}
+        <div
+          className="w-[230px] shrink-0 overflow-y-auto pl-[22px]"
+          style={{ borderLeft: "1px solid rgba(200,201,203,0.65)" }}
+        >
+          <span
+            className="text-[11px] font-medium tracking-[0.14em]"
+            style={{ color: "#8B8E87" }}
+          >
+            待录入数据
+          </span>
+          {pendingMetrics.length === 0 ? (
+            <p
+              className="mt-3.5 text-xs leading-[1.6]"
+              style={{ color: "#626660" }}
+            >
+              暂无待录入数据。发布后 24h / 72h 各录入一次真实数据，诊断才有依据。
+            </p>
+          ) : (
+            <>
+              {pendingMetrics.map((e) => {
+                const due = e.st === "due";
+                const block = (
+                  <>
+                    <div className="text-[11px]" style={{ color: "#8B8E87" }}>
+                      {e.checkpoint.toUpperCase()} · {platformLabel(e.platform)}
+                    </div>
+                    <div className="mt-1 text-[13px] font-semibold leading-[1.5] text-ink-primary">
+                      {e.pub.finalTitle}
+                    </div>
+                    <div
+                      className="mt-1 text-xs leading-[1.55]"
+                      style={{ color: "#626660" }}
+                    >
+                      {due
+                        ? `自 ${checkpointDueAt(e.pub.publishedAt, e.checkpoint).toLocaleDateString()} 起待录入`
+                        : `未到时间 · ${checkpointDueAt(e.pub.publishedAt, e.checkpoint).toLocaleDateString()} 后`}
+                    </div>
+                  </>
+                );
+                return due ? (
+                  <button
+                    key={e.key}
+                    onClick={() =>
+                      setSnapTarget({
+                        publication: {
+                          id: e.pub.id,
+                          platform: e.platform,
+                          finalTitle: e.pub.finalTitle,
+                          publishedAt: e.pub.publishedAt,
+                        },
+                        checkpoint: e.checkpoint,
+                        existing: e.pub.snapshots?.[e.checkpoint] ?? null,
+                      })
+                    }
+                    className="mt-3.5 block w-full pl-3 text-left transition-colors hover:bg-[rgba(124,148,130,0.05)]"
+                    style={{ borderLeft: "2px solid #7C9482" }}
+                  >
+                    {block}
+                  </button>
+                ) : (
+                  <div
+                    key={e.key}
+                    className="mt-3.5 pl-3"
+                    style={{ borderLeft: "2px solid rgba(200,201,203,0.8)" }}
+                  >
+                    {block}
+                  </div>
+                );
+              })}
+              <p
+                className="mt-4 text-[11px] leading-[1.6]"
+                style={{ color: "#8B8E87" }}
+              >
+                发布后 24h / 72h 各录入一次真实数据，诊断才有依据。
+              </p>
+            </>
           )}
-        </DragOverlay>
-      </DndContext>
+        </div>
+      </div>
 
       {/* Content Drawer */}
       <Drawer open={selected !== null} onOpenChange={(o) => !o && setSelected(null)}>
