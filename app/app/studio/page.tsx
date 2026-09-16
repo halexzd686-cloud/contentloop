@@ -6,7 +6,6 @@ import { Badge } from "@/components/ui/badge";
 import { DemoBadge } from "@/components/ui/demo-badge";
 import { Button } from "@/components/ui/button";
 import { FountainLoader } from "@/components/motion/fountain-loader";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -120,37 +119,61 @@ export default function StudioPage() {
 
   return (
     <div className="flex h-full flex-col">
-      <div className="border-b border-border bg-workspace px-6 py-4">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <h1 className="text-[24px] font-semibold leading-tight text-ink-primary">内容工作台</h1>
-            <p className="mt-0.5 text-sm text-ink-muted">
-              从简报到平台版本，完成内容生产。
-            </p>
-          </div>
-          <Button variant="primary" size="sm" onClick={() => setCreateOpen(true)}>
-            <Plus className="mr-1 h-3 w-3" />
-            新建内容
-          </Button>
+      {/* Header — M7 P5: title + summary + primary action */}
+      <div
+        className="flex items-end justify-between px-8 pb-[18px] pt-6"
+        style={{ borderBottom: "1px solid rgba(200,201,203,0.65)" }}
+      >
+        <div>
+          <h1 className="text-[24px] font-semibold leading-tight text-ink-primary">
+            内容工作台
+          </h1>
+          <p className="mt-1.5 text-[12.5px]" style={{ color: "#626660" }}>
+            {archived
+              ? `${contents.length} 条已归档`
+              : `${contents.length} 条内容 · ${
+                  contents.filter((c) => c.status === "in_progress").length
+                } 条制作中`}
+          </p>
         </div>
-        <div className="mt-3 flex gap-1">
-          {(["active", "archived"] as const).map((v) => (
-            <button
-              key={v}
-              onClick={() => setView(v)}
-              className={`rounded-[8px] px-3 py-1.5 text-xs font-medium transition-colors ${
-                view === v
-                  ? "bg-mint-100 text-mint-700"
-                  : "text-ink-muted hover:bg-surface-subtle"
-              }`}
-            >
-              {v === "active" ? "进行中" : "已归档"}
-            </button>
-          ))}
+        <Button variant="primary" size="sm" onClick={() => setCreateOpen(true)}>
+          <Plus className="mr-1 h-3 w-3" />
+          新建内容
+        </Button>
+      </div>
+
+      {/* Index Tabs */}
+      <div className="px-8">
+        <div
+          className="flex gap-6"
+          style={{ borderBottom: "1px solid rgba(200,201,203,0.65)" }}
+        >
+          {(["active", "archived"] as const).map((v) => {
+            const on = view === v;
+            return (
+              <button
+                key={v}
+                onClick={() => setView(v)}
+                className="relative pb-2 pt-3 text-[13px]"
+                style={{
+                  color: on ? "#20231F" : "#626660",
+                  fontWeight: on ? 600 : 400,
+                }}
+              >
+                {v === "active" ? "进行中" : "已归档"}
+                {on && (
+                  <span
+                    className="absolute inset-x-0 bottom-0 h-[2px]"
+                    style={{ background: "#7C9482" }}
+                  />
+                )}
+              </button>
+            );
+          })}
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-6">
+      <div className="flex-1 overflow-y-auto px-8 pb-8">
         {loading && contents.length === 0 ? (
           // M7: fountain transition indicator (喷泉动效 + 页面名)
           <div className="flex min-h-[50vh] items-center justify-center">
@@ -191,92 +214,95 @@ export default function StudioPage() {
             )}
           </div>
         ) : (
-          <div className="space-y-3">
+          <div>
             {error && (
-              <div className="rounded-[8px] border border-danger/20 bg-danger/5 p-3 text-xs text-danger">
+              <div className="mt-4 rounded-[8px] border border-danger/20 bg-danger/5 p-3 text-xs text-danger">
                 {error}
               </div>
             )}
             {contents.map((c) => (
-              <Link key={c.id} href={`/app/studio/${c.id}`}>
-                <Card className="transition-colors hover:border-border-strong">
-                  <CardHeader className="pb-2">
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex min-w-0 items-center gap-2">
-                        <p className="truncate text-sm font-medium text-ink-primary">
-                          {c.title}
-                        </p>
-                        <DemoBadge isDemo={c.isDemo} />
-                      </div>
-                      <div className="flex shrink-0 items-center gap-2">
-                        <Badge variant={STATUS_VARIANT[c.status] || "default"}>
-                          {contentStatusLabel(c.status)}
-                        </Badge>
-                        {archived ? (
-                          <Button
-                            variant="secondary"
-                            size="sm"
-                            disabled={busy}
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              restore(c.id);
-                            }}
-                          >
-                            恢复
-                          </Button>
-                        ) : (
-                          c.status !== "published" && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              disabled={busy}
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                setArchiveTarget(c);
-                              }}
-                            >
-                              归档
-                            </Button>
-                          )
-                        )}
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="pt-0">
-                    <div className="flex items-center gap-3 text-xs text-ink-muted">
-                      {c.ownerName && <span>负责人：{c.ownerName}</span>}
-                      {c.primaryPlatform ? (
-                        <span>{platformLabel(c.primaryPlatform)}</span>
-                      ) : archived ? null : CORRECTABLE_STATUSES.includes(c.status) ? (
-                        <button
-                          className="font-medium text-warning hover:underline"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            setPlatformTarget(c);
-                          }}
-                        >
-                          未设平台——去设置
-                        </button>
-                      ) : (
-                        <span className="text-ink-faint">未设平台</span>
-                      )}
-                      <span>
-                        简报：
-                        {c.briefStatus === "approved"
-                          ? "已确认"
-                          : c.briefStatus === "draft"
-                            ? "草稿"
-                            : "未开始"}
-                      </span>
-                      <span>
-                        更新于 {new Date(c.updatedAt).toLocaleDateString()}
-                      </span>
-                    </div>
-                  </CardContent>
-                </Card>
+              <Link
+                key={c.id}
+                href={`/app/studio/${c.id}`}
+                className="group flex items-center gap-4 px-2.5 py-[15px] transition-colors duration-150 hover:bg-[rgba(124,148,130,0.05)]"
+                style={{ borderBottom: "1px solid rgba(200,201,203,0.4)" }}
+              >
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <p className="truncate text-[15px] font-semibold text-ink-primary">
+                      {c.title}
+                    </p>
+                    <DemoBadge isDemo={c.isDemo} />
+                  </div>
+                  <div
+                    className="mt-1 flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-xs"
+                    style={{ color: "#626660" }}
+                  >
+                    {c.ownerName && <span>负责人：{c.ownerName}</span>}
+                    {c.primaryPlatform ? (
+                      <span>{platformLabel(c.primaryPlatform)}</span>
+                    ) : archived ? null : CORRECTABLE_STATUSES.includes(c.status) ? (
+                      <button
+                        className="font-medium text-warning hover:underline"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setPlatformTarget(c);
+                        }}
+                      >
+                        未设平台——去设置
+                      </button>
+                    ) : (
+                      <span className="text-ink-faint">未设平台</span>
+                    )}
+                    <span>
+                      简报：
+                      {c.briefStatus === "approved"
+                        ? "已确认"
+                        : c.briefStatus === "draft"
+                          ? "草稿"
+                          : "未开始"}
+                    </span>
+                    <span style={{ color: "#8B8E87" }}>
+                      更新于 {new Date(c.updatedAt).toLocaleDateString()}
+                    </span>
+                  </div>
+                </div>
+                <div className="flex shrink-0 items-center gap-2">
+                  <Badge variant={STATUS_VARIANT[c.status] || "default"}>
+                    {contentStatusLabel(c.status)}
+                  </Badge>
+                  {archived ? (
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      disabled={busy}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        restore(c.id);
+                      }}
+                    >
+                      恢复
+                    </Button>
+                  ) : (
+                    c.status !== "published" && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        disabled={busy}
+                        className="opacity-0 transition-opacity duration-150 group-hover:opacity-100"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setArchiveTarget(c);
+                        }}
+                      >
+                        归档
+                      </Button>
+                    )
+                  )}
+                </div>
               </Link>
             ))}
           </div>

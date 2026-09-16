@@ -2,8 +2,9 @@
 
 /**
  * Brief Fields — PRD §8.6 fixed 8 fields.
- * Controlled inputs; read-only when the brief is approved or an AI
- * proposal is pending review.
+ * M7 P5: underline document fields — label + bottom hairline,
+ * focus turns the rule primary. Controlled inputs; read-only
+ * when the brief is approved or an AI proposal is pending.
  */
 
 export interface BriefFieldValues {
@@ -39,20 +40,23 @@ interface BriefFieldsProps {
 }
 
 export function BriefFields({ values, onChange, readOnly }: BriefFieldsProps) {
-  // M5.6: approved Brief is an authoritative document, not a disabled
-  // form — read mode renders labels + plain values (no textarea chrome,
-  // no resize handles). Edit Brief remains the only path into editing.
+  // Approved Brief is an authoritative document, not a disabled
+  // form — read mode renders labels + plain values (no textarea
+  // chrome, no resize handles).
   if (readOnly) {
     return (
-      <div className="grid grid-cols-1 gap-x-8 gap-y-5 sm:grid-cols-2">
+      <div>
         {BRIEF_FIELD_META.map(({ key, label }) => (
-          <div key={key}>
-            <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-ink-muted">
+          <div key={key} className="mt-[22px] first:mt-0">
+            <div
+              className="text-xs font-semibold tracking-[0.04em]"
+              style={{ color: "#626660" }}
+            >
               {label}
-            </p>
-            <p className="mt-1.5 text-sm leading-relaxed text-ink-primary">
+            </div>
+            <div className="mt-[7px] pb-[9px] text-[14.5px] leading-[1.7] text-ink-primary">
               {values[key]}
-            </p>
+            </div>
           </div>
         ))}
       </div>
@@ -60,18 +64,35 @@ export function BriefFields({ values, onChange, readOnly }: BriefFieldsProps) {
   }
 
   return (
-    <div className="grid grid-cols-1 gap-x-8 gap-y-5">
+    <div>
       {BRIEF_FIELD_META.map(({ key, label, placeholder }) => (
-        <div key={key}>
-          <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-[0.08em] text-ink-muted">
+        <div key={key} className="group mt-[22px] first:mt-0">
+          <label
+            className="block text-xs font-semibold tracking-[0.04em]"
+            style={{ color: "#626660" }}
+          >
             {label}
           </label>
           <textarea
             value={values[key]}
             onChange={(e) => onChange(key, e.target.value)}
             placeholder={placeholder}
-            rows={2}
-            className="flex w-full resize-y rounded-[8px] border border-border bg-workspace px-3 py-2 text-sm text-ink-primary placeholder:text-ink-faint focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-mint-500"
+            rows={Math.max(
+              2,
+              values[key].split("\n").length,
+              Math.ceil(values[key].length / 38)
+            )}
+            className="mt-[7px] w-full resize-none border-0 border-b bg-transparent pb-[9px] text-[14.5px] leading-[1.7] text-ink-primary placeholder:text-ink-faint focus:outline-none"
+            style={{
+              borderBottom: "1px solid rgba(200,201,203,0.4)",
+            }}
+            onFocus={(e) => {
+              e.currentTarget.style.borderBottom = "1px solid #7C9482";
+            }}
+            onBlur={(e) => {
+              e.currentTarget.style.borderBottom =
+                "1px solid rgba(200,201,203,0.4)";
+            }}
           />
         </div>
       ))}

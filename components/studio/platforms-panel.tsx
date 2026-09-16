@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ThinkingOrbs } from "@/components/motion/thinking-orbs";
+import { AiActionButton } from "@/components/studio/ai-action-button";
 import { Sparkles, RefreshCw, Lock, Plus, X, FileText } from "lucide-react";
 import {
   PLATFORMS,
@@ -727,22 +728,23 @@ export function usePlatformsPanel({
   const canAdapt = !locked && (!version || editable);
 
   const aiPanel = !hasMaster ? null : (
-    <div className="space-y-3">
+    <div className="space-y-3.5">
       {canAdapt ? (
-        <Button
-          variant="secondary"
-          size="sm"
-          className="w-full"
-          onClick={adapt}
-          disabled={adapting || proposalPending}
-        >
-          <Sparkles className="mr-1 h-3 w-3" />
-          {adapting
-            ? "适配中…"
-            : version
-              ? "重新 AI 适配"
-              : "AI 适配平台版本"}
-        </Button>
+        /* M7: click → button hides, only Thinking Orbs remains */
+        adapting ? (
+          <div className="flex flex-col items-center gap-3 py-2">
+            <ThinkingOrbs size={56} />
+            <span className="text-[12.5px]" style={{ color: "#626660" }}>
+              正在适配平台版本…
+            </span>
+          </div>
+        ) : (
+          <AiActionButton
+            label={version ? "重新适配平台版本" : "适配平台版本"}
+            onClick={adapt}
+            disabled={proposalPending}
+          />
+        )
       ) : (
         <p className="rounded-[8px] border border-border bg-workspace p-3 text-xs text-ink-muted">
           {version?.status === "published"
@@ -762,12 +764,12 @@ export function usePlatformsPanel({
           </button>
         </div>
       )}
-      <p className="text-xs text-ink-faint">
+      <p className="text-xs leading-[1.6]" style={{ color: "#626660" }}>
         {hasPlaybook
           ? "已加载该平台的自定义规范。"
           : "没有自定义平台规范——使用通用平台结构。"}
       </p>
-      <p className="text-xs text-ink-faint">
+      <p className="text-xs leading-[1.6]" style={{ color: "#626660" }}>
         AI 会把已确认的内容母稿适配为结构化的{" "}
         {platformLabel(selected)} 版本。应用或接受前不会保存任何内容。
       </p>

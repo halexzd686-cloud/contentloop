@@ -43,9 +43,8 @@ import {
 } from "@/lib/validation/master";
 import { createSaveQueue, type SaveQueueState } from "@/lib/save-queue";
 import { briefStatusLabel, contentStatusLabel, platformLabel } from "@/lib/labels";
-import { ShinyText } from "@/components/reactbits/shiny-text";
-import { studioAIVisual, shinyTextActive } from "@/lib/ai-visual";
-import { ArrowLeft, Sparkles, RefreshCw, Check, Lock } from "lucide-react";
+import { AiActionButton } from "@/components/studio/ai-action-button";
+import { ArrowLeft, RefreshCw, Check, Lock } from "lucide-react";
 
 /**
  * Studio Workspace — /app/studio/[contentId]
@@ -548,140 +547,197 @@ export default function StudioContentPage({
 
   const approverName = content.reviewer?.name ?? content.owner?.name ?? null;
 
-  // M4.4/M5.6: Studio AI visual lifecycle — ShinyText only,
-  // active during genuine generation; proposals render statically.
-  const aiVisual = studioAIVisual({ generating, proposalPending });
-
   return (
     <div className="flex h-full flex-col">
-      {/* Header — M5.6: title is primary object identity (up to 2 lines);
-          owner/reviewer/save state demoted to a secondary metadata row. */}
-      <div className="border-b border-border bg-workspace px-8 pb-0 pt-4">
-        <div className="flex items-start gap-3">
+      {/* Header — M7 P5: ← back + title + meta (status dot ·
+          待发布平台 · 负责人 · 审核人) */}
+      <div className="px-7 pt-[22px]">
+        <div className="flex items-center gap-3.5">
           <Link
             href="/app/studio"
-            className="mt-1.5 text-ink-muted hover:text-ink-primary"
+            className="shrink-0 text-ink-muted transition-colors hover:text-ink-primary"
+            aria-label="返回内容工作台"
           >
             <ArrowLeft className="h-4 w-4" />
           </Link>
-          <div className="min-w-0 flex-1">
-            <div className="flex items-start justify-between gap-4">
-              <h1 className="text-lg font-semibold leading-snug text-ink-primary [display:-webkit-box] [-webkit-line-clamp:2] [-webkit-box-orient:vertical] overflow-hidden">
-                {content.title}
-              </h1>
+          <h1 className="min-w-0 flex-1 truncate text-[19px] font-semibold text-ink-primary">
+            {content.title}
+          </h1>
+          <span
+            className="flex shrink-0 items-center gap-3.5 text-xs"
+            style={{ color: "#626660" }}
+          >
+            <DemoBadge isDemo={content.isDemo} />
+            <span className="flex items-center gap-1.5">
               <span
-                className={`shrink-0 pt-1 text-xs ${
-                  saveState === "failed"
-                    ? "text-danger"
-                    : saveState === "saved"
-                      ? "text-mint-600"
-                      : "text-ink-muted"
-                }`}
-              >
-                {SAVE_LABEL[saveState]}
-                {saveState === "failed" && (
-                  <button
-                    className="ml-1 underline"
-                    onClick={() => persistBrief(fields)}
-                  >
-                    重试
-                  </button>
-                )}
+                className="inline-block h-[5px] w-[5px] rounded-full"
+                style={{ background: "#7C9482" }}
+              />
+              {contentStatusLabel(content.status)}
+            </span>
+            {content.primaryPlatform && (
+              <span style={{ color: "#8B8E87" }}>
+                待发布平台：{platformLabel(content.primaryPlatform)}
               </span>
-            </div>
-            <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-ink-secondary">
-              <Badge variant={content.status === "in_progress" ? "warning" : "default"}>
-                {contentStatusLabel(content.status)}
-              </Badge>
-              <DemoBadge isDemo={content.isDemo} />
-              {content.primaryPlatform && (
-                <span>{platformLabel(content.primaryPlatform)}</span>
-              )}
-              {content.owner && <span>负责人：{content.owner.name}</span>}
-              {approverName && <span>审核人：{approverName}</span>}
-            </div>
-          </div>
+            )}
+            {content.owner && (
+              <span style={{ color: "#8B8E87" }}>
+                负责人：{content.owner.name}
+              </span>
+            )}
+            {approverName && (
+              <span style={{ color: "#8B8E87" }}>审核人：{approverName}</span>
+            )}
+          </span>
         </div>
 
-        {/* Tabs — all four active (M1.6) */}
-        <div className="mt-3 flex gap-1">
+        {/* Tabs — M7 Index Tabs */}
+        <div
+          className="mt-4 flex gap-[26px]"
+          style={{ borderBottom: "1px solid rgba(200,201,203,0.65)" }}
+        >
           {TABS.map((tab) => {
-            const active = activeTab === tab;
+            const on = activeTab === tab;
             return (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className={`rounded-md px-3 py-1.5 text-sm ${
-                  active
-                    ? "bg-mint-100 font-medium text-ink-primary"
-                    : "text-ink-muted hover:text-ink-primary"
-                }`}
+                className="relative pb-[9px] text-[13px]"
+                style={{
+                  color: on ? "#20231F" : "#626660",
+                  fontWeight: on ? 600 : 400,
+                }}
               >
                 {TAB_LABELS[tab]}
+                {on && (
+                  <span
+                    className="absolute inset-x-0 -bottom-px h-[2px]"
+                    style={{ background: "#7C9482" }}
+                  />
+                )}
               </button>
             );
           })}
         </div>
       </div>
 
-      {/* Three columns — M5.6: 20 / 56 / 24 */}
-      <div className="flex flex-1 overflow-hidden">
-        {/* Sources 20% */}
-        <div className="w-[20%] overflow-y-auto border-r border-border bg-canvas">
+      {/* Three columns — M7 P5: Sources rail 218 / document / inspector 248 */}
+      <div className="flex min-h-0 flex-1">
+        {/* Sources rail */}
+        <div
+          className="w-[218px] shrink-0 overflow-y-auto"
+          style={{ borderRight: "1px solid rgba(200,201,203,0.65)" }}
+        >
           <SourcesPanel signal={signal} />
         </div>
 
-        {/* Workspace 56% */}
-        <div className="w-[56%] overflow-y-auto bg-workspace p-8">
+        {/* Document workspace */}
+        <div className="flex flex-1 justify-center overflow-y-auto px-[34px] py-6">
+          <div
+            className="w-full max-w-[640px] self-start rounded-[5px] px-[38px] py-8"
+            style={{
+              background: "#FBFBF8",
+              border: "1px solid rgba(200,201,203,0.4)",
+            }}
+          >
           {activeTab === "Brief" ? (
           <>
-          <div className="mb-4 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <h2 className="text-sm font-semibold text-ink-primary">内容简报</h2>
-              {brief && (
-                <Badge variant={approved ? "mint" : "default"}>
-                  {briefStatusLabel(brief.status)}
-                </Badge>
-              )}
-            </div>
-            {approved ? (
-              hasPublications ? (
+          <div className="flex items-baseline justify-between">
+            <span className="flex items-center gap-2.5">
+              <span
+                className="text-ink-primary"
+                style={{
+                  fontFamily: "var(--font-noto-serif), serif",
+                  fontSize: 18,
+                  fontWeight: 600,
+                }}
+              >
+                内容简报
+              </span>
+              {brief &&
+                (approved ? (
+                  <span
+                    className="inline-flex items-center gap-1.5 text-xs font-medium"
+                    style={{ color: "#626660" }}
+                  >
+                    <span
+                      className="inline-block h-[5px] w-[5px] rounded-full"
+                      style={{ background: "#7C9482" }}
+                    />
+                    已确认
+                  </span>
+                ) : (
+                  <Badge variant="default">
+                    {briefStatusLabel(brief.status)}
+                  </Badge>
+                ))}
+            </span>
+            <span className="flex items-center gap-3">
+              {!approved && SAVE_LABEL[saveState] && (
                 <span
-                  className="text-xs text-ink-faint"
-                  title="这条内容已有发布的平台版本。简报和母稿不能再编辑。"
+                  className={`text-xs ${
+                    saveState === "failed"
+                      ? "text-danger"
+                      : saveState === "saved"
+                        ? "text-mint-600"
+                        : "text-ink-muted"
+                  }`}
                 >
-                  已发布——简报已锁定
+                  {SAVE_LABEL[saveState]}
+                  {saveState === "failed" && (
+                    <button
+                      className="ml-1 underline"
+                      onClick={() => persistBrief(fields)}
+                    >
+                      重试
+                    </button>
+                  )}
                 </span>
+              )}
+              {approved ? (
+                hasPublications ? (
+                  <span
+                    className="text-xs text-ink-faint"
+                    title="这条内容已有发布的平台版本。简报和母稿不能再编辑。"
+                  >
+                    已发布——简报已锁定
+                  </span>
+                ) : (
+                  <button
+                    onClick={() => setEditConfirmOpen(true)}
+                    className="inline-flex h-8 items-center rounded-[5px] px-3 text-[12.5px] font-medium text-ink-primary transition-colors hover:bg-surface-subtle"
+                    style={{ border: "1px solid #C8C9CB" }}
+                  >
+                    编辑简报
+                  </button>
+                )
               ) : (
                 <Button
-                  variant="secondary"
+                  variant="primary"
                   size="sm"
-                  onClick={() => setEditConfirmOpen(true)}
+                  onClick={handleApprove}
+                  disabled={
+                    approving || !brief || !allFilled || proposalPending || generating
+                  }
                 >
-                  编辑简报
+                  <Check className="mr-1 h-3 w-3" />
+                  {approving ? "确认中…" : "确认内容简报"}
                 </Button>
-              )
-            ) : (
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={handleApprove}
-                disabled={
-                  approving || !brief || !allFilled || proposalPending || generating
-                }
-              >
-                <Check className="mr-1 h-3 w-3" />
-                {approving ? "确认中…" : "确认内容简报"}
-              </Button>
-            )}
+              )}
+            </span>
           </div>
 
-          <p className="-mt-2 mb-4 text-xs text-ink-secondary">
+          <p className="mt-1.5 text-[12.5px]" style={{ color: "#626660" }}>
             这条内容为什么存在：写给谁、解决什么问题、用什么角度。
           </p>
 
+          <div className="mt-3.5" style={{ borderTop: "1px solid rgba(200,201,203,0.4)" }} />
+
           {approved && brief?.approvedAt && (
-            <p className="mb-4 text-xs text-ink-muted">
+            <p
+              className="mb-4 pt-2.5 text-[12.5px] leading-[1.65]"
+              style={{ color: "#626660" }}
+            >
               已于 {new Date(brief.approvedAt).toLocaleString()}
               {approverName ? ` 由 ${approverName}` : ""} 确认。只读状态——需要修改请点“编辑简报”。
             </p>
@@ -793,61 +849,54 @@ export default function StudioContentPage({
               onSnapshot={handleSnapshot}
             />
           )}
+          </div>
         </div>
 
-        {/* Loop AI 24% — supportive mint-inset, quieter than the editor */}
-        <div className="w-[24%] overflow-y-auto border-l border-border bg-canvas p-5">
-          <div className="rounded-[10px] border border-mint-600/25 bg-mint-100/40 p-4">
-            <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-ink-muted">
-              Loop AI
-            </p>
-            {/* M4.4: ShinyText identity — shimmer active ONLY during a
-                genuine AI request; static at all other times. */}
-            <p className="mt-1.5 text-xs text-ink-secondary">
-              <ShinyText
-                text="AI 提供建议，最终由你确认。"
-                disabled={!shinyTextActive(aiVisual)}
-                speed={1.6}
-                color="#5F625D"
-                shineColor="#4E9F84"
-              />
-            </p>
+        {/* Loop AI inspector — M7 P5: 248px document surface */}
+        <div
+          className="w-[248px] shrink-0 overflow-y-auto p-[18px]"
+          style={{
+            borderLeft: "1px solid rgba(200,201,203,0.65)",
+            background: "#FBFBF8",
+          }}
+        >
+          <div className="text-[13px] font-semibold text-ink-primary">Loop AI</div>
+          <div
+            className="mt-1.5 flex items-center gap-1.5 text-[11.5px]"
+            style={{ color: "#8B8E87" }}
+          >
+            <span
+              className="inline-block h-1 w-1 rounded-full"
+              style={{ background: "#D4B26A" }}
+            />
+            AI 提供建议，最终由你确认。
           </div>
           {activeTab === "Platforms" ? (
-            <div className="mt-4">{platformsPanel.aiPanel}</div>
+            <div className="mt-5">{platformsPanel.aiPanel}</div>
           ) : activeTab === "Review" ? (
-            <div className="mt-4">
-              <p className="text-xs text-ink-secondary">
-                审核只能由人完成。AI 不会替你勾选清单或批准内容。
-              </p>
-            </div>
+            <p className="mt-5 text-xs leading-[1.6]" style={{ color: "#626660" }}>
+              审核只能由人完成。AI 不会替你勾选清单或批准内容。
+            </p>
           ) : activeTab === "Master" ? (
-            <div className="mt-3">
-              <p className="text-xs text-ink-faint">
-                母稿的 AI 操作暂未开放。
-              </p>
-            </div>
+            <p className="mt-5 text-xs leading-[1.6]" style={{ color: "#626660" }}>
+              母稿的 AI 操作暂未开放。
+            </p>
           ) : (
-          <div className="mt-3 space-y-3">
+          <div className="mt-5 space-y-3.5">
             {/* M7: click → button hides, only Thinking Orbs remains */}
-            {!generating && (
-              <Button
-                variant="secondary"
-                size="sm"
-                className="w-full"
+            {generating ? (
+              <div className="flex flex-col items-center gap-3 py-2">
+                <ThinkingOrbs size={56} />
+                <span className="text-[12.5px]" style={{ color: "#626660" }}>
+                  正在生成简报草稿…
+                </span>
+              </div>
+            ) : (
+              <AiActionButton
+                label="生成简报草稿"
                 onClick={handleGenerate}
                 disabled={approved || proposalPending}
-              >
-                <Sparkles className="mr-1 h-3 w-3" />
-                AI 生成简报草稿
-              </Button>
-            )}
-            {/* M7: AI reasoning = Thinking Orbs (approved V2) */}
-            {generating && (
-              <div className="flex flex-col items-center gap-2 py-2">
-                <ThinkingOrbs size={48} />
-                <p className="text-xs text-ink-secondary">正在生成简报草稿…</p>
-              </div>
+              />
             )}
             {generateError && (
               <div className="rounded-[8px] border border-danger/20 bg-danger/5 p-3">
@@ -861,7 +910,7 @@ export default function StudioContentPage({
                 </button>
               </div>
             )}
-            <p className="text-xs text-ink-faint">
+            <p className="text-xs leading-[1.6]" style={{ color: "#626660" }}>
               {signal
                 ? "AI 会根据关联线索、品牌信息和平台规范起草。不应用就不会保存任何内容。"
                 : "AI 会根据这条内容、品牌信息和平台规范起草。不应用就不会保存任何内容。"}
