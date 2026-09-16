@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { FountainLoader } from "@/components/motion/fountain-loader";
 import {
@@ -44,6 +43,17 @@ interface MetricDef {
   isActive: boolean;
 }
 
+interface Pillar {
+  id: string;
+  name: string;
+}
+
+interface TeamMember {
+  id: string;
+  name: string;
+  title: string | null;
+}
+
 const PLATFORMS = [
   { key: "xiaohongshu", label: "Xiaohongshu" },
   { key: "bilibili", label: "Bilibili" },
@@ -52,24 +62,45 @@ const PLATFORMS = [
 
 const FORMAT_LABEL: Record<MetricFormat, string> = {
   count: "计数",
-  percentage: "百分比（×100%）",
-  ratio: "比值（x : 1）",
+  percentage: "百分比",
+  ratio: "比值",
 };
+
+const SECTIONS = ["指标定义", "内容方向", "团队成员"] as const;
+type SectionKey = (typeof SECTIONS)[number];
+
+const INK2 = "#626660";
+const HAIRLINE = "1px solid rgba(200,201,203,0.4)";
+const RULE = "1px solid rgba(200,201,203,0.65)";
 
 export default function SettingsPage() {
   const [defs, setDefs] = useState<MetricDef[]>([]);
+  const [pillars, setPillars] = useState<Pillar[]>([]);
+  const [members, setMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [editTarget, setEditTarget] = useState<MetricDef | null>(null);
   const [createPlatform, setCreatePlatform] = useState<string | null>(null);
+  const [section, setSection] = useState<SectionKey>("指标定义");
+  const [platform, setPlatform] = useState<string>("xiaohongshu");
 
   const load = useCallback(async () => {
     try {
-      const res = await fetch("/api/settings/metrics");
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "加载失败");
-      setDefs(data.definitions);
+      const [mRes, pRes, tRes] = await Promise.all([
+        fetch("/api/settings/metrics"),
+        fetch("/api/settings/pillars"),
+        fetch("/api/team-members"),
+      ]);
+      const [m, p, t] = await Promise.all([
+        mRes.json(),
+        pRes.json(),
+        tRes.json(),
+      ]);
+      if (!mRes.ok) throw new Error(m.error || "加载失败");
+      setDefs(m.definitions);
+      if (pRes.ok) setPillars(p.pillars ?? []);
+      if (tRes.ok) setMembers(t.members ?? []);
       setLoadError(null);
     } catch (err) {
       setLoadError(err instanceof Error ? err.message : "加载失败");
@@ -83,12 +114,12 @@ export default function SettingsPage() {
     return () => clearTimeout(t);
   }, [load]);
 
-  const byPlatform = useMemo(() => {
-    const map = new Map<string, MetricDef[]>();
-    for (const p of PLATFORMS) map.set(p.key, []);
-    for (const d of defs) map.get(d.platform)?.push(d);
-    return map;
-  }, [defs]);
+  const platformDefs = useMemo(
+    () => defs.filter((d) => d.platform === platform),
+    [defs, platform]
+  );
+  const rawDefs = platformDefs.filter((d) => d.type === "raw");
+  const derivedDefs = platformDefs.filter((d) => d.type === "derived");
 
   const nameOf = useCallback(
     (platform: string) => (key: string) =>
@@ -115,32 +146,91 @@ export default function SettingsPage() {
     }
   }
 
-  return (
-    <div className="p-8">
-      <h1 className="text-2xl font-semibold text-ink-primary">设置</h1>
+  const GRID = "1.5fr 1fr 1.1fr 0.75fr 0.5fr";
 
-      <div className="mt-6">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-ink-muted">
-          指标
-        </h2>
-        <p className="mt-1 text-xs text-ink-secondary">
-          这些定义控制每项指标如何计算和展示。派生指标始终显示其公式。
-        </p>
+  function renderMetricRow(d: MetricDef, last: boolean) {
+    return (
+      <div
+        key={d.id}
+        className="grid items-baseline gap-3 px-1 py-[11px]"
+        style={{
+          gridTemplateColumns: GRID,
+          borderBottom: last ? "none" : HAIRLINE,
+          opacity: d.isActive ? 1 : 0.6,
+        }}
+      >
+        <span className="text-[13.5px] font-semibold text-ink-primary">
+          {d.alias ?? d.displayName}
+          {d.alias && (
+            <span
+              className="mt-0.5 block text-[11.5px] font-normal"
+              style={{ color: INK2 }}
+            >
+              原名:{d.displayName}
+            </span>
+          )}
+        </span>
+        <span
+          className="text-xs"
+          style={{ color: INK2, fontFamily: "ui-monospace, 'SF Mono', monospace" }}
+        >
+          {d.key}
+        </span>
+        <span className="text-xs" style={{ color: INK2 }}>
+          {d.type === "derived" ? "派生" : "原始"} · {FORMAT_LABEL[d.format]}
+          {d.type === "derived" && (
+            <span className="mt-0.5 block text-[11.5px]">
+              {buildFormulaPreview(d, nameOf(d.platform))}
+            </span>
+          )}
+          {d.caution && (
+            <span className="mt-0.5 block text-[11.5px]">
+              ⚠ {metricCautionLabel(d.caution)}
+            </span>
+          )}
+        </span>
+        <button
+          className="flex items-center gap-1.5 text-xs"
+          style={{ color: INK2 }}
+          onClick={() => toggleActive(d)}
+          title={d.isActive ? "点击停用" : "点击启用"}
+        >
+          <span
+            className="inline-block h-[5px] w-[5px] rounded-full"
+            style={{ background: d.isActive ? "#7C9482" : "#C8C9CB" }}
+          />
+          {d.isActive ? "启用" : "停用"}
+        </button>
+        <button
+          className="text-left text-xs font-medium"
+          style={{ color: "#3F7455" }}
+          onClick={() => setEditTarget(d)}
+        >
+          编辑
+        </button>
       </div>
+    );
+  }
 
-      {actionError && (
-        <div className="mt-4 rounded-[8px] border border-danger/20 bg-danger/5 p-3 text-xs text-danger">
-          {actionError}
-        </div>
-      )}
+  return (
+    <div className="flex h-full flex-col">
+      {/* Header — M7: title only */}
+      <header
+        className="px-7 pb-[18px] pt-6"
+        style={{ borderBottom: RULE }}
+      >
+        <h1 className="text-[24px] font-semibold leading-tight text-ink-primary">
+          设置
+        </h1>
+      </header>
 
       {loading ? (
         // M7: fountain transition indicator (喷泉动效 + 页面名)
-        <div className="mt-6 flex min-h-[40vh] items-center justify-center">
+        <div className="flex min-h-[40vh] flex-1 items-center justify-center">
           <FountainLoader size={30} label="正在加载设置" />
         </div>
       ) : loadError ? (
-        <div className="mt-6 flex items-center gap-3">
+        <div className="flex items-center gap-3 p-7">
           <p className="text-sm text-danger">{loadError}</p>
           <Button
             variant="secondary"
@@ -155,77 +245,208 @@ export default function SettingsPage() {
           </Button>
         </div>
       ) : (
-        <div className="mt-4 space-y-6">
-          {PLATFORMS.map((p) => (
-            <div key={p.key}>
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-medium text-ink-primary">
-                  {platformLabel(p.key)}
-                </h3>
+        <div className="flex min-h-0 flex-1">
+          {/* Utility Index */}
+          <nav
+            className="sticky top-0 w-[184px] shrink-0 self-start py-[18px]"
+            style={{ borderRight: RULE, background: "#EBECE7" }}
+          >
+            {SECTIONS.map((s) => {
+              const on = section === s;
+              return (
                 <button
-                  className="inline-flex items-center gap-1 text-xs text-mint-600 hover:underline"
-                  onClick={() => setCreatePlatform(p.key)}
+                  key={s}
+                  onClick={() => setSection(s)}
+                  className="relative block w-full px-5 py-[9px] text-left text-[13px]"
+                  style={{
+                    color: on ? "#20231F" : INK2,
+                    fontWeight: on ? 600 : 400,
+                  }}
                 >
-                  <Plus className="h-3 w-3" />
-                  新建派生指标
+                  {on && (
+                    <span
+                      className="absolute left-0 top-1/2 h-[18px] w-[2px] -translate-y-1/2 rounded-full"
+                      style={{ background: "#7C9482" }}
+                    />
+                  )}
+                  {s}
                 </button>
+              );
+            })}
+          </nav>
+
+          <div className="flex-1 overflow-y-auto px-7 py-[22px]">
+            {actionError && (
+              <div className="mb-4 rounded-[8px] border border-danger/20 bg-danger/5 p-3 text-xs text-danger">
+                {actionError}
               </div>
-              <div className="mt-2 divide-y divide-border rounded-[8px] border border-border bg-workspace">
-                {(byPlatform.get(p.key) ?? []).length === 0 ? (
-                  <p className="px-3 py-2.5 text-xs text-ink-secondary">
+            )}
+
+            {/* ── 指标定义: Configuration Ledger ── */}
+            {section === "指标定义" && (
+              <div
+                className="rounded-[5px] px-[26px] py-5"
+                style={{
+                  background: "#FBFBF8",
+                  border: "1px solid rgba(200,201,203,0.5)",
+                }}
+              >
+                {/* Platform Index Tabs + create */}
+                <div
+                  className="flex gap-6"
+                  style={{ borderBottom: RULE }}
+                >
+                  {PLATFORMS.map((p) => {
+                    const on = platform === p.key;
+                    return (
+                      <button
+                        key={p.key}
+                        onClick={() => setPlatform(p.key)}
+                        className="relative pb-2 text-[13px]"
+                        style={{
+                          color: on ? "#20231F" : INK2,
+                          fontWeight: on ? 600 : 400,
+                        }}
+                      >
+                        {platformLabel(p.key)}
+                        {on && (
+                          <span
+                            className="absolute inset-x-0 -bottom-px h-[2px]"
+                            style={{ background: "#7C9482" }}
+                          />
+                        )}
+                      </button>
+                    );
+                  })}
+                  <button
+                    className="ml-auto inline-flex items-center gap-1 pb-2 text-[12.5px]"
+                    style={{ color: INK2 }}
+                    onClick={() => setCreatePlatform(platform)}
+                  >
+                    <Plus className="h-3 w-3" />
+                    新建派生指标
+                  </button>
+                </div>
+
+                {platformDefs.length === 0 ? (
+                  <p className="px-1 py-4 text-xs" style={{ color: INK2 }}>
                     该平台还没有指标定义。
                   </p>
                 ) : (
-                  (byPlatform.get(p.key) ?? []).map((d) => (
-                  <div
-                    key={d.id}
-                    className={`flex items-center gap-3 px-3 py-2.5 ${d.isActive ? "" : "opacity-60"}`}
-                  >
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-ink-primary">
-                          {d.alias ?? d.displayName}
-                        </span>
-                        <Badge variant={d.type === "derived" ? "mint" : "default"}>
-                          {d.type === "derived" ? "派生" : "原始"}
-                        </Badge>
-                        {!d.isActive && <Badge variant="default">已停用</Badge>}
-                      </div>
-                      <p className="mt-0.5 text-xs text-ink-muted">
-                        <code className="text-ink-faint">{d.key}</code>
-                        {" · "}
-                        {FORMAT_LABEL[d.format]}
-                        {d.type === "derived" && (
-                          <>
-                            {" · "}
-                            {buildFormulaPreview(d, nameOf(d.platform))}
-                          </>
-                        )}
-                      </p>
-                      {d.caution && (
-                        <p className="mt-0.5 text-xs text-ink-secondary">
-                          ⚠ {metricCautionLabel(d.caution)}
-                        </p>
-                      )}
+                  <>
+                    <div
+                      className="px-1 pb-1 pt-3.5 text-[11px] font-semibold tracking-[0.14em]"
+                      style={{ color: INK2 }}
+                    >
+                      原始指标
                     </div>
-                    <button
-                      className="text-xs text-ink-muted hover:text-ink-primary"
-                      onClick={() => setEditTarget(d)}
+                    <div
+                      className="grid gap-3 px-1 py-2 text-[11px] font-semibold tracking-[0.1em]"
+                      style={{
+                        gridTemplateColumns: GRID,
+                        color: INK2,
+                        borderBottom: RULE,
+                      }}
                     >
-                      编辑
-                    </button>
-                    <button
-                      className="text-xs text-ink-muted hover:text-ink-primary"
-                      onClick={() => toggleActive(d)}
+                      <span>显示名</span>
+                      <span>技术键</span>
+                      <span>类型</span>
+                      <span>状态</span>
+                      <span />
+                    </div>
+                    {rawDefs.map((d, i) =>
+                      renderMetricRow(
+                        d,
+                        i === rawDefs.length - 1 && derivedDefs.length === 0
+                      )
+                    )}
+                    {derivedDefs.length > 0 && (
+                      <>
+                        <div
+                          className="px-1 pb-1 pt-3.5 text-[11px] font-semibold tracking-[0.14em]"
+                          style={{ color: INK2 }}
+                        >
+                          派生指标
+                        </div>
+                        {derivedDefs.map((d, i) =>
+                          renderMetricRow(d, i === derivedDefs.length - 1)
+                        )}
+                      </>
+                    )}
+                  </>
+                )}
+              </div>
+            )}
+
+            {/* ── 内容方向 ── */}
+            {section === "内容方向" && (
+              <div
+                className="rounded-[5px] px-[26px] py-5"
+                style={{
+                  background: "#FBFBF8",
+                  border: "1px solid rgba(200,201,203,0.5)",
+                }}
+              >
+                {pillars.length === 0 ? (
+                  <p className="px-1 py-2 text-xs" style={{ color: INK2 }}>
+                    还没有内容方向。
+                  </p>
+                ) : (
+                  pillars.map((p, i) => (
+                    <div
+                      key={p.id}
+                      className="px-1 py-3"
+                      style={{
+                        borderBottom:
+                          i < pillars.length - 1 ? HAIRLINE : "none",
+                      }}
                     >
-                      {d.isActive ? "停用" : "启用"}
-                    </button>
-                  </div>
+                      <div className="text-[13.5px] font-semibold text-ink-primary">
+                        {p.name}
+                      </div>
+                    </div>
                   ))
                 )}
               </div>
-            </div>
-          ))}
+            )}
+
+            {/* ── 团队成员 ── */}
+            {section === "团队成员" && (
+              <div
+                className="rounded-[5px] px-[26px] py-5"
+                style={{
+                  background: "#FBFBF8",
+                  border: "1px solid rgba(200,201,203,0.5)",
+                }}
+              >
+                {members.length === 0 ? (
+                  <p className="px-1 py-2 text-xs" style={{ color: INK2 }}>
+                    还没有团队成员。
+                  </p>
+                ) : (
+                  members.map((m, i) => (
+                    <div
+                      key={m.id}
+                      className="flex items-baseline gap-3 px-1 py-[11px]"
+                      style={{
+                        borderBottom:
+                          i < members.length - 1 ? HAIRLINE : "none",
+                      }}
+                    >
+                      <span className="text-[13.5px] font-semibold text-ink-primary">
+                        {m.name}
+                      </span>
+                      {m.title && (
+                        <span className="text-xs" style={{ color: INK2 }}>
+                          {m.title}
+                        </span>
+                      )}
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
         </div>
       )}
 
