@@ -2,6 +2,7 @@
 
 import { ThinkingOrbs } from "@/components/motion/thinking-orbs";
 import { SpiralLoader } from "@/components/motion/spiral-loader";
+import { FountainLoader } from "@/components/motion/fountain-loader";
 import { Button } from "@/components/ui/button";
 
 /** Reduced-motion preview without flipping the OS setting: the same
@@ -83,6 +84,17 @@ export default function MotionSpike() {
           </Row>
           <Row label="32px · 较大处理（少用）">
             <SpiralLoader size={32} />
+          </Row>
+        </div>
+      </section>
+
+      <section className="mt-10">
+        <h2 className="text-[11px] font-medium uppercase tracking-[0.14em] text-ink-muted">
+          Fountain Loader（页面/组件切换加载）
+        </h2>
+        <div className="mt-2 rounded-[10px] border border-border bg-workspace px-6">
+          <Row label="30px · 页面切换加载">
+            <FountainLoader size={30} label="正在加载内容工作台" />
           </Row>
         </div>
       </section>

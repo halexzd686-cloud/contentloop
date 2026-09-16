@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { FountainLoader } from "@/components/motion/fountain-loader";
 import {
   Dialog,
   DialogContent,
@@ -134,7 +135,10 @@ export default function SettingsPage() {
       )}
 
       {loading ? (
-        <p className="mt-6 text-sm text-ink-muted">正在加载指标…</p>
+        // M7: fountain transition indicator (喷泉动效 + 页面名)
+        <div className="mt-6 flex min-h-[40vh] items-center justify-center">
+          <FountainLoader size={30} label="正在加载设置" />
+        </div>
       ) : loadError ? (
         <div className="mt-6 flex items-center gap-3">
           <p className="text-sm text-danger">{loadError}</p>

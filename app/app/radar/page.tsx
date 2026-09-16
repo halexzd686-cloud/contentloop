@@ -6,6 +6,7 @@ import { AddSignalDialog } from "@/components/radar/add-signal-dialog";
 import { SignalFilters } from "@/components/radar/signal-filters";
 import { QuickReview } from "@/components/radar/quick-review";
 import { Button } from "@/components/ui/button";
+import { FountainLoader } from "@/components/motion/fountain-loader";
 import { DotTexture } from "@/components/reactbits/dot-texture";
 import { RefreshCw } from "lucide-react";
 import { NAV_LABELS } from "@/lib/labels";
@@ -238,16 +239,10 @@ export default function RadarPage() {
 
           <div className="mt-4 space-y-3">
             {loading && signals.length === 0 ? (
-              Array.from({ length: 3 }).map((_, i) => (
-                <div
-                  key={i}
-                  className="animate-pulse rounded-[10px] border border-border bg-workspace p-5"
-                >
-                  <div className="mb-2 h-3 w-24 rounded bg-surface-subtle" />
-                  <div className="mb-2 h-4 w-3/4 rounded bg-surface-subtle" />
-                  <div className="h-3 w-full rounded bg-surface-subtle" />
-                </div>
-              ))
+              // M7: fountain transition indicator (喷泉动效 + 页面名)
+              <div className="flex min-h-[40vh] items-center justify-center">
+                <FountainLoader size={30} label="正在加载选题雷达" />
+              </div>
             ) : error ? (
               <div className="rounded-[10px] border border-danger/20 bg-danger/5 p-6 text-center">
                 <p className="text-sm text-danger">{error}</p>

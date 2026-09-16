@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { DemoBadge } from "@/components/ui/demo-badge";
 import { Button } from "@/components/ui/button";
+import { FountainLoader } from "@/components/motion/fountain-loader";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import {
   Dialog,
@@ -151,16 +152,9 @@ export default function StudioPage() {
 
       <div className="flex-1 overflow-y-auto p-6">
         {loading && contents.length === 0 ? (
-          <div className="space-y-3">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <div
-                key={i}
-                className="animate-pulse rounded-[10px] border border-border bg-workspace p-5"
-              >
-                <div className="mb-2 h-4 w-1/2 rounded bg-surface-subtle" />
-                <div className="h-3 w-1/4 rounded bg-surface-subtle" />
-              </div>
-            ))}
+          // M7: fountain transition indicator (喷泉动效 + 页面名)
+          <div className="flex min-h-[50vh] items-center justify-center">
+            <FountainLoader size={30} label="正在加载内容工作台" />
           </div>
         ) : error && contents.length === 0 ? (
           <div className="rounded-[10px] border border-danger/20 bg-danger/5 p-6 text-center">

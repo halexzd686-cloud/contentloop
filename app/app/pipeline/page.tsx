@@ -14,6 +14,7 @@ import {
   type DragStartEvent,
 } from "@dnd-kit/core";
 import { Button } from "@/components/ui/button";
+import { FountainLoader } from "@/components/motion/fountain-loader";
 import { DemoBadge } from "@/components/ui/demo-badge";
 import {
   Drawer,
@@ -271,9 +272,10 @@ export default function PipelinePage() {
   const activeItem = activeId ? items.find((i) => i.id === activeId) : null;
 
   if (loading) {
+    // M7: fountain transition indicator (喷泉动效 + 页面名)
     return (
-      <div className="flex h-full items-center justify-center">
-        <p className="text-sm text-ink-muted">正在加载内容流程…</p>
+      <div className="flex h-full min-h-[60vh] items-center justify-center">
+        <FountainLoader size={30} label="正在加载内容流程" />
       </div>
     );
   }

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { FountainLoader } from "@/components/motion/fountain-loader";
 import { RefreshCw } from "lucide-react";
 import {
   formatMetricValue,
@@ -343,9 +344,10 @@ export default function AnalyticsPage() {
   }
 
   if (loading) {
+    // M7: fountain transition indicator (喷泉动效 + 页面名)
     return (
-      <div className="flex h-full items-center justify-center">
-        <p className="text-sm text-ink-muted">正在加载数据复盘…</p>
+      <div className="flex h-full min-h-[60vh] items-center justify-center">
+        <FountainLoader size={30} label="正在加载数据复盘" />
       </div>
     );
   }

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { FountainLoader } from "@/components/motion/fountain-loader";
 import { Badge } from "@/components/ui/badge";
 import { RefreshCw, ArrowRight } from "lucide-react";
 import {
@@ -72,19 +73,10 @@ export default function HomePage() {
   }, [load]);
 
   if (loading && !model) {
+    // M7: fountain transition indicator (喷泉动效 + 页面名)
     return (
-      <div className="p-10">
-        <div className="space-y-3">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <div
-              key={i}
-              className="animate-pulse rounded-[10px] border border-border bg-workspace p-5"
-            >
-              <div className="mb-2 h-4 w-1/3 rounded bg-surface-subtle" />
-              <div className="h-3 w-1/5 rounded bg-surface-subtle" />
-            </div>
-          ))}
-        </div>
+      <div className="flex h-full min-h-[60vh] items-center justify-center">
+        <FountainLoader size={30} label="正在加载首页" />
       </div>
     );
   }
