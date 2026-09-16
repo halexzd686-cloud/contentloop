@@ -48,7 +48,7 @@ const MEMBERS: [string, string][] = [
 function Ledger() {
   return (
     <div
-      className="max-w-[780px] rounded-[5px] px-[26px] py-5"
+      className="rounded-[5px] px-[26px] py-5"
       style={{ background: "#FBFBF8", border: "1px solid rgba(200,201,203,0.5)" }}
     >
       <div className="flex gap-6" style={{ borderBottom: "1px solid rgba(200,201,203,0.65)" }}>
@@ -168,7 +168,7 @@ export function SettingsProto() {
 
             {section === "内容方向" && (
               <div
-                className="max-w-[780px] rounded-[5px] px-[26px] py-5"
+                className="rounded-[5px] px-[26px] py-5"
                 style={{ background: "#FBFBF8", border: "1px solid rgba(200,201,203,0.5)" }}
               >
                 {PILLARS.map(([n, d], i) => (
@@ -182,7 +182,7 @@ export function SettingsProto() {
 
             {section === "团队成员" && (
               <div
-                className="max-w-[780px] rounded-[5px] px-[26px] py-5"
+                className="rounded-[5px] px-[26px] py-5"
                 style={{ background: "#FBFBF8", border: "1px solid rgba(200,201,203,0.5)" }}
               >
                 {MEMBERS.map(([n, r], i) => (
