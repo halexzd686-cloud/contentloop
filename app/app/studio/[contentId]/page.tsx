@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { DemoBadge } from "@/components/ui/demo-badge";
 import { Button } from "@/components/ui/button";
+import { ThinkingOrbs } from "@/components/motion/thinking-orbs";
 import {
   Dialog,
   DialogContent,
@@ -838,6 +839,13 @@ export default function StudioContentPage({
               <Sparkles className="mr-1 h-3 w-3" />
               {generating ? "生成草稿中…" : "AI 生成简报草稿"}
             </Button>
+            {/* M7: AI reasoning = Thinking Orbs (approved V2) */}
+            {generating && (
+              <div className="flex flex-col items-center gap-2 py-2">
+                <ThinkingOrbs size={48} />
+                <p className="text-xs text-ink-secondary">正在生成简报草稿…</p>
+              </div>
+            )}
             {generateError && (
               <div className="rounded-[8px] border border-danger/20 bg-danger/5 p-3">
                 <p className="text-xs text-danger">{generateError}</p>

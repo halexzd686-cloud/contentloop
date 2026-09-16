@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { ThinkingOrbs } from "@/components/motion/thinking-orbs";
 import { Sparkles, RefreshCw, Lock, Plus, X, FileText } from "lucide-react";
 import {
   PLATFORMS,
@@ -622,6 +623,13 @@ export function usePlatformsPanel({
                 >
                   {creating ? "创建中…" : "创建空白草稿"}
                 </Button>
+              </div>
+            )}
+            {/* M7: AI reasoning = Thinking Orbs (approved V2) */}
+            {adapting && (
+              <div className="mt-3 flex flex-col items-center gap-2 py-2">
+                <ThinkingOrbs size={48} />
+                <p className="text-xs text-ink-secondary">正在适配平台版本…</p>
               </div>
             )}
           </div>

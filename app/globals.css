@@ -134,10 +134,16 @@ body {
   color: var(--ink-primary);
 }
 
-/* ── M7 Focus: 2px gold with visible offset ────────── */
+/* ── M7 Focus: 2px gold with visible offset (interactive
+   controls only — text inputs keep their own border focus) ── */
 :focus-visible {
   outline: 2px solid var(--cl-gold);
   outline-offset: 2px;
+}
+input:focus-visible,
+textarea:focus-visible,
+[contenteditable]:focus-visible {
+  outline: none;
 }
 
 

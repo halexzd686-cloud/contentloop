@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { ThinkingOrbs } from "@/components/motion/thinking-orbs";
 import { Sparkles, RefreshCw, X } from "lucide-react";
 import type { ResolvedEvidence } from "@/lib/validation/diagnosis";
 import { confidenceLabel } from "@/lib/labels";
@@ -218,6 +219,13 @@ export function LoopAnalysis({
             <Sparkles className="mr-1 h-3 w-3" />
             {generating ? "AI 正在分析表现…" : "重新分析"}
           </Button>
+          {/* M7: AI reasoning = Thinking Orbs (approved V2) */}
+          {generating && (
+            <div className="flex flex-col items-center gap-2 py-2">
+              <ThinkingOrbs size={48} />
+              <p className="text-xs text-ink-secondary">正在分析表现…</p>
+            </div>
+          )}
           {onCreateTest && !diagnosisStale && (
             <Button
               variant="primary"
@@ -248,6 +256,13 @@ export function LoopAnalysis({
             <Sparkles className="mr-1 h-3 w-3" />
             {generating ? "AI 正在分析表现…" : "AI 分析表现"}
           </Button>
+          {/* M7: AI reasoning = Thinking Orbs (approved V2) */}
+          {generating && (
+            <div className="flex flex-col items-center gap-2 py-2">
+              <ThinkingOrbs size={48} />
+              <p className="text-xs text-ink-secondary">正在分析表现…</p>
+            </div>
+          )}
         </div>
       )}
 
