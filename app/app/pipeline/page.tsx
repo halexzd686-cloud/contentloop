@@ -268,7 +268,7 @@ function Column({
   return (
     <div
       ref={setNodeRef}
-      className="w-full min-w-[220px] shrink rounded-[5px] transition-colors"
+      className="w-full shrink rounded-[5px] transition-colors"
       style={{
         background: isOver ? "rgba(124,148,130,0.07)" : undefined,
         outline: isOver ? "1px dashed rgba(124,148,130,0.5)" : "none",
@@ -472,15 +472,15 @@ export default function PipelinePage() {
               one document object; the space outside is page margin. */}
           <div className="min-w-0 flex-1 overflow-x-auto">
             <div
-              className="h-full rounded-[8px] px-[22px] py-5"
+              className="h-full min-w-[860px] rounded-[8px] px-[22px] py-5"
               style={{
                 background: "#FBFBF8",
                 border: "1px solid rgba(200,201,203,0.5)",
               }}
             >
               <div
-                className="grid content-start gap-5"
-                style={{ gridTemplateColumns: "repeat(5, minmax(200px, 1fr))" }}
+                className="grid content-start gap-4"
+                style={{ gridTemplateColumns: "repeat(5, minmax(0, 1fr))" }}
               >
                 {COLUMNS.map((col) => (
                   <Column
