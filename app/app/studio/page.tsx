@@ -145,7 +145,7 @@ export default function StudioPage() {
       {/* Index Tabs */}
       <div className="px-8">
         <div
-          className="flex gap-6"
+          className="flex max-w-[1080px] gap-6"
           style={{ borderBottom: "1px solid rgba(200,201,203,0.65)" }}
         >
           {(["active", "archived"] as const).map((v) => {
@@ -214,7 +214,7 @@ export default function StudioPage() {
             )}
           </div>
         ) : (
-          <div>
+          <div className="max-w-[1080px]">
             {error && (
               <div className="mt-4 rounded-[8px] border border-danger/20 bg-danger/5 p-3 text-xs text-danger">
                 {error}

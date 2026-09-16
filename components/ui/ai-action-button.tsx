@@ -1,14 +1,12 @@
 "use client";
 
-import { useRef, useState } from "react";
-
 /**
  * AiActionButton — M7 A2 "magic" Loop AI action (human-approved).
  *
  * Idle: aurora conic border travels behind the document face, inner
  * aura breathes, orbit glyph rotates slowly — restrained but alive.
- * Click: glyph spins up, a pulse ring expands, the face collapses,
- * then onClick fires (~430ms) and the caller swaps in ThinkingOrbs.
+ * Click fires onClick immediately (no click morph — removed per
+ * review); the caller swaps in ThinkingOrbs while generating.
  * Styles live in globals.css (.ai-magic-btn*), frozen palette only.
  *
  * Used for every genuine AI generation entry (brief draft, platform
@@ -23,23 +21,8 @@ export function AiActionButton({
   onClick?: () => void;
   disabled?: boolean;
 }) {
-  const [clicked, setClicked] = useState(false);
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  function handleClick() {
-    if (disabled || clicked) return;
-    setClicked(true);
-    timer.current = setTimeout(() => {
-      onClick?.();
-    }, 430);
-  }
-
   return (
-    <button
-      onClick={handleClick}
-      disabled={disabled}
-      className={`ai-magic-btn w-full ${clicked ? "ai-magic-btn--clicked" : ""}`}
-    >
+    <button onClick={onClick} disabled={disabled} className="ai-magic-btn w-full">
       <span className="ai-magic-btn__face">
         <svg
           className="ai-magic-btn__glyph"
@@ -59,7 +42,6 @@ export function AiActionButton({
         </svg>
         <span style={{ position: "relative" }}>{label}</span>
       </span>
-      <span className="ai-magic-btn__burst" aria-hidden />
     </button>
   );
 }

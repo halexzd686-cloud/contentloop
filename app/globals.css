@@ -172,9 +172,8 @@ textarea:focus-visible,
 
 /* ── M7 A2 Magic AI action button (frozen palette only) ──
    Aurora conic border travels behind the document face; inner aura
-   breathes; orbit glyph rotates slowly. Click morph: glyph spins up,
-   a pulse ring expands, the face collapses — then ThinkingOrbs takes
-   over (parent swaps content on onClick, fired after the morph). */
+   breathes; orbit glyph rotates slowly. Click fires immediately —
+   ThinkingOrbs takes over on the caller's generating state. */
 .ai-magic-btn {
   position: relative;
   overflow: hidden;
@@ -239,33 +238,6 @@ textarea:focus-visible,
 .ai-magic-btn__glyph {
   animation: ai-glyph-spin 7s linear infinite;
 }
-.ai-magic-btn__burst {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  z-index: 2;
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  border: 2px solid rgba(124, 148, 130, 0.7);
-  transform: translate(-50%, -50%);
-  opacity: 0;
-  pointer-events: none;
-}
-.ai-magic-btn--clicked .ai-magic-btn__burst {
-  animation: ai-burst 550ms ease-out forwards;
-}
-.ai-magic-btn--clicked::before {
-  animation:
-    ai-aurora-rotate 500ms linear infinite,
-    ai-collapse 450ms ease-in forwards;
-}
-.ai-magic-btn--clicked .ai-magic-btn__face {
-  animation: ai-collapse 450ms ease-in forwards;
-}
-.ai-magic-btn--clicked .ai-magic-btn__glyph {
-  animation: ai-glyph-spin 450ms linear infinite;
-}
 
 @keyframes ai-aurora-rotate {
   to {
@@ -284,22 +256,6 @@ textarea:focus-visible,
 @keyframes ai-glyph-spin {
   to {
     transform: rotate(360deg);
-  }
-}
-@keyframes ai-burst {
-  0% {
-    opacity: 0.9;
-    transform: translate(-50%, -50%) scale(1);
-  }
-  100% {
-    opacity: 0;
-    transform: translate(-50%, -50%) scale(16);
-  }
-}
-@keyframes ai-collapse {
-  to {
-    opacity: 0;
-    transform: scale(0.72);
   }
 }
 
