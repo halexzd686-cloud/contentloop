@@ -268,7 +268,7 @@ function Column({
   return (
     <div
       ref={setNodeRef}
-      className="w-full min-w-[220px] max-w-[320px] flex-1 shrink rounded-[5px] transition-colors"
+      className="w-full min-w-[220px] shrink rounded-[5px] transition-colors"
       style={{
         background: isOver ? "rgba(124,148,130,0.07)" : undefined,
         outline: isOver ? "1px dashed rgba(124,148,130,0.5)" : "none",
@@ -443,7 +443,10 @@ export default function PipelinePage() {
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
       >
-        <div className="grid flex-1 content-start gap-5 overflow-x-auto px-8 pt-5" style={{ gridTemplateColumns: "repeat(5, minmax(220px, 1fr))" }}>
+        <div
+          className="grid flex-1 content-start justify-start gap-5 overflow-x-auto px-8 pt-5"
+          style={{ gridTemplateColumns: "repeat(5, minmax(220px, 300px))" }}
+        >
           {COLUMNS.map((col) => (
             <Column
               key={col.key}
