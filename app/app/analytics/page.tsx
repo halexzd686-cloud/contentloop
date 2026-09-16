@@ -584,18 +584,72 @@ export default function AnalyticsPage() {
                     </div>
                   ) : detail ? (
                     <>
-                      {/* Fact header */}
-                      <div className="text-xs" style={{ color: "#626660" }}>
-                        <span className="text-sm font-medium text-ink-primary">
-                          {detail.fact.finalTitle}
-                        </span>
-                        <DemoBadge isDemo={detail.fact.isDemo} />
-                        <span className="ml-2">
-                          {platformLabel(detail.fact.platform)} ·{" "}
-                          {detail.fact.pillarName ?? "无内容方向"} · 发布于{" "}
-                          {new Date(detail.fact.publishedAt).toLocaleString()}
-                        </span>
-                      </div>
+                      {/* 本期概览 (M7 方案 C): title + headline numbers pull
+                          density upward; values are existing metrics only. */}
+                      {detail.fact.hasSnapshot ? (
+                        <div
+                          className="flex flex-wrap items-end gap-x-8 gap-y-3 pb-4"
+                          style={{ borderBottom: RULE }}
+                        >
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2 text-[15px] font-semibold text-ink-primary">
+                              {detail.fact.finalTitle}
+                              <DemoBadge isDemo={detail.fact.isDemo} />
+                            </div>
+                            <div
+                              className="mt-1 text-[11px]"
+                              style={{ color: "#626660" }}
+                            >
+                              {platformLabel(detail.fact.platform)} ·{" "}
+                              {detail.fact.pillarName ?? "无内容方向"} · 发布于{" "}
+                              {new Date(detail.fact.publishedAt).toLocaleDateString()} ·{" "}
+                              {selected.checkpoint}
+                            </div>
+                          </div>
+                          {[...raws, ...deriveds].slice(0, 4).map((m) => {
+                            const account = baselineFor(detail.accountBaseline, m.key);
+                            return (
+                              <div key={m.key} className="shrink-0 text-right">
+                                <div
+                                  className="text-ink-primary"
+                                  style={{
+                                    fontFamily: "var(--font-cormorant), serif",
+                                    fontSize: 24,
+                                    fontWeight: 600,
+                                    lineHeight: 1,
+                                  }}
+                                >
+                                  {formatMetricValue(m.format, m.value)}
+                                </div>
+                                <div
+                                  className="mt-1 text-[10.5px]"
+                                  style={{ color: "#626660" }}
+                                >
+                                  {m.label}
+                                  {account && account.median !== null && (
+                                    <>
+                                      {" · 中位 "}
+                                      {formatMetricValue(m.format, account.median)}
+                                    </>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <div className="text-xs" style={{ color: "#626660" }}>
+                          <span className="text-sm font-medium text-ink-primary">
+                            {detail.fact.finalTitle}
+                          </span>
+                          <DemoBadge isDemo={detail.fact.isDemo} />
+                          <span className="ml-2">
+                            {platformLabel(detail.fact.platform)} ·{" "}
+                            {detail.fact.pillarName ?? "无内容方向"} · 发布于{" "}
+                            {new Date(detail.fact.publishedAt).toLocaleString()}
+                          </span>
+                        </div>
+                      )}
                       {detail.fact.isDemo && (
                         <p className="mt-2 rounded-[8px] border border-border bg-canvas px-3 py-2 text-xs text-ink-secondary">
                           {DEMO_NOTICE}
