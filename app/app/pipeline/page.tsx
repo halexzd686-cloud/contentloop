@@ -86,6 +86,58 @@ const COLUMNS = [
   { key: "published", label: contentStatusLabel("published") },
 ] as const;
 
+// M7 stage colors (approved pipeline-final-v2): silver / primary /
+// gold / quiet primary / gray. No rainbow status colors.
+const STAGE_COLOR: Record<string, string> = {
+  planning: "#C8C9CB",
+  in_progress: "#7C9482",
+  review: "#D4B26A",
+  scheduled: "rgba(124,148,130,0.55)",
+  published: "#8B8E87",
+};
+
+function ColMotif({ color }: { color: string }) {
+  return (
+    <svg width="22" height="10" viewBox="0 0 22 10" aria-hidden>
+      <line x1="0" y1="5" x2="12" y2="5" stroke={color} strokeWidth="2" strokeLinecap="round" />
+      <circle cx="18" cy="5" r="3" fill={color} />
+    </svg>
+  );
+}
+
+/** Single StatusMarker fact line for a tile (data-true, never mock). */
+function tileFact(item: PipelineItem): string {
+  if (item.platforms.length === 0) {
+    return `暂无平台版本 · 简报${
+      item.briefStatus ? briefStatusLabel(item.briefStatus) : "未开始"
+    }`;
+  }
+  const p = item.platforms[0];
+  const parts = [platformLabel(p.platform)];
+  if (p.status === "review") {
+    parts.push(`审核清单 ${p.checklistDone}/${p.checklistTotal}`);
+  } else {
+    parts.push(versionStatusLabel(p.status));
+  }
+  if (p.publication) {
+    const pub = p.publication;
+    parts.push(`发布于 ${new Date(pub.publishedAt).toLocaleDateString()}`);
+    for (const c of ["24h", "72h"] as Checkpoint[]) {
+      const has = c === "24h" ? pub.snapshot24h : pub.snapshot72h;
+      const st = checkpointStatus(pub.publishedAt, c, has);
+      parts.push(
+        st === "submitted"
+          ? `${c} 已录入`
+          : st === "due"
+            ? `${c} 待录入`
+            : `${c} 未到时间`
+      );
+    }
+  }
+  if (item.platforms.length > 1) parts.push(`+${item.platforms.length - 1} 个平台`);
+  return parts.join(" · ");
+}
+
 function PlatformChips({ platforms }: { platforms: PlatformState[] }) {
   if (platforms.length === 0) {
     return (
@@ -115,21 +167,58 @@ function PlatformChips({ platforms }: { platforms: PlatformState[] }) {
 }
 
 function CardContent({ item }: { item: PipelineItem }) {
+  const color = STAGE_COLOR[item.status] || "#8B8E87";
+  const action =
+    item.status === "review"
+      ? { label: "去审核", href: `/app/studio/${item.id}` }
+      : item.status === "published" &&
+          item.platforms.some((p) => p.publication)
+        ? { label: "查看复盘", href: "/app/analytics" }
+        : null;
   return (
     <>
       <div className="flex items-start justify-between gap-2">
-        <p className="text-sm font-medium text-ink-primary">{item.title}</p>
+        <p className="text-[14px] font-semibold leading-[1.5] text-ink-primary">
+          {item.title}
+        </p>
         <DemoBadge isDemo={item.isDemo} />
       </div>
-      <div className="mt-1.5">
-        <PlatformChips platforms={item.platforms} />
+      <hr
+        className="my-2"
+        style={{ border: "none", borderTop: "1px solid rgba(200,201,203,0.4)" }}
+      />
+      <div
+        className="flex items-center gap-1.5 text-xs leading-[1.55]"
+        style={{ color: "#626660" }}
+      >
+        <span
+          className="inline-block h-[5px] w-[5px] shrink-0 rounded-full"
+          style={{ background: color }}
+        />
+        {tileFact(item)}
       </div>
-      <div className="mt-1.5 flex items-center justify-between text-[11px] text-ink-muted">
+      <div
+        className="mt-[9px] flex items-baseline justify-between text-[11.5px]"
+        style={{ color: "#8B8E87" }}
+      >
         <span>{item.ownerName ?? "未分配"}</span>
         {item.deadlineAt && (
           <span>截止 {new Date(item.deadlineAt).toLocaleDateString()}</span>
         )}
       </div>
+      {action && (
+        <div className="mt-3">
+          <Link
+            href={action.href}
+            onClick={(e) => e.stopPropagation()}
+            onPointerDown={(e) => e.stopPropagation()}
+            className="inline-flex h-[30px] items-center rounded-[5px] px-[11px] text-xs font-medium text-ink-primary transition-colors hover:bg-surface-subtle"
+            style={{ border: "1px solid #C8C9CB" }}
+          >
+            {action.label}
+          </Link>
+        </div>
+      )}
     </>
   );
 }
@@ -150,9 +239,13 @@ function DraggableCard({
       {...attributes}
       {...listeners}
       onClick={() => onOpen(item)}
-      className={`cursor-grab rounded-[8px] border border-border bg-workspace p-3 shadow-sm transition-colors hover:border-mint-600/50 ${
+      className={`mt-3 cursor-grab rounded-[5px] px-[15px] py-[13px] transition-colors hover:bg-[rgba(124,148,130,0.05)] ${
         isDragging ? "opacity-40" : ""
       }`}
+      style={{
+        background: "#FBFBF8",
+        border: "1px solid rgba(200,201,203,0.55)",
+      }}
     >
       <CardContent item={item} />
     </div>
@@ -171,25 +264,46 @@ function Column({
   onOpen: (item: PipelineItem) => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: colKey });
+  const color = STAGE_COLOR[colKey] || "#8B8E87";
   return (
     <div
       ref={setNodeRef}
-      className={`flex w-full min-w-[220px] max-w-[320px] flex-1 shrink flex-col rounded-[8px] border p-2 ${
-        isOver ? "border-mint-600 bg-mint-100/40" : "border-border bg-canvas"
-      }`}
+      className="w-full min-w-[220px] max-w-[320px] flex-1 shrink rounded-[5px] transition-colors"
+      style={{
+        background: isOver ? "rgba(124,148,130,0.07)" : undefined,
+        outline: isOver ? "1px dashed rgba(124,148,130,0.5)" : "none",
+        outlineOffset: 4,
+      }}
     >
-      <div className="mb-2 flex items-center justify-between px-1">
-        <span className="text-[11px] font-medium uppercase tracking-[0.14em] text-ink-muted">
+      {/* ──● column header + hairline with stage segment */}
+      <div
+        className="relative flex items-center gap-2 pb-2.5"
+        style={{ borderBottom: "1px solid rgba(200,201,203,0.65)" }}
+      >
+        <ColMotif color={color} />
+        <span className="text-[13px] font-semibold text-ink-primary">
           {label}
         </span>
-        <span className="text-xs text-ink-muted">{items.length}</span>
+        <span
+          className="ml-auto text-xs tabular-nums"
+          style={{ color: "#8B8E87" }}
+        >
+          {items.length}
+        </span>
+        <span
+          className="absolute -bottom-px left-0 h-[2px] w-[22px]"
+          style={{ background: color }}
+        />
       </div>
-      <div className="flex-1 space-y-2 overflow-y-auto">
+      <div className="pb-4">
         {items.map((item) => (
           <DraggableCard key={item.id} item={item} onOpen={onOpen} />
         ))}
         {items.length === 0 && (
-          <p className="px-2 py-6 text-center text-[11px] text-ink-muted">
+          <p
+            className="px-2 py-6 text-center text-[11px]"
+            style={{ color: "#8B8E87" }}
+          >
             {colKey === "published"
               ? "真实发布后，内容会出现在这里。"
               : "暂无内容"}
@@ -300,11 +414,19 @@ export default function PipelinePage() {
   }
 
   return (
-    <div className="flex h-full flex-col p-6">
-      <div className="mb-4 flex items-center gap-3">
-        <h1 className="text-[24px] font-semibold leading-tight text-ink-primary">内容流程</h1>
+    <div className="flex h-full flex-col">
+      {/* Header — M7: title + real summary */}
+      <div className="flex items-end justify-between px-8 pb-[18px] pt-6">
+        <div>
+          <h1 className="text-[24px] font-semibold leading-tight text-ink-primary">
+            内容流程
+          </h1>
+          <p className="mt-1.5 text-[12.5px]" style={{ color: "#626660" }}>
+            {items.length} 条内容 · 五阶段 · 拖动卡片推进阶段
+          </p>
+        </div>
         {dragError && (
-          <div className="ml-auto flex items-center gap-2 rounded-[8px] border border-danger/20 bg-danger/5 px-3 py-1.5">
+          <div className="flex items-center gap-2 rounded-[8px] border border-danger/20 bg-danger/5 px-3 py-1.5">
             <p className="text-xs text-danger">{dragError}</p>
             <button
               className="text-xs text-ink-muted underline"
@@ -321,7 +443,7 @@ export default function PipelinePage() {
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
       >
-        <div className="flex flex-1 gap-3 overflow-x-auto">
+        <div className="grid flex-1 content-start gap-5 overflow-x-auto px-8 pt-5" style={{ gridTemplateColumns: "repeat(5, minmax(220px, 1fr))" }}>
           {COLUMNS.map((col) => (
             <Column
               key={col.key}
@@ -334,7 +456,13 @@ export default function PipelinePage() {
         </div>
         <DragOverlay>
           {activeItem && (
-            <div className="w-[204px] rounded-[8px] border border-mint-600 bg-workspace p-3 shadow-lg">
+            <div
+              className="w-[240px] rounded-[5px] px-[15px] py-[13px] shadow-lg"
+              style={{
+                background: "#FBFBF8",
+                border: "1px solid rgba(124,148,130,0.6)",
+              }}
+            >
               <CardContent item={activeItem} />
             </div>
           )}
