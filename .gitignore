@@ -47,3 +47,6 @@ next-env.d.ts
 
 # M7 visual verification (temporary, never committed)
 .shots/
+
+.vercel
+.env*

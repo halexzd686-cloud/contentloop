@@ -105,3 +105,12 @@
 - 第一轮生产版（平涂团子+胶囊眼+金牌徽章）上线后，用户判定"有点普通"，进行了三轮设计探索（原型页 app/dev/pet-variants，dev-only 保留）：R1 仪表环/体积感/轨道眼 → R2 史莱姆形态四案 → R3 衔尾环/表情系统/融合
 - **最终决策：保持生产现状，不替换**。探索资产留在 dev 页备查，若日后重启可直接从 R3-W3（衔尾环+表情系统）续起
 - AI 按钮重设计（B+ 双线框）已上线，与小环现状风格协调
+
+## 部署上线（2026-09-23，Vercel）
+
+- 公开地址：https://contentloop-howard15.vercel.app（Vercel + Supabase，团队 howard15 / 项目 contentloop）
+- 过程中修复三个部署坑：① CLI 创建的项目框架预设为空 → API PATCH framework=nextjs；② 空 public/ 目录触发 Vercel 误检 → 已删除（favicon 走 app 约定）；③ Supabase 直连地址 IPv6-only，Vercel serverless 不可达 → 自动探测区域定位 Session Pooler（aws-0-ap-northeast-2）并更新 DATABASE_URL
+- 部署保护 ssoProtection 已置 null（公开展示用；V1 无应用层认证，写接口公开——求职演示定位下的有意取舍，README 安全边界已注明）
+- 线上验证：页面 200 / 数据 API 返回真实库数据 / AI 草稿 200（6.9s）
+- Git：M8–M9 全部工作已按行为拆 6 个提交推送至 github.com/halexzd686-cloud/contentloop（main）
+- README 重写为用户账号统一风格（参考 SoloFlow/TK-Kanban/Moxing Studio）；截图入 docs/media/
