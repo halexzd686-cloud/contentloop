@@ -66,11 +66,28 @@ ContentLoop 的视觉人格应体现：
 
 ## 2.1 Base Theme
 
-默认仅支持：
+双主题（2026-09-18 用户拍板修订，原"V1 不做 Dark Mode"废止）：
 
-> **Light Theme**
+> **Light Theme（默认）/ Dark Theme（手动切换 + localStorage 持久化）**
 
-V1 不做 Dark Mode。
+原则：**换纸不换版**——双主题共享全部排版、发丝线、账本语言与组件结构，仅颜色令牌切换（`[data-theme="dark"]` 重定义 `app/globals.css` 令牌，见 §2.1.1）。
+
+### 2.1.1 Dark Theme 令牌（用户指定三色 + ink 家族反演底色）
+
+| 角色 | Light | Dark |
+|---|---|---|
+| 主强调（选中/主按钮/状态点/AI 主色） | #7C9482 | #658761 |
+| 语义金（评分/洞察/DEMO） | #D4B26A | #DFA05D |
+| 危险（仅错误/破坏操作） | #B85B57 | #AC5045 |
+| Canvas | #F5F6F3 | #1A1C19 |
+| 文档面 | #FBFBF8 | #232620 |
+| Overlay | #FFFFFF | #2A2D27 |
+| 强文字 | #20231F | #EDEFEA |
+| 功能小字 | #626660 | #9A9D94 |
+| 装饰小字 | #8B8E87 | #6E7168 |
+| 结构线 | #C8C9CB | #4A4D45 |
+
+实现契约：canvas 组件（`ctx.fillStyle` 不支持 var()）经 `lib/theme.ts` 运行时解析令牌并监听 `cl-themechange` 重绘；`@keyframes` 内继续禁止 CSS 变量（深色变体用 `[data-theme="dark"]` 选择器覆写）；切换入口在侧栏底部，防 FOUC 内联脚本在 `app/layout.tsx`。
 
 ## 2.2 Background System
 

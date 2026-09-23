@@ -77,7 +77,6 @@ Do NOT add any of the following unless the user explicitly changes the specifica
 - Global autonomous super-agent
 - Multi-model routing UI
 - Prompt editor
-- Dark mode
 - Full mobile Studio editor
 - Video generation
 - Video editing
@@ -804,6 +803,8 @@ Do not add:
 - decorative continuous motion
 - random card floating
 - excessive spring effects
+
+例外：小环（侧栏宠物）：允许 ~6s 间隔的 150ms 眨眼与拖拽回弹（2026-09-23 用户拍板）；其余待机静止。
 
 ---
 
