@@ -4,12 +4,20 @@ import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Sparkles, RefreshCw } from "lucide-react";
 import { AI_PROPOSAL_APPLY_HELPER, platformLabel } from "@/lib/labels";
+import {
+  INK_FUNCTIONAL,
+  SURFACE,
+  LedgerLabel,
+} from "@/components/analytics/ledger";
 
 /**
  * Learning section — M3.3, inside the concluded Test drawer.
  *
  * AI Draft = wording proposal only (zero DB writes). Save is the only
  * write. evidenceSummary is server-built and never editable.
+ *
+ * M8-B3: presentation aligned to the M7 ledger language — no card
+ * shell; evidence panels are dashed pending-surface panels.
  */
 
 interface LearningContextData {
@@ -132,16 +140,14 @@ export function LearningSection({ testId }: { testId: string }) {
   }
 
   return (
-    <section className="rounded-[8px] border border-border bg-canvas p-3">
-      <p className="text-xs font-semibold uppercase tracking-wide text-ink-muted">
-        运营经验
-      </p>
-      <p className="mt-1 text-xs text-ink-secondary">
+    <section>
+      <LedgerLabel>运营经验</LedgerLabel>
+      <p className="mt-1 text-xs" style={{ color: INK_FUNCTIONAL }}>
         你从已完成的运营测试中选择保存的可复用经验。
       </p>
 
       {ctx.sourceStale && (
-        <p className="mt-2 rounded-[8px] border border-warning/30 bg-warning/5 p-2 text-xs text-ink-secondary">
+        <p className="mt-2 rounded-[5px] border border-warning/30 bg-warning/5 p-2 text-xs text-ink-secondary">
           该测试的底层数据已变化。这条经验基于结论时定格的证据。
         </p>
       )}
@@ -150,19 +156,22 @@ export function LearningSection({ testId }: { testId: string }) {
       {ctx.learning && !editingSaved && (
         <div className="mt-2 space-y-2">
           <p className="text-sm text-ink-primary">{ctx.learning.text}</p>
-          <p className="text-[11px] text-ink-faint">
+          <p className="text-[11px]" style={{ color: INK_FUNCTIONAL }}>
             {ctx.learning.platform ? platformLabel(ctx.learning.platform) : "全部平台"}
             {ctx.learning.pillarId ? ` · 限定内容方向` : ""}
             {" · "}保存于 {new Date(ctx.learning.createdAt).toLocaleString()}
           </p>
           {/* M4.2: persistent guidance — a saved Learning never rewrites
               content; Studio (Brief tab) is the only Apply surface. */}
-          <p className="text-xs text-ink-muted">
+          <p className="text-xs" style={{ color: INK_FUNCTIONAL }}>
             已保存。这不会改动任何内容。请在内容工作台的“内容简报”中应用到合适的内容。
           </p>
-          <details className="text-xs text-ink-muted">
+          <details className="text-xs" style={{ color: INK_FUNCTIONAL }}>
             <summary className="cursor-pointer">证据摘要</summary>
-            <pre className="mt-1 whitespace-pre-wrap rounded-[8px] border border-border bg-workspace p-2 font-sans">
+            <pre
+              className="mt-1 whitespace-pre-wrap rounded-[5px] p-2 font-sans"
+              style={{ background: SURFACE, border: "1px dashed var(--cl-silver)" }}
+            >
               {ctx.learning.evidenceSummary}
             </pre>
           </details>
@@ -211,7 +220,7 @@ export function LearningSection({ testId }: { testId: string }) {
             </Button>
             <Button variant="ghost" size="sm" onClick={() => setEditingSaved(false)}>取消</Button>
           </div>
-          <p className="text-[11px] text-ink-faint">
+          <p className="text-[11px]" style={{ color: INK_FUNCTIONAL }}>
             证据摘要定格于结论时，编辑不会改写它。
           </p>
         </div>
@@ -226,9 +235,12 @@ export function LearningSection({ testId }: { testId: string }) {
 
       {!ctx.learning && creating && (
         <div className="mt-2 space-y-2">
-          <details className="text-xs text-ink-muted" open>
+          <details className="text-xs" style={{ color: INK_FUNCTIONAL }} open>
             <summary className="cursor-pointer">证据摘要（定格于结论时）</summary>
-            <pre className="mt-1 whitespace-pre-wrap rounded-[8px] border border-border bg-workspace p-2 font-sans">
+            <pre
+              className="mt-1 whitespace-pre-wrap rounded-[5px] p-2 font-sans"
+              style={{ background: SURFACE, border: "1px dashed var(--cl-silver)" }}
+            >
               {ctx.evidenceSummaryPreview}
             </pre>
           </details>
@@ -254,7 +266,13 @@ export function LearningSection({ testId }: { testId: string }) {
               </p>
             )}
             {draft !== null && (
-              <div className="mt-1 rounded-[8px] border border-mint-600/30 bg-mint-100/40 p-2">
+              <div
+                className="mt-1 rounded-[5px] p-2"
+                style={{
+                  background: "var(--mint-tint)",
+                  border: "1px solid var(--mint-line)",
+                }}
+              >
                 <p className="text-xs text-ink-primary">{draft}</p>
                 <div className="mt-1.5 flex gap-2">
                   <button
@@ -267,13 +285,14 @@ export function LearningSection({ testId }: { testId: string }) {
                     应用
                   </button>
                   <button
-                    className="text-xs text-ink-muted hover:underline"
+                    className="text-xs hover:underline"
+                    style={{ color: INK_FUNCTIONAL }}
                     onClick={() => setDraft(null)}
                   >
                     放弃
                   </button>
                 </div>
-                <p className="mt-1.5 text-[11px] text-ink-secondary">
+                <p className="mt-1.5 text-[11px]" style={{ color: INK_FUNCTIONAL }}>
                   {AI_PROPOSAL_APPLY_HELPER}
                 </p>
               </div>

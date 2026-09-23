@@ -1,15 +1,22 @@
 "use client";
 
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Check } from "lucide-react";
 import { formatMetricValue } from "@/lib/metrics/engine";
 import type { ResultRow, BaselineCell } from "@/lib/tests-result";
 import {
+  checkpointLabel,
   testOutcomeLabel,
   testRoleLabel,
   TEST_OUTCOME_HELPERS,
 } from "@/lib/labels";
+import {
+  HAIRLINE,
+  RULE,
+  INK_FUNCTIONAL,
+  SURFACE,
+  LedgerLabel,
+  StatusDot,
+} from "@/components/analytics/ledger";
 
 /**
  * M3.2 Observed Results + Complete Test panel.
@@ -18,6 +25,9 @@ import {
  * (Win/Loss/Trade-off/No Clear Result); no "significant/proved/winner"
  * language; concluded tests show frozen evidence ("captured at
  * conclusion time") with a stale banner when the subject changed.
+ *
+ * M8-B3: presentation aligned to the M7 ledger language — hairline
+ * rows instead of nested cards; outcome as text + dot, no Badge.
  */
 
 const OUTCOME_KEYS = ["win", "loss", "trade_off", "no_clear_result"] as const;
@@ -61,7 +71,7 @@ function BaselineText({
 }) {
   if (!cell.available) return <span className="text-ink-faint">N/A</span>;
   return (
-    <span className="text-ink-secondary">
+    <span style={{ color: INK_FUNCTIONAL }}>
       {/* Same shared formatter as the primary value — one format per
           MetricDefinition, presentation-only. */}
       {formatMetricValue(format, cell.median)}
@@ -101,7 +111,7 @@ export function ResultSection({
 }) {
   if (resultError) {
     return (
-      <section className="rounded-[8px] border border-danger/20 bg-danger/5 p-3">
+      <section className="rounded-[5px] border border-danger/20 bg-danger/5 p-3">
         <p className="text-xs text-danger">{resultError}</p>
         <button
           className="mt-1 text-xs text-mint-600 underline"
@@ -114,8 +124,13 @@ export function ResultSection({
   }
   if (!result) {
     return (
-      <section className="rounded-[8px] border border-border bg-canvas p-3">
-        <p className="text-xs text-ink-faint">正在加载观察结果…</p>
+      <section
+        className="rounded-[5px] px-4 py-5 text-center"
+        style={{ background: SURFACE, border: "1px dashed var(--cl-silver)" }}
+      >
+        <p className="text-xs" style={{ color: INK_FUNCTIONAL }}>
+          正在加载观察结果…
+        </p>
       </section>
     );
   }
@@ -125,50 +140,54 @@ export function ResultSection({
   const pm = result.primaryMetric ?? result.evidence?.primaryMetric ?? null;
 
   return (
-    <section className="rounded-[8px] border border-border bg-canvas p-3">
-      <p className="text-xs font-semibold uppercase tracking-wide text-ink-muted">
-        观察结果 — {pm?.label ?? "主要指标"} · {result.test.checkpoint}
-      </p>
-
-      {!running && (
-        <p className="mt-1 text-[11px] text-ink-faint">
-          证据于结论时定格。
-        </p>
-      )}
+    <section>
+      <div className="flex items-baseline gap-2">
+        <LedgerLabel>
+          观察结果 — {pm?.label ?? "主要指标"} · {checkpointLabel(result.test.checkpoint)}
+        </LedgerLabel>
+        {!running && (
+          <span className="text-[11px]" style={{ color: INK_FUNCTIONAL }}>
+            证据于结论时定格。
+          </span>
+        )}
+      </div>
       {!running && result.resultStale && (
-        <p className="mt-1 rounded-[8px] border border-warning/30 bg-warning/5 p-2 text-xs text-ink-secondary">
+        <p className="mt-1 rounded-[5px] border border-warning/30 bg-warning/5 p-2 text-xs text-ink-secondary">
           该测试完成后，关联发布数据已变化。
         </p>
       )}
 
-      <div className="mt-2 space-y-1.5">
+      <div className="mt-2" style={{ borderTop: RULE }}>
         {rows.length === 0 && (
-          <p className="text-xs text-ink-faint">
+          <p className="py-2 text-xs text-ink-faint">
             关联发布记录以观察结果。
           </p>
         )}
         {rows.map((r) => (
           <div
             key={r.publicationId}
-            className="rounded-[8px] border border-border bg-workspace px-3 py-2"
+            className="px-1 py-2"
+            style={{ borderBottom: HAIRLINE }}
           >
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-ink-primary">
+            <div className="flex items-center justify-between gap-2">
+              <span className="truncate text-xs font-medium text-ink-primary">
                 {r.finalTitle}
               </span>
-              <span className="text-[11px] text-ink-faint">{testRoleLabel(r.role)}</span>
+              <span className="shrink-0 text-[11px]" style={{ color: INK_FUNCTIONAL }}>
+                {testRoleLabel(r.role)}
+              </span>
             </div>
             {r.availability === "awaiting" ? (
-              <p className="mt-0.5 text-[11px] text-ink-muted">
-                还没有 {result.test.checkpoint} 数据
+              <p className="mt-0.5 text-[11px]" style={{ color: INK_FUNCTIONAL }}>
+                还没有 {checkpointLabel(result.test.checkpoint)} 数据
               </p>
             ) : r.availability === "metric_unavailable" ? (
-              <p className="mt-0.5 text-[11px] text-ink-muted">
+              <p className="mt-0.5 text-[11px]" style={{ color: INK_FUNCTIONAL }}>
                 主要指标不可用（N/A）
               </p>
             ) : (
-              <p className="mt-0.5 text-xs text-ink-secondary">
-                <span className="font-medium text-ink-primary">
+              <p className="mt-0.5 text-xs" style={{ color: INK_FUNCTIONAL }}>
+                <span className="font-medium tabular-nums text-ink-primary">
                   {pm ? formatMetricValue(pm.format, r.value) : "N/A"}
                 </span>
                 {" · "}账号中位数{" "}
@@ -197,16 +216,19 @@ export function ResultSection({
       )}
 
       {!running && (
-        <div className="mt-3 border-t border-border pt-3">
-          <div className="flex items-center gap-2 text-xs font-semibold text-ink-secondary">
-            <span>结果：</span>
-            <Badge variant={result.outcome === "win" ? "mint" : "default"}>
+        <div className="mt-3 pt-3" style={{ borderTop: RULE }}>
+          <div className="flex items-center gap-2 text-xs">
+            <span className="font-semibold" style={{ color: INK_FUNCTIONAL }}>
+              结果：
+            </span>
+            <span className="flex items-center gap-1.5 font-medium text-ink-primary">
+              {result.outcome === "win" && <StatusDot />}
               {result.outcome ? testOutcomeLabel(result.outcome) : "—"}
-            </Badge>
+            </span>
           </div>
           <p className="mt-1 text-xs text-ink-primary">{result.conclusion}</p>
           {result.concludedAt && (
-            <p className="mt-1 text-[11px] text-ink-faint">
+            <p className="mt-1 text-[11px]" style={{ color: INK_FUNCTIONAL }}>
               完成于 {new Date(result.concludedAt).toLocaleString()}
             </p>
           )}
@@ -214,9 +236,12 @@ export function ResultSection({
       )}
 
       {running && !concludeOpen && (
-        <div className="mt-3 border-t border-border pt-3">
+        <div className="mt-3 pt-3" style={{ borderTop: RULE }}>
           {result.readiness.reasons.length > 0 && (
-            <ul className="mb-2 space-y-1 text-[11px] text-ink-muted">
+            <ul
+              className="mb-2 space-y-1 text-[11px]"
+              style={{ color: INK_FUNCTIONAL }}
+            >
               {result.readiness.reasons.map((r) => (
                 <li key={r}>• {r}</li>
               ))}
@@ -228,19 +253,24 @@ export function ResultSection({
             onClick={onOpenConclude}
             disabled={!result.readiness.canConclude || !!result.baselineError}
           >
-            <Check className="mr-1 h-3 w-3" />
             完成测试
           </Button>
         </div>
       )}
 
       {running && concludeOpen && (
-        <div className="mt-3 space-y-3 rounded-[8px] border border-mint-600/30 bg-mint-100/40 p-3">
+        <div
+          className="mt-3 space-y-3 rounded-[5px] p-3"
+          style={{
+            background: "var(--mint-tint)",
+            border: "1px solid var(--mint-line)",
+          }}
+        >
           <p className="text-xs font-medium text-ink-primary">
             请复核上方观察结果。确认后，证据将随你的结论一起保存。
           </p>
           {result.readiness.forcedOutcome === "no_clear_result" && (
-            <p className="rounded-[8px] border border-warning/30 bg-warning/5 p-2 text-[11px] text-ink-secondary">
+            <p className="rounded-[5px] border border-warning/30 bg-warning/5 p-2 text-[11px] text-ink-secondary">
               {result.readiness.reasons.join(" ")}当前只能得出“无明确结论”。
             </p>
           )}

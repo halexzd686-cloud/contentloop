@@ -2,14 +2,23 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { Badge } from "@/components/ui/badge";
-import { BookOpen } from "lucide-react";
 import { platformLabel, testOutcomeLabel } from "@/lib/labels";
+import {
+  HAIRLINE,
+  RULE,
+  INK_FUNCTIONAL,
+  SURFACE,
+  Sec,
+  StatusDot,
+} from "@/components/analytics/ledger";
 
 /**
  * Learnings list — M3.3, inside Analytics below Tests.
  * Read model + Studio navigation (M4.2). Apply/Dismiss mutations
  * live only in Studio (M3.4 frozen boundary).
+ *
+ * M8-B3: presentation aligned to the M7 ledger language — hairline
+ * rows instead of the M5.6 card shell; status as text + dot, no Badge.
  */
 
 interface LearningRow {
@@ -49,25 +58,37 @@ export function LearningsSection() {
   }, [load]);
 
   return (
-    <div className="mt-4 rounded-[8px] border border-border bg-workspace">
-      <div className="flex items-center gap-2 border-b border-border px-4 py-2.5">
-        <BookOpen className="h-4 w-4 text-ink-muted" />
-        <span className="text-sm font-semibold text-ink-primary">运营经验</span>
-        <span className="text-xs text-ink-faint">{learnings.length}</span>
-      </div>
+    <div className="mt-10">
+      <Sec
+        title="运营经验"
+        note={loaded ? `${learnings.length} 条` : undefined}
+        gold
+      />
 
-      {error && <p className="px-4 py-2 text-xs text-danger">{error}</p>}
+      {error && <p className="py-2 text-xs text-danger">{error}</p>}
 
       {loaded && learnings.length === 0 ? (
-        <p className="px-4 py-4 text-xs text-ink-faint">
-          还没有运营经验。经验来自已完成的运营测试，由你保存后可复用。
-        </p>
+        <div
+          className="mt-2 rounded-[5px] px-6 py-6 text-center"
+          style={{ background: SURFACE, border: "1px dashed var(--cl-silver)" }}
+        >
+          <p className="text-xs" style={{ color: INK_FUNCTIONAL }}>
+            还没有运营经验。经验来自已完成的运营测试，由你保存后可复用。
+          </p>
+        </div>
       ) : (
-        <div className="divide-y divide-border">
+        <div className="mt-1" style={{ borderTop: RULE }}>
           {learnings.map((l) => (
-            <div key={l.id} className="px-4 py-3">
-              <p className="text-sm text-ink-primary">{l.text}</p>
-              <div className="mt-1 flex items-center gap-2 text-xs text-ink-muted">
+            <div
+              key={l.id}
+              className="px-1 py-3"
+              style={{ borderBottom: HAIRLINE }}
+            >
+              <p className="text-[13.5px] text-ink-primary">{l.text}</p>
+              <div
+                className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs"
+                style={{ color: INK_FUNCTIONAL }}
+              >
                 {l.platform && (
                   <span>{platformLabel(l.platform)}</span>
                 )}
@@ -79,7 +100,10 @@ export function LearningsSection() {
                   </span>
                 )}
                 {l.sourceStale && (
-                  <Badge variant="warning">来源测试数据已变化</Badge>
+                  <span className="inline-flex items-center gap-1.5">
+                    · <StatusDot gold />
+                    来源测试数据已变化
+                  </span>
                 )}
                 {l.appliedCount > 0 && (
                   <span>· 当前应用于 {l.appliedCount} 条内容</span>

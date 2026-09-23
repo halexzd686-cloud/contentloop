@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -18,11 +17,21 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer";
-import { FlaskConical, Plus, X } from "lucide-react";
 import { ResultSection, type ResultData } from "@/components/analytics/test-result-section";
 import { LearningSection } from "@/components/analytics/learning-section";
-import { createTestFormSubmittable } from "@/lib/validation/test";
 import {
+  HAIRLINE,
+  RULE,
+  INK_FUNCTIONAL,
+  SURFACE,
+  Motif,
+  LedgerLabel,
+  StatusDot,
+} from "@/components/analytics/ledger";
+import { createTestFormSubmittable } from "@/lib/validation/test";
+import { CHECKPOINTS } from "@/lib/validation/snapshot";
+import {
+  checkpointLabel,
   platformLabel,
   testMethodLabel,
   testStatusLabel,
@@ -42,6 +51,10 @@ import {
  * status=running (server-owned). Core definition is locked at create.
  * Running tests: edit descriptive fields, attach/detach publications,
  * or Discard (M4.1 — removes the test and its links only).
+ *
+ * M8-B3: presentation aligned to the M7 ledger language — hairline
+ * rows, Sec/Motif header, status as text + dot. Data flow, gates and
+ * conditional branches are unchanged.
  */
 
 interface TestRow {
@@ -132,44 +145,61 @@ export function TestsSection({
   }, [load]);
 
   return (
-    <div className="mt-6 rounded-[8px] border border-border bg-workspace">
-      <div className="flex items-center justify-between border-b border-border px-4 py-2.5">
-        <div className="flex items-center gap-2">
-          <FlaskConical className="h-4 w-4 text-ink-muted" />
-          <span className="text-sm font-semibold text-ink-primary">运营测试</span>
-          <span className="text-xs text-ink-faint">{tests.length}</span>
-          <span className="text-xs text-ink-secondary">{TEST_SECTION_HELPER}</span>
-        </div>
+    <div className="mt-10">
+      <div className="mb-1 flex items-center gap-2">
+        <Motif />
+        <span className="text-[15px] font-semibold text-ink-primary">运营测试</span>
+        <span
+          className="ml-auto text-xs"
+          style={{ color: INK_FUNCTIONAL }}
+        >
+          {loaded ? `${tests.length} 条 · ` : ""}
+          {TEST_SECTION_HELPER}
+        </span>
         <Button variant="secondary" size="sm" onClick={() => setCreateOpen(true)}>
-          <Plus className="mr-1 h-3 w-3" />
           创建运营测试
         </Button>
       </div>
 
       {error && (
-        <div className="px-4 py-2 text-xs text-danger">{error}</div>
+        <div className="py-2 text-xs text-danger">{error}</div>
       )}
 
       {loaded && tests.length === 0 ? (
-        <p className="px-4 py-4 text-xs text-ink-faint">
-          还没有运营测试。从一个关于已发布内容的真实问题开始创建。
-        </p>
+        <div
+          className="mt-2 rounded-[5px] px-6 py-6 text-center"
+          style={{ background: SURFACE, border: "1px dashed var(--cl-silver)" }}
+        >
+          <p className="text-xs" style={{ color: INK_FUNCTIONAL }}>
+            还没有运营测试。从一个关于已发布内容的真实问题开始创建。
+          </p>
+        </div>
       ) : (
-        <div className="divide-y divide-border">
+        <div className="mt-1" style={{ borderTop: RULE }}>
           {tests.map((t) => (
             <button
               key={t.id}
-              className="w-full px-4 py-2.5 text-left hover:bg-canvas"
+              className="w-full px-3 py-2.5 text-left transition-colors duration-150 hover:bg-[var(--mint-tint)]"
+              style={{ borderBottom: HAIRLINE }}
               onClick={() => setSelectedId(t.id)}
             >
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-ink-primary">{t.title}</span>
-                <Badge variant={t.status === "running" ? "warning" : "default"}>
+              <div className="flex items-center justify-between gap-3">
+                <span className="truncate text-[13.5px] font-medium text-ink-primary">
+                  {t.title}
+                </span>
+                <span
+                  className="flex shrink-0 items-center gap-1.5 text-xs"
+                  style={{ color: INK_FUNCTIONAL }}
+                >
+                  {t.status === "running" && <StatusDot />}
                   {testStatusLabel(t.status)}
-                </Badge>
+                </span>
               </div>
-              <p className="mt-0.5 text-xs text-ink-muted">
-                {platformLabel(t.platform)} · {t.checkpoint} ·{" "}
+              <p
+                className="mt-0.5 text-xs"
+                style={{ color: INK_FUNCTIONAL }}
+              >
+                {platformLabel(t.platform)} · {checkpointLabel(t.checkpoint)} ·{" "}
                 {testMethodLabel(t.method)} · {t.primaryMetricKey} ·{" "}
                 {t.publicationCount} 条发布
               </p>
@@ -299,7 +329,14 @@ function CreateTestDialog({
         </DialogHeader>
 
         {contextLabel && (
-          <p className="rounded-[8px] border border-border bg-canvas px-3 py-2 text-xs text-ink-muted">
+          <p
+            className="rounded-[5px] px-3 py-2 text-xs"
+            style={{
+              background: SURFACE,
+              border: "1px dashed var(--cl-silver)",
+              color: INK_FUNCTIONAL,
+            }}
+          >
             创建运营测试，基于：{contextLabel}
           </p>
         )}
@@ -315,8 +352,9 @@ function CreateTestDialog({
             <div>
               <label className="mb-1 block text-xs font-medium text-ink-secondary">数据点 *</label>
               <select className="w-full rounded-[8px] border border-border bg-workspace px-3 py-2 text-sm outline-none focus:border-mint-600" value={checkpoint} onChange={(e) => setCheckpoint(e.target.value)}>
-                <option value="24h">24h</option>
-                <option value="72h">72h</option>
+                {CHECKPOINTS.map((c) => (
+                  <option key={c} value={c}>{checkpointLabel(c)}</option>
+                ))}
               </select>
               <p className="mt-1 text-xs text-ink-secondary">{CHECKPOINT_HELPER}</p>
             </div>
@@ -594,7 +632,7 @@ function TestDetailDrawer({
                 <DrawerTitle>{detail.test.title}</DrawerTitle>
               )}
               <DrawerDescription>
-                {platformLabel(detail.test.platform)} · {detail.test.checkpoint} ·{" "}
+                {platformLabel(detail.test.platform)} · {checkpointLabel(detail.test.checkpoint)} ·{" "}
                 {testMethodLabel(detail.test.method)} · {detail.test.primaryMetricKey} ·{" "}
                 {testStatusLabel(detail.test.status)}
               </DrawerDescription>
@@ -609,7 +647,13 @@ function TestDetailDrawer({
                 </div>
               )}
               {editing && (
-                <div className="space-y-3 rounded-[8px] border border-mint-600/30 bg-mint-100/40 p-3">
+                <div
+                  className="space-y-3 rounded-[5px] p-3"
+                  style={{
+                    background: "var(--mint-tint)",
+                    border: "1px solid var(--mint-line)",
+                  }}
+                >
                   <p className="text-xs font-medium text-ink-primary">
                     编辑中——只有标题、保持一致项和对比对象可以修改。测试定义已锁定。
                   </p>
@@ -640,42 +684,51 @@ function TestDetailDrawer({
                 </div>
               )}
               <section>
-                <p className="text-xs font-semibold uppercase tracking-wide text-ink-muted">假设</p>
+                <LedgerLabel>假设</LedgerLabel>
                 <p className="mt-1 text-ink-primary">{detail.test.hypothesis}</p>
               </section>
               <section>
-                <p className="text-xs font-semibold uppercase tracking-wide text-ink-muted">改动</p>
+                <LedgerLabel>改动</LedgerLabel>
                 <p className="mt-1 text-ink-primary">{detail.test.change}</p>
               </section>
               {!editing && (detail.test.keepConsistent || detail.test.compareWith) && (
-                <section className="text-xs text-ink-muted">
+                <section className="text-xs" style={{ color: INK_FUNCTIONAL }}>
                   {detail.test.keepConsistent && <p>保持一致项：{detail.test.keepConsistent}</p>}
                   {detail.test.compareWith && <p>对比对象：{detail.test.compareWith}</p>}
                 </section>
               )}
 
               <section>
-                <p className="text-xs font-semibold uppercase tracking-wide text-ink-muted">
+                <LedgerLabel>
                   发布记录（{detail.publications.length}）
-                </p>
-                <div className="mt-2 space-y-1.5">
+                </LedgerLabel>
+                <div className="mt-2" style={{ borderTop: HAIRLINE }}>
                   {detail.publications.map((p) => (
-                    <div key={p.id} className="flex items-center justify-between rounded-[8px] border border-border bg-canvas px-3 py-2">
-                      <div>
-                        <p className="text-xs font-medium text-ink-primary">{p.finalTitle}</p>
-                        <p className="text-[11px] text-ink-muted">
-                          {testRoleLabel(p.role)} · {p.hasCheckpointData ? `已有 ${detail.test.checkpoint} 数据` : `还没有 ${detail.test.checkpoint} 数据`}
+                    <div
+                      key={p.id}
+                      className="flex items-center justify-between gap-2 px-1 py-2"
+                      style={{ borderBottom: HAIRLINE }}
+                    >
+                      <div className="min-w-0">
+                        <p className="truncate text-xs font-medium text-ink-primary">{p.finalTitle}</p>
+                        <p className="text-[11px]" style={{ color: INK_FUNCTIONAL }}>
+                          {testRoleLabel(p.role)} · {p.hasCheckpointData ? `已有 ${checkpointLabel(detail.test.checkpoint)} 数据` : `还没有 ${checkpointLabel(detail.test.checkpoint)} 数据`}
                         </p>
                       </div>
                       {running && (
-                        <button className="text-ink-faint hover:text-danger" onClick={() => detach(p.publicationId)} disabled={busy}>
-                          <X className="h-3.5 w-3.5" />
+                        <button
+                          className="shrink-0 text-xs hover:text-danger"
+                          style={{ color: INK_FUNCTIONAL }}
+                          onClick={() => detach(p.publicationId)}
+                          disabled={busy}
+                        >
+                          移除
                         </button>
                       )}
                     </div>
                   ))}
                   {detail.publications.length === 0 && (
-                    <p className="text-xs text-ink-faint">尚未关联发布记录。</p>
+                    <p className="py-2 text-xs text-ink-faint">尚未关联发布记录。</p>
                   )}
                 </div>
 
@@ -738,7 +791,7 @@ function TestDetailDrawer({
               />
 
               {running && (
-                <div className="border-t border-border pt-3">
+                <div className="pt-3" style={{ borderTop: RULE }}>
                   <Button
                     variant="ghost"
                     size="sm"

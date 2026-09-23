@@ -178,11 +178,11 @@ export function LoopAnalysis({
       <div className="text-[13px] font-semibold text-ink-primary">Loop AI</div>
       <div
         className="flex items-center gap-1.5 text-[11.5px]"
-        style={{ color: "#8B8E87" }}
+        style={{ color: "var(--ink-muted)" }}
       >
         <span
           className="inline-block h-1 w-1 rounded-full"
-          style={{ background: "#D4B26A" }}
+          style={{ background: "var(--cl-gold)" }}
         />
         AI 提供建议，最终由你确认。
       </div>
