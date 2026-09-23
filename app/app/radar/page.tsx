@@ -209,13 +209,13 @@ export default function RadarPage() {
       {/* Header: title + real status summary + add */}
       <div
         className="flex items-end justify-between px-8 pb-[18px] pt-6"
-        style={{ borderBottom: "1px solid rgba(200,201,203,0.65)" }}
+        style={{ borderBottom: "1px solid var(--border)" }}
       >
         <div>
           <h1 className="text-[24px] font-semibold leading-tight text-ink-primary">
             {NAV_LABELS.radar}
           </h1>
-          <p className="mt-1.5 text-[12.5px]" style={{ color: "#626660" }}>
+          <p className="mt-1.5 text-[12.5px]" style={{ color: "var(--cl-neutral)" }}>
             {counts.total || 0} 条线索 · {counts.selected || 0} 条已选用 ·{" "}
             {(counts.new || 0) + (counts.reviewing || 0)} 条待评估
           </p>
@@ -228,7 +228,7 @@ export default function RadarPage() {
         {/* Signals Feed */}
         <div
           className="w-[55%] overflow-y-auto px-6 py-4"
-          style={{ borderRight: "1px solid rgba(200,201,203,0.65)" }}
+          style={{ borderRight: "1px solid var(--border)" }}
         >
           <SignalFilters
             activeStatus={statusFilter}

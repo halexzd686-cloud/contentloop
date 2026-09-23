@@ -49,6 +49,32 @@
   --border: rgba(200, 201, 203, 0.65);
   --border-strong: var(--cl-silver);
 
+  /* ── M9 ③ theme-contract helpers (hardcoded hairlines migrate
+     to these in the later sweep; light values = current pixels) ── */
+  --border-hairline: rgba(200, 201, 203, 0.4);
+  --border-mid: rgba(200, 201, 203, 0.5);
+  --cl-primary-strong: #3F7455;
+
+  /* ── M9 ③ rgba-blend helpers (hardcoded tints migrate later) ── */
+  /* 背景 tint — light merges the 0.05/0.06/0.07/0.08 mint-background
+     variants into one imperceptible value */
+  --mint-tint: rgba(124, 148, 130, 0.07);
+  --gold-tint: rgba(212, 178, 106, 0.08);
+  --ink-tint: rgba(32, 35, 31, 0.08);
+  /* 线条 */
+  --mint-line: rgba(124, 148, 130, 0.3);
+  --mint-strong: rgba(124, 148, 130, 0.55);
+  --gold-line: rgba(212, 178, 106, 0.35);
+  /* 文字强化 */
+  --cl-gold-strong: #AE8A44;
+
+  /* ── M9 ③ motion/canvas helpers (orbs ring, pill shell, hover) ── */
+  --cl-primary-deep: #5F7A68;   /* orbs front-of-depth primary */
+  --cl-silver-dim: #D6D7D9;     /* orbs far-particle desaturation */
+  --cl-ring: #8B978F;           /* machined orbit track hue */
+  --pill-bg: #ECECEF;           /* ribbon pill shell */
+  --cl-primary-hover: #71856F;  /* portal button hover */
+
   /* ── Radius (M7: 3/5/7/9) ─────────────────────────── */
   --radius-checkbox: 3px;
   --radius-button: 6px;
@@ -76,6 +102,152 @@
   :root {
     --sidebar-width: 216px;
   }
+}
+
+/* ── M9 ③ Dark theme — token contract only ─────────────
+   Activated by <html data-theme="dark"> (sidebar toggle +
+   anti-FOUC script in app/layout.tsx, persisted as
+   localStorage["cl-theme"]). Only color tokens are
+   redefined — radius / motion / fonts / sidebar width are
+   theme-invariant. Aliases (--canvas, --workspace,
+   --ink-primary, --ink-secondary, --mint-600, --success,
+   --warning, --border-strong) follow automatically via
+   their var() references. Hardcoded hex/rgba in components
+   still render light — the sweep is a later task. */
+[data-theme="dark"] {
+  color-scheme: dark;
+  --cl-primary: #658761;
+  --cl-gold: #DFA05D;
+  --danger: #AC5045;
+  --cl-ink-strong: #EDEFEA;
+  --cl-paper: #1A1C19;
+  --cl-surface: #232620;
+  --cl-overlay: #2A2D27;
+  --cl-sidebar: #1E201C;
+  --cl-silver: #4A4D45;
+  --cl-neutral: #9A9D94;
+  --ink-muted: #6E7168;
+  --ink-faint: #565950;
+  --surface-subtle: #262923;
+  --mint-500: #7B9576;
+  --mint-300: #45533F;
+  --mint-100: #2A3329;
+  --neutral-status: #6E7168;
+  --border: rgba(237, 239, 234, 0.16);
+  --border-hairline: rgba(237, 239, 234, 0.08);
+  --border-mid: rgba(237, 239, 234, 0.11);
+  --cl-primary-strong: #8AA982;
+  --mint-tint: rgba(101, 135, 97, 0.16);
+  --gold-tint: rgba(223, 160, 93, 0.14);
+  --ink-tint: rgba(0, 0, 0, 0.45);
+  --mint-line: rgba(101, 135, 97, 0.42);
+  --mint-strong: rgba(101, 135, 97, 0.65);
+  --gold-line: rgba(223, 160, 93, 0.45);
+  --cl-gold-strong: #DFA05D;
+  --cl-primary-deep: #4C6A4C;
+  --cl-silver-dim: #3A3D36;
+  --cl-ring: #5A6355;
+  --pill-bg: #2A2D27;
+  --cl-primary-hover: #557150;
+}
+
+/* ── M9 responsive: auto-collapse the rail below 1280px ──
+   M9 decision (approved): <1280 the rail becomes a 64px icon-only
+   column — labels/wordmark hidden via .sidebar-label, icons centered,
+   active rail marker preserved. Supersedes the M7 "no manual
+   collapse" note for narrow widths (AGENTS §27 allows collapsing
+   the sidebar at narrower widths). */
+.sidebar-mark {
+  display: none;
+}
+@media (max-width: 1279.98px) {
+  :root {
+    --sidebar-width: 64px;
+  }
+  .sidebar-label {
+    display: none;
+  }
+  .sidebar-nav-row {
+    justify-content: center;
+    padding-inline: 0;
+  }
+  .sidebar-wordmark {
+    display: flex;
+    justify-content: center;
+    padding-inline: 0;
+  }
+  .sidebar-mark {
+    display: block;
+  }
+}
+
+/* ── M9 小环 (sidebar pet) — §25 approved exception: the only idle
+   motion is a ~6s-interval 150ms blink (transform-only keyframes,
+   no colors, no CSS variables inside); everything else stays still.
+   Reduced-motion: fully static. ── */
+.sidebar-pet {
+  width: 40px;
+  height: 40px;
+}
+@media (max-width: 1279.98px) {
+  .sidebar-pet {
+    width: 28px;
+    height: 28px;
+  }
+}
+.pet-eyes {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: pet-blink 6s ease-in-out infinite;
+}
+@keyframes pet-blink {
+  0% {
+    transform: scaleY(1);
+  }
+  1.25% {
+    transform: scaleY(0.1);
+  }
+  2.5%,
+  100% {
+    transform: scaleY(1);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pet-eyes {
+    animation: none;
+  }
+}
+
+/* ── M9 方案② Loop AI 审阅排版（展开的 CollapsibleRail）──
+   仅后代选择器覆盖：窄栏排版不变；展开态切换到审阅版 —
+   正文 14.5px / 行高 1.8、区块标题 15px semibold、段落与
+   区块间距放宽、内容列上限 600px。子组件逻辑零改动（覆盖
+   依赖「无层样式优先于 Tailwind @layer utilities」）。 */
+[data-loop-ai-expanded] {
+  line-height: 1.8;
+}
+[data-loop-ai-expanded] > * {
+  max-width: 600px;
+}
+[data-loop-ai-expanded] p,
+[data-loop-ai-expanded] li {
+  line-height: 1.8;
+}
+[data-loop-ai-expanded] .text-xs,
+[data-loop-ai-expanded] .text-sm,
+[data-loop-ai-expanded] .text-\[11\.5px\] {
+  font-size: 14.5px;
+  line-height: 1.8;
+}
+[data-loop-ai-expanded] .text-\[11px\] {
+  font-size: 12.5px;
+  line-height: 1.7;
+}
+[data-loop-ai-expanded] section + section {
+  margin-top: 20px;
+}
+[data-loop-ai-expanded] .font-semibold {
+  font-size: 15px;
 }
 
 @theme inline {
@@ -119,6 +291,11 @@
 }
 
 /* ── Base ──────────────────────────────────────────── */
+html {
+  /* Token-driven so overscroll / html-level gaps follow the theme (M9 ③);
+     identical to body in light mode, so light pixels are unchanged. */
+  background: var(--canvas);
+}
 body {
   background: var(--canvas);
   color: var(--ink-primary);
@@ -170,99 +347,36 @@ textarea:focus-visible,
   }
 }
 
-/* ── M7 A2 Magic AI action button (frozen palette only) ──
-   Aurora conic border travels behind the document face; inner aura
-   breathes; orbit glyph rotates slowly. Click fires immediately —
-   ThinkingOrbs takes over on the caller's generating state. */
-.ai-magic-btn {
-  position: relative;
-  overflow: hidden;
-  border-radius: 9px;
-  padding: 1.5px;
-  isolation: isolate;
-  cursor: pointer;
-  transition: transform 180ms ease;
-}
-.ai-magic-btn:hover {
-  transform: translateY(-1px);
-}
-.ai-magic-btn:disabled {
-  opacity: 0.5;
-  cursor: default;
-  transform: none;
-}
-.ai-magic-btn::before {
-  content: "";
-  position: absolute;
-  inset: -120%;
-  z-index: 0;
-  background: conic-gradient(
-    from 0deg,
-    transparent 0deg,
-    rgba(124, 148, 130, 0.95) 50deg,
-    rgba(212, 178, 106, 0.9) 90deg,
-    transparent 140deg,
-    transparent 220deg,
-    rgba(124, 148, 130, 0.6) 290deg,
-    transparent 340deg
-  );
-  animation: ai-aurora-rotate 2.6s linear infinite;
-}
-.ai-magic-btn__face {
-  position: relative;
-  z-index: 1;
-  display: flex;
+/* ── M9 AI action button (B+ 双线框，用户拍板 2026-09-23) ──
+   零待机动画（§24 契约）：1px 主绿描边 + 2px 内缩发丝 keyline +
+   静态轨道符号；hover 淡绿底 + 内线加深（Fast 150ms）。双主题走令牌。
+   生成中状态由调用方换 ThinkingOrbs，与按钮无关。 */
+.ai-action-btn {
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 9px;
-  height: 43px;
-  border-radius: 8px;
-  background: linear-gradient(180deg, #ffffff 0%, #f3f5ee 100%);
+  gap: 8px;
+  height: 36px;
+  padding: 0 16px;
+  border-radius: 6px;
   font-size: 13px;
   font-weight: 500;
-  color: #20231f;
+  color: var(--cl-ink-strong);
+  background: var(--cl-surface);
+  border: 1px solid var(--cl-primary);
+  box-shadow: inset 0 0 0 2px var(--cl-surface), inset 0 0 0 3px var(--mint-line);
+  cursor: pointer;
+  transition: background 150ms ease, box-shadow 150ms ease;
 }
-.ai-magic-btn__face::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: 8px;
-  background: radial-gradient(
-    150px 46px at 50% 125%,
-    rgba(124, 148, 130, 0.28),
-    transparent 70%
-  );
-  animation: ai-aura-breath 2.4s ease-in-out infinite;
-  pointer-events: none;
+.ai-action-btn:hover {
+  background: var(--mint-tint);
+  box-shadow: inset 0 0 0 2px var(--cl-surface), inset 0 0 0 3px var(--cl-primary);
 }
-.ai-magic-btn__glyph {
-  animation: ai-glyph-spin 7s linear infinite;
+.ai-action-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
 }
-
-@keyframes ai-aurora-rotate {
-  to {
-    transform: rotate(360deg);
-  }
-}
-@keyframes ai-aura-breath {
-  0%,
-  100% {
-    opacity: 0.4;
-  }
-  50% {
-    opacity: 1;
-  }
-}
-@keyframes ai-glyph-spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .ai-magic-btn::before,
-  .ai-magic-btn__face::after,
-  .ai-magic-btn__glyph {
-    animation: none;
-  }
+.ai-action-btn:disabled:hover {
+  background: var(--cl-surface);
+  box-shadow: inset 0 0 0 2px var(--cl-surface), inset 0 0 0 3px var(--mint-line);
 }

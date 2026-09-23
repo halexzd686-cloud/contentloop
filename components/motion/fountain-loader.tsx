@@ -42,18 +42,18 @@ export function FountainLoader({
         style={{ display: "inline-block", overflow: "visible" }}
       >
         {/* track: faint basin */}
-        <ellipse cx="12" cy="20" rx="8" ry="1.6" fill="none" stroke="#C8C9CB" strokeWidth="1" opacity="0.8" />
+        <ellipse cx="12" cy="20" rx="8" ry="1.6" fill="none" strokeWidth="1" opacity="0.8" style={{ stroke: "var(--cl-silver)" }} />
         {/* spout */}
-        <line x1="12" y1="20" x2="12" y2="13" stroke="#C8C9CB" strokeWidth="1.4" strokeLinecap="round" />
+        <line x1="12" y1="20" x2="12" y2="13" strokeWidth="1.4" strokeLinecap="round" style={{ stroke: "var(--cl-silver)" }} />
         {DROPLETS.map((d, i) => (
           <circle
             key={i}
             cx={d.x}
             cy="13"
             r="1.7"
-            fill="#7C9482"
             className="fountain-dot"
             style={{
+              fill: "var(--cl-primary)",
               animationDelay: `${d.delay}ms`,
               animationDuration: `${d.dur}ms`,
             }}

@@ -34,11 +34,11 @@ export function SourcesPanel({ signal }: { signal: SignalContext | null }) {
       <div className="p-[18px]">
         <p
           className="text-[11px] font-medium tracking-[0.14em]"
-          style={{ color: "#8B8E87" }}
+          style={{ color: "var(--ink-muted)" }}
         >
           来源
         </p>
-        <p className="mt-3.5 text-[13px] leading-[1.6]" style={{ color: "#626660" }}>
+        <p className="mt-3.5 text-[13px] leading-[1.6]" style={{ color: "var(--cl-neutral)" }}>
           没有关联线索。这条内容是手动创建的。
         </p>
       </div>
@@ -60,13 +60,13 @@ export function SourcesPanel({ signal }: { signal: SignalContext | null }) {
     <div className="p-[18px]">
       <p
         className="text-[11px] font-medium tracking-[0.14em]"
-        style={{ color: "#8B8E87" }}
+        style={{ color: "var(--ink-muted)" }}
       >
         来源
       </p>
 
-      <div className="mt-3.5 pl-3" style={{ borderLeft: "2px solid #7C9482" }}>
-        <div className="text-[11px]" style={{ color: "#8B8E87" }}>
+      <div className="mt-3.5 pl-3" style={{ borderLeft: "2px solid var(--cl-primary)" }}>
+        <div className="text-[11px]" style={{ color: "var(--ink-muted)" }}>
           选题线索 · {sourceLabel}
         </div>
         <div className="mt-1 text-[13px] font-semibold leading-normal text-ink-primary">
@@ -75,13 +75,13 @@ export function SourcesPanel({ signal }: { signal: SignalContext | null }) {
         {signal.summary && (
           <div
             className="mt-1 text-xs leading-[1.55] line-clamp-3"
-            style={{ color: "#626660" }}
+            style={{ color: "var(--cl-neutral)" }}
           >
             {signal.summary}
           </div>
         )}
         {metaParts.length > 0 && (
-          <div className="mt-1 text-xs leading-[1.55]" style={{ color: "#626660" }}>
+          <div className="mt-1 text-xs leading-[1.55]" style={{ color: "var(--cl-neutral)" }}>
             {metaParts.join(" · ")}
           </div>
         )}

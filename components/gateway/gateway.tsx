@@ -77,7 +77,7 @@ export function Gateway() {
                 restrained directional terminal — real next-stage transition */}
             <Link
               href="/app"
-              className="group inline-flex h-[50px] w-[206px] items-center justify-center gap-2.5 rounded-[6px] bg-cl-primary text-[14px] font-medium text-white/95 transition-colors duration-150 hover:bg-[#71856F]"
+              className="group inline-flex h-[50px] w-[206px] items-center justify-center gap-2.5 rounded-[6px] bg-cl-primary text-[14px] font-medium text-white/95 transition-colors duration-150 hover:bg-[var(--cl-primary-hover)]"
             >
               进入 ContentLoop
               <ArrowRight

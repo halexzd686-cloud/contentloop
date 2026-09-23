@@ -45,10 +45,10 @@ const SOURCE_TYPE_LABELS: Record<string, string> = {
 };
 
 const STATUS_DOT: Record<string, string> = {
-  new: "#C8C9CB",
-  reviewing: "#7C9482",
-  selected: "#D4B26A",
-  skipped: "#8B8E87",
+  new: "var(--cl-silver)",
+  reviewing: "var(--cl-primary)",
+  selected: "var(--cl-gold)",
+  skipped: "var(--ink-muted)",
 };
 
 // ─── Status Menu (M1.1: new ↔ reviewing only) ─────────
@@ -146,24 +146,24 @@ export function SignalCard({
 
   return (
     <div
-      className="group relative flex cursor-pointer items-center gap-4 px-3 py-[13px] transition-colors duration-150 hover:bg-[rgba(124,148,130,0.05)]"
+      className="group relative flex cursor-pointer items-center gap-4 px-3 py-[13px] transition-colors duration-150 hover:bg-[var(--mint-tint)]"
       style={{
-        borderBottom: "1px solid rgba(200,201,203,0.4)",
-        background: selected ? "rgba(124,148,130,0.07)" : undefined,
+        borderBottom: "1px solid var(--border-hairline)",
+        background: selected ? "var(--mint-tint)" : undefined,
       }}
       onClick={() => onSelect(signal.id)}
     >
       {selected && (
         <span
           className="absolute left-0 top-1/2 h-6 w-[2px] -translate-y-1/2 rounded-full"
-          style={{ background: "#7C9482" }}
+          style={{ background: "var(--cl-primary)" }}
         />
       )}
       <span
         className="w-5 shrink-0 text-[14px]"
         style={{
           fontFamily: "var(--font-cormorant), serif",
-          color: "#8B8E87",
+          color: "var(--ink-muted)",
         }}
       >
         {String(index).padStart(2, "0")}
@@ -172,7 +172,7 @@ export function SignalCard({
         <div className="truncate text-[14.5px] font-semibold text-ink-primary">
           {signal.title}
         </div>
-        <div className="mt-1 truncate text-xs" style={{ color: "#626660" }}>
+        <div className="mt-1 truncate text-xs" style={{ color: "var(--cl-neutral)" }}>
           {meta}
         </div>
       </div>
@@ -183,11 +183,11 @@ export function SignalCard({
       />
       <span
         className="flex shrink-0 items-center gap-1.5 text-xs"
-        style={{ color: "#626660" }}
+        style={{ color: "var(--cl-neutral)" }}
       >
         <span
           className="inline-block h-[5px] w-[5px] rounded-full"
-          style={{ background: STATUS_DOT[signal.status] || "#8B8E87" }}
+          style={{ background: STATUS_DOT[signal.status] || "var(--ink-muted)" }}
         />
         {signalStatusLabel(signal.status)}
       </span>

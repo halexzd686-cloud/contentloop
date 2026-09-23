@@ -50,7 +50,7 @@ export function BriefFields({ values, onChange, readOnly }: BriefFieldsProps) {
           <div key={key} className="mt-[22px] first:mt-0">
             <div
               className="text-xs font-semibold tracking-[0.04em]"
-              style={{ color: "#626660" }}
+              style={{ color: "var(--cl-neutral)" }}
             >
               {label}
             </div>
@@ -69,7 +69,7 @@ export function BriefFields({ values, onChange, readOnly }: BriefFieldsProps) {
         <div key={key} className="group mt-[22px] first:mt-0">
           <label
             className="block text-xs font-semibold tracking-[0.04em]"
-            style={{ color: "#626660" }}
+            style={{ color: "var(--cl-neutral)" }}
           >
             {label}
           </label>
@@ -84,14 +84,14 @@ export function BriefFields({ values, onChange, readOnly }: BriefFieldsProps) {
             )}
             className="mt-[7px] w-full resize-none border-0 border-b bg-transparent pb-[9px] text-[14.5px] leading-[1.7] text-ink-primary placeholder:text-ink-faint focus:outline-none"
             style={{
-              borderBottom: "1px solid rgba(200,201,203,0.4)",
+              borderBottom: "1px solid var(--border-hairline)",
             }}
             onFocus={(e) => {
-              e.currentTarget.style.borderBottom = "1px solid #7C9482";
+              e.currentTarget.style.borderBottom = "1px solid var(--cl-primary)";
             }}
             onBlur={(e) => {
               e.currentTarget.style.borderBottom =
-                "1px solid rgba(200,201,203,0.4)";
+                "1px solid var(--border-hairline)";
             }}
           />
         </div>

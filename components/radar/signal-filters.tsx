@@ -55,7 +55,7 @@ export function SignalFilters({
     <div>
       <div
         className="flex items-center justify-between gap-4"
-        style={{ borderBottom: "1px solid rgba(200,201,203,0.65)" }}
+        style={{ borderBottom: "1px solid var(--border)" }}
       >
         {/* Index Tabs */}
         <div className="flex gap-6">
@@ -69,21 +69,21 @@ export function SignalFilters({
                 onClick={() => onStatusChange(tab.key)}
                 className="relative pb-2 text-[13px]"
                 style={{
-                  color: on ? "#20231F" : "#626660",
+                  color: on ? "var(--cl-ink-strong)" : "var(--cl-neutral)",
                   fontWeight: on ? 600 : 400,
                 }}
               >
                 {tab.label}
                 <span
                   className="ml-[3px] text-[11px] tabular-nums"
-                  style={{ color: "#8B8E87" }}
+                  style={{ color: "var(--ink-muted)" }}
                 >
                   {count}
                 </span>
                 {on && (
                   <span
                     className="absolute inset-x-0 bottom-0 h-[2px]"
-                    style={{ background: "#7C9482" }}
+                    style={{ background: "var(--cl-primary)" }}
                   />
                 )}
               </button>
@@ -98,10 +98,10 @@ export function SignalFilters({
           className="mb-1.5 flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-[6px] transition-colors duration-150"
           style={{
             border: active
-              ? "1px solid #7C9482"
-              : "1px solid rgba(200,201,203,0.8)",
-            background: active ? "#7C9482" : "transparent",
-            color: active ? "rgba(255,255,255,0.95)" : "#8B8E87",
+              ? "1px solid var(--cl-primary)"
+              : "1px solid var(--border-strong)",
+            background: active ? "var(--cl-primary)" : "transparent",
+            color: active ? "var(--cl-overlay)" : "var(--ink-muted)",
           }}
         >
           <Search className="h-[13px] w-[13px]" />
@@ -112,7 +112,7 @@ export function SignalFilters({
       {active && (
         <div
           className="flex items-center gap-2 px-0.5 py-[9px]"
-          style={{ borderBottom: "1px solid #7C9482" }}
+          style={{ borderBottom: "1px solid var(--cl-primary)" }}
         >
           <Search className="h-[13px] w-[13px] shrink-0 text-ink-secondary" />
           <input
@@ -129,7 +129,7 @@ export function SignalFilters({
           {search && (
             <span
               className="shrink-0 text-[11px] tabular-nums"
-              style={{ color: "#626660" }}
+              style={{ color: "var(--cl-neutral)" }}
             >
               {counts.total ?? 0} 条结果
             </span>

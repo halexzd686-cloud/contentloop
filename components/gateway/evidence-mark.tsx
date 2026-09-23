@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { resolveTokens, onThemeChange } from "@/lib/theme";
 
 /**
  * Loop Evidence Mark — M7 prototype final: Arc Sweep (R2 Instrument Focus)
@@ -21,16 +22,35 @@ import { useEffect, useRef } from "react";
  * Engineering: Canvas 2D, DPR ≤ 2, rAF cleanup, rAF-debounced RO,
  * completion timer (rAF starvation), reduced-motion → final frame.
  * Never writes canvas.style (RO feedback loop).
+ * M9 ③: colors resolve from theme tokens at runtime (canvas ignores
+ * var()); re-resolved + repainted on "cl-themechange".
  */
 
-const GREEN = "#7C9482";
-const DEEP = "#4F6257";
-const SILVER = "#C8C9CB";
-const SILVER_DIM = "#B9BCB4";
-const GOLD = "#D4B26A";
-const NEUTRAL = "#626660";
-const NUM_GOLD = "#AE8A44";
-const BG = "#F5F6F3";
+const TOKEN_MAP = {
+  green: "--cl-primary",
+  deep: "--cl-primary-strong",
+  silver: "--cl-silver",
+  silverDim: "--ink-faint",
+  gold: "--cl-gold",
+  neutral: "--cl-neutral",
+  numGold: "--cl-gold-strong",
+  bg: "--cl-paper",
+} as const;
+
+type PaletteKey = keyof typeof TOKEN_MAP;
+type Palette = Record<PaletteKey, string>;
+
+/* Original M7 hexes — fallbacks only, so light pixels never drift. */
+const FALLBACK: Palette = {
+  green: "#7C9482",
+  deep: "#4F6257",
+  silver: "#C8C9CB",
+  silverDim: "#B9BCB4",
+  gold: "#D4B26A",
+  neutral: "#626660",
+  numGold: "#AE8A44",
+  bg: "#F5F6F3",
+};
 
 const REVEAL_MS = 1400;
 
@@ -44,9 +64,9 @@ const CY = 440;
 const RAD = Math.PI / 180;
 
 const ARCS = [
-  { r: 200, a0: 195, a1: 345, color: SILVER, w: 2.0, from: 0.6, to: 0.9 }, // outer, top sweep
-  { r: 148, a0: 20, a1: 170, color: GREEN, w: 2.6, from: 0.45, to: 0.78 }, // mid, bottom sweep
-  { r: 95, a0: 95, a1: 235, color: SILVER_DIM, w: 2.2, from: 0.3, to: 0.62 }, // inner, lower-left
+  { r: 200, a0: 195, a1: 345, color: "silver", w: 2.0, from: 0.6, to: 0.9 }, // outer, top sweep
+  { r: 148, a0: 20, a1: 170, color: "green", w: 2.6, from: 0.45, to: 0.78 }, // mid, bottom sweep
+  { r: 95, a0: 95, a1: 235, color: "silverDim", w: 2.2, from: 0.3, to: 0.62 }, // inner, lower-left
 ] as const;
 
 function onCircle(r: number, deg: number) {
@@ -75,7 +95,13 @@ function smoothstep(t: number, a: number, b: number) {
   return x * x * (3 - 2 * x);
 }
 
-function draw(ctx: CanvasRenderingContext2D, W: number, H: number, t: number) {
+function draw(
+  ctx: CanvasRenderingContext2D,
+  W: number,
+  H: number,
+  t: number,
+  pal: Palette
+) {
   ctx.clearRect(0, 0, W, H);
   const s = Math.min(W / DW, H / DH);
   const ox = (W - DW * s) / 2;
@@ -89,7 +115,7 @@ function draw(ctx: CanvasRenderingContext2D, W: number, H: number, t: number) {
     const p = smoothstep(t, arc.from, arc.to);
     if (p <= 0) continue;
     ctx.globalAlpha = 0.9;
-    ctx.strokeStyle = arc.color;
+    ctx.strokeStyle = pal[arc.color];
     ctx.lineWidth = arc.w * U;
     ctx.lineCap = "round";
     ctx.beginPath();
@@ -111,13 +137,13 @@ function draw(ctx: CanvasRenderingContext2D, W: number, H: number, t: number) {
     const x = X(n.x);
     const y = Y(n.y);
     ctx.globalAlpha = 0.35 * learningP;
-    ctx.strokeStyle = SILVER_DIM;
+    ctx.strokeStyle = pal.silverDim;
     ctx.lineWidth = 1.5 * U;
     ctx.beginPath();
     ctx.arc(x, y, 12 * U, 0, Math.PI * 2);
     ctx.stroke();
     ctx.globalAlpha = learningP;
-    ctx.fillStyle = GREEN;
+    ctx.fillStyle = pal.green;
     ctx.beginPath();
     ctx.arc(x, y, n.r * U, 0, Math.PI * 2);
     ctx.fill();
@@ -128,11 +154,11 @@ function draw(ctx: CanvasRenderingContext2D, W: number, H: number, t: number) {
   if (pubP > 0) {
     const n = NODES.publication;
     ctx.globalAlpha = pubP;
-    ctx.fillStyle = BG;
+    ctx.fillStyle = pal.bg;
     ctx.beginPath();
     ctx.arc(X(n.x), Y(n.y), n.r * U, 0, Math.PI * 2);
     ctx.fill();
-    ctx.strokeStyle = SILVER_DIM;
+    ctx.strokeStyle = pal.silverDim;
     ctx.lineWidth = 2.4 * U;
     ctx.beginPath();
     ctx.arc(X(n.x), Y(n.y), n.r * U, 0, Math.PI * 2);
@@ -144,11 +170,11 @@ function draw(ctx: CanvasRenderingContext2D, W: number, H: number, t: number) {
   if (contentP > 0) {
     const n = NODES.content;
     ctx.globalAlpha = contentP;
-    ctx.fillStyle = BG;
+    ctx.fillStyle = pal.bg;
     ctx.beginPath();
     ctx.arc(X(n.x), Y(n.y), n.r * U, 0, Math.PI * 2);
     ctx.fill();
-    ctx.strokeStyle = GREEN;
+    ctx.strokeStyle = pal.green;
     ctx.lineWidth = 2.4 * U;
     ctx.beginPath();
     ctx.arc(X(n.x), Y(n.y), n.r * U, 0, Math.PI * 2);
@@ -160,7 +186,7 @@ function draw(ctx: CanvasRenderingContext2D, W: number, H: number, t: number) {
   if (signalP > 0) {
     const n = NODES.signal;
     ctx.globalAlpha = signalP;
-    ctx.fillStyle = NEUTRAL;
+    ctx.fillStyle = pal.neutral;
     ctx.beginPath();
     ctx.arc(X(n.x), Y(n.y), n.r * U, 0, Math.PI * 2);
     ctx.fill();
@@ -170,7 +196,7 @@ function draw(ctx: CanvasRenderingContext2D, W: number, H: number, t: number) {
   const coreP = smoothstep(t, 0.0, 0.25);
   if (coreP > 0) {
     ctx.globalAlpha = coreP;
-    ctx.fillStyle = DEEP;
+    ctx.fillStyle = pal.deep;
     ctx.beginPath();
     ctx.arc(X(CX), Y(CY), 18 * U * (0.6 + 0.4 * coreP), 0, Math.PI * 2);
     ctx.fill();
@@ -178,7 +204,7 @@ function draw(ctx: CanvasRenderingContext2D, W: number, H: number, t: number) {
   const ringP = smoothstep(t, 0.05, 0.35);
   if (ringP > 0) {
     ctx.globalAlpha = 0.95 * ringP;
-    ctx.strokeStyle = GOLD;
+    ctx.strokeStyle = pal.gold;
     ctx.lineWidth = 2.6 * U;
     ctx.lineCap = "round";
     ctx.beginPath();
@@ -194,7 +220,7 @@ function draw(ctx: CanvasRenderingContext2D, W: number, H: number, t: number) {
     const r1 = 32 * U;
     const r2 = (long ? 45 : 40) * U;
     ctx.globalAlpha = 0.9 * tickP;
-    ctx.strokeStyle = GOLD;
+    ctx.strokeStyle = pal.gold;
     ctx.lineWidth = (long ? 1.9 : 1.6) * U;
     ctx.lineCap = "round";
     ctx.beginPath();
@@ -208,7 +234,7 @@ function draw(ctx: CanvasRenderingContext2D, W: number, H: number, t: number) {
     const numP = smoothstep(t, 0.82, 1.0);
     if (numP <= 0) continue;
     ctx.globalAlpha = numP * 0.9;
-    ctx.fillStyle = num.gold ? NUM_GOLD : SILVER_DIM;
+    ctx.fillStyle = num.gold ? pal.numGold : pal.silverDim;
     ctx.font = `600 ${14 * U}px "Cormorant Garamond", "Noto Serif SC", serif`;
     ctx.textBaseline = "middle";
     ctx.fillText(num.text, X(num.x), Y(num.y));
@@ -238,12 +264,20 @@ export function EvidenceMark({ className = "" }: { className?: string }) {
     let done = currentT === 1;
     let bw = 0;
     let bh = 0;
+    let palette = resolveTokens<Palette>(TOKEN_MAP, FALLBACK);
 
     const paint = () => {
       if (bw <= 0 || bh <= 0) return;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      draw(ctx, bw, bh, currentT);
+      draw(ctx, bw, bh, currentT, palette);
     };
+
+    /* M9 ③: re-resolve colors on theme switch; a running reveal keeps
+       animating with the new palette, a static/finished mark repaints. */
+    const offTheme = onThemeChange(() => {
+      palette = resolveTokens<Palette>(TOKEN_MAP, FALLBACK);
+      paint();
+    });
 
     const resize = () => {
       const rect = wrap.getBoundingClientRect();
@@ -289,6 +323,7 @@ export function EvidenceMark({ className = "" }: { className?: string }) {
       cancelAnimationFrame(roRaf);
       clearTimeout(finishTimer);
       ro.disconnect();
+      offTheme();
     };
   }, []);
 

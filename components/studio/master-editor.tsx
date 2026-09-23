@@ -110,7 +110,7 @@ export function MasterEditor({
   return (
     <div>
       <div className="mb-3 flex items-center justify-between">
-        <p className="text-xs" style={{ color: "#8B8E87" }}>
+        <p className="text-xs" style={{ color: "var(--ink-muted)" }}>
           {modules.length} 个模块 · 拖动手柄调整顺序
         </p>
         <span
@@ -220,8 +220,8 @@ function SortableModule({
         transition,
         opacity: isDragging ? 0.6 : 1,
         borderBottom:
-          index < total - 1 ? "1px solid rgba(200,201,203,0.4)" : "none",
-        background: isDragging ? "rgba(124,148,130,0.06)" : undefined,
+          index < total - 1 ? "1px solid var(--border-hairline)" : "none",
+        background: isDragging ? "var(--mint-tint)" : undefined,
       }}
       className="group py-[18px]"
     >
@@ -238,7 +238,7 @@ function SortableModule({
         )}
         <span
           className="text-xs font-semibold tracking-[0.04em]"
-          style={{ color: "#626660" }}
+          style={{ color: "var(--cl-neutral)" }}
         >
           {MODULE_LABEL[module.type]}
         </span>

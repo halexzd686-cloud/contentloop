@@ -163,7 +163,7 @@ export default function HomePage() {
           {/* Index Tabs */}
           <div
             className="mt-4 flex gap-6"
-            style={{ borderBottom: "1px solid rgba(200,201,203,0.65)" }}
+            style={{ borderBottom: "1px solid var(--border)" }}
           >
             {tabs.map((t) => {
               const on = tab === t.key;
@@ -173,21 +173,21 @@ export default function HomePage() {
                   onClick={() => setTab(t.key)}
                   className="relative pb-2 text-[13px]"
                   style={{
-                    color: on ? "#20231F" : "#626660",
+                    color: on ? "var(--cl-ink-strong)" : "var(--cl-neutral)",
                     fontWeight: on ? 600 : 400,
                   }}
                 >
                   {t.label}
                   <span
                     className="ml-[3px] text-[11px] tabular-nums"
-                    style={{ color: "#8B8E87" }}
+                    style={{ color: "var(--ink-muted)" }}
                   >
                     {t.n}
                   </span>
                   {on && (
                     <span
                       className="absolute inset-x-0 bottom-0 h-[2px]"
-                      style={{ background: "#7C9482" }}
+                      style={{ background: "var(--cl-primary)" }}
                     />
                   )}
                 </button>
@@ -207,14 +207,14 @@ export default function HomePage() {
                   <Link
                     key={r.key}
                     href={r.href}
-                    className="flex items-center gap-[18px] px-2.5 py-[15px] transition-colors duration-150 hover:bg-[rgba(124,148,130,0.05)]"
-                    style={{ borderBottom: "1px solid rgba(200,201,203,0.4)" }}
+                    className="flex items-center gap-[18px] px-2.5 py-[15px] transition-colors duration-150 hover:bg-[var(--mint-tint)]"
+                    style={{ borderBottom: "1px solid var(--border-hairline)" }}
                   >
                     <span
                       className="w-[22px] shrink-0 text-[15px]"
                       style={{
                         fontFamily: "var(--font-cormorant), serif",
-                        color: "#8B8E87",
+                        color: "var(--ink-muted)",
                       }}
                     >
                       {String(i + 1).padStart(2, "0")}
@@ -223,13 +223,13 @@ export default function HomePage() {
                       <div className="truncate text-[15px] font-semibold">
                         {r.title}
                       </div>
-                      <div className="mt-1 text-xs" style={{ color: "#626660" }}>
+                      <div className="mt-1 text-xs" style={{ color: "var(--cl-neutral)" }}>
                         {r.meta}
                       </div>
                     </div>
                     <span
                       className="flex shrink-0 items-center gap-2.5 text-[13px] font-medium"
-                      style={{ color: "#3F7455" }}
+                      style={{ color: "var(--cl-primary-strong)" }}
                     >
                       <NodeArrow />
                       {r.action}
@@ -259,7 +259,7 @@ export default function HomePage() {
                   <div
                     key={c.id}
                     className="py-4 pl-[18px]"
-                    style={{ borderLeft: "2px solid #7C9482" }}
+                    style={{ borderLeft: "2px solid var(--cl-primary)" }}
                   >
                     <div className="flex items-center gap-3">
                       <div className="truncate text-[16px] font-semibold">
@@ -275,7 +275,7 @@ export default function HomePage() {
                       <Link
                         href={`/app/studio/${c.id}`}
                         className="inline-flex items-center gap-2.5 text-[13px] font-medium"
-                        style={{ color: "#3F7455" }}
+                        style={{ color: "var(--cl-primary-strong)" }}
                       >
                         <NodeArrow />
                         继续编辑
@@ -298,8 +298,8 @@ export default function HomePage() {
                   <Link
                     key={c.id}
                     href={`/app/studio/${c.id}`}
-                    className="flex items-center justify-between gap-4 px-2.5 py-3 transition-colors duration-150 hover:bg-[rgba(124,148,130,0.05)]"
-                    style={{ borderBottom: "1px solid rgba(200,201,203,0.4)" }}
+                    className="flex items-center justify-between gap-4 px-2.5 py-3 transition-colors duration-150 hover:bg-[var(--mint-tint)]"
+                    style={{ borderBottom: "1px solid var(--border-hairline)" }}
                   >
                     <span className="min-w-0 truncate text-[14px] font-medium">
                       {c.title}
@@ -313,8 +313,8 @@ export default function HomePage() {
                   <Link
                     key={t.id}
                     href="/app/analytics"
-                    className="flex items-center justify-between gap-4 px-2.5 py-3 transition-colors duration-150 hover:bg-[rgba(124,148,130,0.05)]"
-                    style={{ borderBottom: "1px solid rgba(200,201,203,0.4)" }}
+                    className="flex items-center justify-between gap-4 px-2.5 py-3 transition-colors duration-150 hover:bg-[var(--mint-tint)]"
+                    style={{ borderBottom: "1px solid var(--border-hairline)" }}
                   >
                     <span className="min-w-0 truncate text-[14px] font-medium">
                       {t.title}

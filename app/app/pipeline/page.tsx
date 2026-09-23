@@ -30,6 +30,7 @@ import {
   checkpointDueAt,
   checkpointStatus,
   type Checkpoint,
+  type TimedCheckpoint,
 } from "@/lib/validation/snapshot";
 import {
   briefStatusLabel,
@@ -89,11 +90,11 @@ const COLUMNS = [
 // M7 stage colors (approved pipeline-final-v2): silver / primary /
 // gold / quiet primary / gray. No rainbow status colors.
 const STAGE_COLOR: Record<string, string> = {
-  planning: "#C8C9CB",
-  in_progress: "#7C9482",
-  review: "#D4B26A",
-  scheduled: "rgba(124,148,130,0.55)",
-  published: "#8B8E87",
+  planning: "var(--cl-silver)",
+  in_progress: "var(--cl-primary)",
+  review: "var(--cl-gold)",
+  scheduled: "var(--mint-strong)",
+  published: "var(--ink-muted)",
 };
 
 function ColMotif({ color }: { color: string }) {
@@ -122,7 +123,7 @@ function tileFact(item: PipelineItem): string {
   if (p.publication) {
     const pub = p.publication;
     parts.push(`发布于 ${new Date(pub.publishedAt).toLocaleDateString()}`);
-    for (const c of ["24h", "72h"] as Checkpoint[]) {
+    for (const c of ["24h", "72h"] as TimedCheckpoint[]) {
       const has = c === "24h" ? pub.snapshot24h : pub.snapshot72h;
       const st = checkpointStatus(pub.publishedAt, c, has);
       parts.push(
@@ -167,7 +168,7 @@ function PlatformChips({ platforms }: { platforms: PlatformState[] }) {
 }
 
 function CardContent({ item }: { item: PipelineItem }) {
-  const color = STAGE_COLOR[item.status] || "#8B8E87";
+  const color = STAGE_COLOR[item.status] || "var(--ink-muted)";
   const action =
     item.status === "review"
       ? { label: "去审核", href: `/app/studio/${item.id}` }
@@ -185,11 +186,11 @@ function CardContent({ item }: { item: PipelineItem }) {
       </div>
       <hr
         className="my-2"
-        style={{ border: "none", borderTop: "1px solid rgba(200,201,203,0.4)" }}
+        style={{ border: "none", borderTop: "1px solid var(--border-hairline)" }}
       />
       <div
         className="flex items-center gap-1.5 text-xs leading-[1.55]"
-        style={{ color: "#626660" }}
+        style={{ color: "var(--cl-neutral)" }}
       >
         <span
           className="inline-block h-[5px] w-[5px] shrink-0 rounded-full"
@@ -199,7 +200,7 @@ function CardContent({ item }: { item: PipelineItem }) {
       </div>
       <div
         className="mt-[9px] flex items-baseline justify-between text-[11.5px]"
-        style={{ color: "#8B8E87" }}
+        style={{ color: "var(--ink-muted)" }}
       >
         <span>{item.ownerName ?? "未分配"}</span>
         {item.deadlineAt && (
@@ -213,7 +214,7 @@ function CardContent({ item }: { item: PipelineItem }) {
             onClick={(e) => e.stopPropagation()}
             onPointerDown={(e) => e.stopPropagation()}
             className="inline-flex h-[30px] items-center rounded-[5px] px-[11px] text-xs font-medium text-ink-primary transition-colors hover:bg-surface-subtle"
-            style={{ border: "1px solid #C8C9CB" }}
+            style={{ border: "1px solid var(--cl-silver)" }}
           >
             {action.label}
           </Link>
@@ -239,12 +240,12 @@ function DraggableCard({
       {...attributes}
       {...listeners}
       onClick={() => onOpen(item)}
-      className={`mt-3 cursor-grab rounded-[5px] px-[15px] py-[13px] transition-colors hover:bg-[rgba(124,148,130,0.08)] ${
+      className={`mt-3 cursor-grab rounded-[5px] px-[15px] py-[13px] transition-colors hover:bg-[var(--mint-tint)] ${
         isDragging ? "opacity-40" : ""
       }`}
       style={{
-        background: "#F5F6F3",
-        border: "1px solid rgba(200,201,203,0.55)",
+        background: "var(--cl-paper)",
+        border: "1px solid var(--border-mid)",
       }}
     >
       <CardContent item={item} />
@@ -264,21 +265,21 @@ function Column({
   onOpen: (item: PipelineItem) => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: colKey });
-  const color = STAGE_COLOR[colKey] || "#8B8E87";
+  const color = STAGE_COLOR[colKey] || "var(--ink-muted)";
   return (
     <div
       ref={setNodeRef}
       className="w-full shrink rounded-[5px] transition-colors"
       style={{
-        background: isOver ? "rgba(124,148,130,0.07)" : undefined,
-        outline: isOver ? "1px dashed rgba(124,148,130,0.5)" : "none",
+        background: isOver ? "var(--mint-tint)" : undefined,
+        outline: isOver ? "1px dashed var(--mint-strong)" : "none",
         outlineOffset: 4,
       }}
     >
       {/* ──● column header + hairline with stage segment */}
       <div
         className="relative flex items-center gap-2 pb-2.5"
-        style={{ borderBottom: "1px solid rgba(200,201,203,0.65)" }}
+        style={{ borderBottom: "1px solid var(--border)" }}
       >
         <ColMotif color={color} />
         <span className="text-[13px] font-semibold text-ink-primary">
@@ -286,7 +287,7 @@ function Column({
         </span>
         <span
           className="ml-auto text-xs tabular-nums"
-          style={{ color: "#8B8E87" }}
+          style={{ color: "var(--ink-muted)" }}
         >
           {items.length}
         </span>
@@ -302,7 +303,7 @@ function Column({
         {items.length === 0 && (
           <p
             className="px-2 py-6 text-center text-[11px]"
-            style={{ color: "#8B8E87" }}
+            style={{ color: "var(--ink-muted)" }}
           >
             {colKey === "published"
               ? "真实发布后，内容会出现在这里。"
@@ -393,7 +394,7 @@ export default function PipelinePage() {
         .filter((p) => p.publication)
         .flatMap((p) => {
           const pub = p.publication!;
-          return (["24h", "72h"] as Checkpoint[]).map((c) => {
+          return (["24h", "72h"] as TimedCheckpoint[]).map((c) => {
             const has = c === "24h" ? pub.snapshot24h : pub.snapshot72h;
             return {
               key: `${pub.id}:${c}`,
@@ -445,7 +446,7 @@ export default function PipelinePage() {
           <h1 className="text-[24px] font-semibold leading-tight text-ink-primary">
             内容流程
           </h1>
-          <p className="mt-1.5 text-[12.5px]" style={{ color: "#626660" }}>
+          <p className="mt-1.5 text-[12.5px]" style={{ color: "var(--cl-neutral)" }}>
             {items.length} 条内容 · 五阶段 · 拖动卡片推进阶段
           </p>
         </div>
@@ -472,15 +473,17 @@ export default function PipelinePage() {
               one document object; the space outside is page margin. */}
           <div className="min-w-0 flex-1 overflow-x-auto">
             <div
-              className="h-full min-w-[860px] rounded-[8px] px-[22px] py-5"
+              className="h-full overflow-x-auto rounded-[8px] px-[22px] py-5"
               style={{
-                background: "#FBFBF8",
-                border: "1px solid rgba(200,201,203,0.5)",
+                background: "var(--cl-surface)",
+                border: "1px solid var(--border-mid)",
               }}
             >
+              {/* M9: columns keep ≥190px so CJK card titles wrap by word;
+                  below that the panel scrolls horizontally. */}
               <div
                 className="grid content-start gap-4"
-                style={{ gridTemplateColumns: "repeat(5, minmax(0, 1fr))" }}
+                style={{ gridTemplateColumns: "repeat(5, minmax(190px, 1fr))" }}
               >
                 {COLUMNS.map((col) => (
                   <Column
@@ -499,8 +502,8 @@ export default function PipelinePage() {
               <div
                 className="w-[240px] rounded-[5px] px-[15px] py-[13px] shadow-lg"
                 style={{
-                  background: "#FBFBF8",
-                  border: "1px solid rgba(124,148,130,0.6)",
+                  background: "var(--cl-surface)",
+                  border: "1px solid var(--mint-strong)",
                 }}
               >
                 <CardContent item={activeItem} />
@@ -512,18 +515,18 @@ export default function PipelinePage() {
         {/* Right rail (M7 direction C): pending metric entries */}
         <div
           className="w-[230px] shrink-0 overflow-y-auto pl-[22px]"
-          style={{ borderLeft: "1px solid rgba(200,201,203,0.65)" }}
+          style={{ borderLeft: "1px solid var(--border)" }}
         >
           <span
             className="text-[11px] font-medium tracking-[0.14em]"
-            style={{ color: "#8B8E87" }}
+            style={{ color: "var(--ink-muted)" }}
           >
             待录入数据
           </span>
           {pendingMetrics.length === 0 ? (
             <p
               className="mt-3.5 text-xs leading-[1.6]"
-              style={{ color: "#626660" }}
+              style={{ color: "var(--cl-neutral)" }}
             >
               暂无待录入数据。发布后 24h / 72h 各录入一次真实数据，诊断才有依据。
             </p>
@@ -533,7 +536,7 @@ export default function PipelinePage() {
                 const due = e.st === "due";
                 const block = (
                   <>
-                    <div className="text-[11px]" style={{ color: "#8B8E87" }}>
+                    <div className="text-[11px]" style={{ color: "var(--ink-muted)" }}>
                       {e.checkpoint.toUpperCase()} · {platformLabel(e.platform)}
                     </div>
                     <div className="mt-1 text-[13px] font-semibold leading-[1.5] text-ink-primary">
@@ -541,7 +544,7 @@ export default function PipelinePage() {
                     </div>
                     <div
                       className="mt-1 text-xs leading-[1.55]"
-                      style={{ color: "#626660" }}
+                      style={{ color: "var(--cl-neutral)" }}
                     >
                       {due
                         ? `自 ${checkpointDueAt(e.pub.publishedAt, e.checkpoint).toLocaleDateString()} 起待录入`
@@ -564,8 +567,8 @@ export default function PipelinePage() {
                         existing: e.pub.snapshots?.[e.checkpoint] ?? null,
                       })
                     }
-                    className="mt-3.5 block w-full pl-3 text-left transition-colors hover:bg-[rgba(124,148,130,0.05)]"
-                    style={{ borderLeft: "2px solid #7C9482" }}
+                    className="mt-3.5 block w-full pl-3 text-left transition-colors hover:bg-[var(--mint-tint)]"
+                    style={{ borderLeft: "2px solid var(--cl-primary)" }}
                   >
                     {block}
                   </button>
@@ -573,7 +576,7 @@ export default function PipelinePage() {
                   <div
                     key={e.key}
                     className="mt-3.5 pl-3"
-                    style={{ borderLeft: "2px solid rgba(200,201,203,0.8)" }}
+                    style={{ borderLeft: "2px solid var(--border-strong)" }}
                   >
                     {block}
                   </div>
@@ -581,7 +584,7 @@ export default function PipelinePage() {
               })}
               <p
                 className="mt-4 text-[11px] leading-[1.6]"
-                style={{ color: "#8B8E87" }}
+                style={{ color: "var(--ink-muted)" }}
               >
                 发布后 24h / 72h 各录入一次真实数据，诊断才有依据。
               </p>
@@ -671,7 +674,7 @@ export default function PipelinePage() {
                           {selected.platforms
                             .filter((p) => p.publication)
                             .flatMap((p) =>
-                              (["24h", "72h"] as Checkpoint[]).map((c) => {
+                              (["24h", "72h"] as TimedCheckpoint[]).map((c) => {
                                 const pub = p.publication!;
                                 const has = c === "24h" ? pub.snapshot24h : pub.snapshot72h;
                                 const st = checkpointStatus(pub.publishedAt, c, has);

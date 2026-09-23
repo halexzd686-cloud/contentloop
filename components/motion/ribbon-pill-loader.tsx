@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { resolveTokens, onThemeChange } from "@/lib/theme";
 
 /**
  * RibbonPillLoader — data-loading motion (M7, human-approved).
@@ -12,6 +13,9 @@ import { useEffect, useRef } from "react";
  * uses the reference's light-theme values (pill #ECECEF, label
  * #25242A), which sit inside our silver/ink tokens; accent maps to
  * #7C9482 / #D4B26A per the frozen palette.
+ * M9 ③: shell/label now read --pill-bg / --cl-ink-strong; canvas
+ * colors resolve from tokens at runtime and re-resolve on
+ * "cl-themechange".
  *
  * Semantic split: ribbon = DATA READING (metrics fetch), gyro
  * ThinkingOrbs = AI REASONING. Different shape, different meaning.
@@ -21,21 +25,30 @@ import { useEffect, useRef } from "react";
  * reduced-motion static frame.
  */
 
-const C = {
+const TOKEN_MAP = {
+  primary: "--cl-primary",
+  insight: "--cl-gold",
+  ring: "--cl-ring", // track = ring hue at 0.55 alpha (drawn via globalAlpha)
+} as const;
+
+type PaletteKey = keyof typeof TOKEN_MAP;
+type Palette = Record<PaletteKey, string>;
+
+const FALLBACK: Palette = {
   primary: "#7C9482",
   insight: "#D4B26A",
-  track: "rgba(139,151,143,0.55)",
+  ring: "#8B978F",
 };
 
 const CW = 72; // canvas css width
 const CH = 34; // canvas css height
 
 const DOTS = [
-  { phase: 0.0, r: 3.4, color: C.primary },
-  { phase: 1.4, r: 2.8, color: C.primary },
-  { phase: 2.9, r: 2.4, color: C.primary },
-  { phase: 4.3, r: 2.2, color: C.insight },
-];
+  { phase: 0.0, r: 3.4, color: "primary" },
+  { phase: 1.4, r: 2.8, color: "primary" },
+  { phase: 2.9, r: 2.4, color: "primary" },
+  { phase: 4.3, r: 2.2, color: "insight" },
+] as const satisfies readonly { phase: number; r: number; color: PaletteKey }[];
 
 const SPEED = 1.05; // rad/s, calm per reference
 
@@ -62,6 +75,13 @@ export function RibbonPillLoader({
     let running = false;
     let inView = true;
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const pal = resolveTokens<Palette>(TOKEN_MAP, FALLBACK);
+    /* M9 ③: re-resolve on theme switch — RAF loop reads pal per frame;
+       the reduced-motion static frame repaints once. */
+    const offTheme = onThemeChange(() => {
+      Object.assign(pal, resolveTokens<Palette>(TOKEN_MAP, FALLBACK));
+      if (reduced) drawFrame(0.7);
+    });
 
     const cx = CW / 2;
     const cy = CH / 2;
@@ -86,9 +106,11 @@ export function RibbonPillLoader({
         else ctx.lineTo(p.x, p.y);
       }
       ctx.closePath();
-      ctx.strokeStyle = C.track;
+      ctx.strokeStyle = pal.ring;
+      ctx.globalAlpha = 0.55;
       ctx.lineWidth = 1.2;
       ctx.stroke();
+      ctx.globalAlpha = 1;
 
       // particles, far → near
       const ds = DOTS.map((d) => ({ ...d, p: point(t0 + d.phase) })).sort(
@@ -99,7 +121,7 @@ export function RibbonPillLoader({
         ctx.globalAlpha = 0.3 + 0.7 * d.p.depth;
         ctx.beginPath();
         ctx.arc(d.p.x, d.p.y, d.r * s, 0, Math.PI * 2);
-        ctx.fillStyle = d.color;
+        ctx.fillStyle = pal[d.color];
         ctx.fill();
       }
       ctx.globalAlpha = 1;
@@ -132,7 +154,7 @@ export function RibbonPillLoader({
     };
 
     resize();
-    if (reduced) return;
+    if (reduced) return offTheme;
 
     const io = new IntersectionObserver(
       ([entry]) => {
@@ -152,6 +174,7 @@ export function RibbonPillLoader({
       stop();
       io.disconnect();
       document.removeEventListener("visibilitychange", onVisibility);
+      offTheme();
     };
   }, []);
 
@@ -159,8 +182,8 @@ export function RibbonPillLoader({
     <span
       className={`inline-flex items-center gap-3 rounded-full py-2.5 pl-3 pr-5 ${className}`}
       style={{
-        background: "#ECECEF",
-        border: "1px solid rgba(200,201,203,0.6)",
+        background: "var(--pill-bg)",
+        border: "1px solid var(--border)",
       }}
       role="status"
       aria-label={label}
@@ -172,7 +195,7 @@ export function RibbonPillLoader({
       />
       <span
         className="text-[12.5px] font-medium"
-        style={{ color: "#25242A" }}
+        style={{ color: "var(--cl-ink-strong)" }}
       >
         {label}
       </span>

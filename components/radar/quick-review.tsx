@@ -96,8 +96,8 @@ const EVIDENCE_SOURCE_LABELS: Record<string, string> = {
   model_inference: "AI 推断",
 };
 
-const HAIRLINE = "1px solid rgba(200,201,203,0.4)";
-const RULE = "1px solid rgba(200,201,203,0.65)";
+const HAIRLINE = "1px solid var(--border-hairline)";
+const RULE = "1px solid var(--border)";
 
 // ─── Small pieces ──────────────────────────────────────
 
@@ -245,18 +245,18 @@ export function QuickReview({
       <div className="flex items-baseline justify-between">
         <span
           className="text-[11px] font-medium tracking-[0.14em]"
-          style={{ color: "#8B8E87" }}
+          style={{ color: "var(--ink-muted)" }}
         >
           快速评估
         </span>
         <span className="flex items-center gap-3">
           <span
             className="flex items-center gap-1.5 text-[11px]"
-            style={{ color: "#8B8E87" }}
+            style={{ color: "var(--ink-muted)" }}
           >
             <span
               className="inline-block h-1 w-1 rounded-full"
-              style={{ background: "#D4B26A" }}
+              style={{ background: "var(--cl-gold)" }}
             />
             AI 分析 · 由你确认
           </span>
@@ -274,7 +274,7 @@ export function QuickReview({
         <h2 className="mt-2 text-[17px] font-semibold leading-relaxed text-ink-primary">
           {signal.title}
         </h2>
-        <p className="mt-[5px] text-xs" style={{ color: "#626660" }}>
+        <p className="mt-[5px] text-xs" style={{ color: "var(--cl-neutral)" }}>
           {[sourceLabel, timeMeta].filter(Boolean).join(" · ")}
           {" · "}
           {signalStatusLabel(signal.status)}
@@ -291,7 +291,7 @@ export function QuickReview({
           </a>
         )}
         {signal.summary && (
-          <p className="mt-2 text-[13px] leading-[1.6]" style={{ color: "#626660" }}>
+          <p className="mt-2 text-[13px] leading-[1.6]" style={{ color: "var(--cl-neutral)" }}>
             {signal.summary}
           </p>
         )}
@@ -328,10 +328,10 @@ export function QuickReview({
                 </span>
                 <span
                   className="mt-2 w-full"
-                  style={{ borderTop: "1.5px solid #7C9482" }}
+                  style={{ borderTop: "1.5px solid var(--cl-primary)" }}
                 />
               </span>
-              <span className="pb-[5px] text-xs" style={{ color: "#8B8E87" }}>
+              <span className="pb-[5px] text-xs" style={{ color: "var(--ink-muted)" }}>
                 选题评分<span> / 100</span>
               </span>
               {signal.analysisConfidence && (
@@ -362,7 +362,7 @@ export function QuickReview({
               </div>
               <p
                 className="mt-[7px] text-[13.5px] leading-[1.65]"
-                style={{ color: "#626660" }}
+                style={{ color: "var(--cl-neutral)" }}
               >
                 {signal.whyItMatters || "N/A"}
               </p>
@@ -375,13 +375,13 @@ export function QuickReview({
               <div>
                 <div
                   className="text-xs font-semibold"
-                  style={{ color: "#626660" }}
+                  style={{ color: "var(--cl-neutral)" }}
                 >
                   受众匹配
                 </div>
                 <p
                   className="mt-1.5 text-[13px] leading-[1.6]"
-                  style={{ color: "#626660" }}
+                  style={{ color: "var(--cl-neutral)" }}
                 >
                   {signal.audienceMatch || "N/A"}
                 </p>
@@ -389,13 +389,13 @@ export function QuickReview({
               <div>
                 <div
                   className="text-xs font-semibold"
-                  style={{ color: "#626660" }}
+                  style={{ color: "var(--cl-neutral)" }}
                 >
                   内容风险
                 </div>
                 <p
                   className="mt-1.5 text-[13px] leading-[1.6]"
-                  style={{ color: "#626660" }}
+                  style={{ color: "var(--cl-neutral)" }}
                 >
                   {signal.contentRisk || "N/A"}
                 </p>
@@ -419,21 +419,21 @@ export function QuickReview({
                       style={{
                         borderBottom: HAIRLINE,
                         background: sel
-                          ? "rgba(124,148,130,0.07)"
+                          ? "var(--mint-tint)"
                           : undefined,
                       }}
                     >
                       {sel && (
                         <span
                           className="absolute left-0 top-1/2 h-[22px] w-[2px] -translate-y-1/2 rounded-full"
-                          style={{ background: "#7C9482" }}
+                          style={{ background: "var(--cl-primary)" }}
                         />
                       )}
                       <span
                         className="w-5 shrink-0 text-[14px]"
                         style={{
                           fontFamily: "var(--font-cormorant), serif",
-                          color: "#8B8E87",
+                          color: "var(--ink-muted)",
                         }}
                       >
                         {String(i + 1).padStart(2, "0")}
@@ -456,7 +456,7 @@ export function QuickReview({
                 <div>
                   <div
                     className="mb-1.5 text-xs font-semibold"
-                    style={{ color: "#626660" }}
+                    style={{ color: "var(--cl-neutral)" }}
                   >
                     证据
                   </div>
@@ -465,7 +465,7 @@ export function QuickReview({
                       <li
                         key={i}
                         className="text-xs"
-                        style={{ color: "#626660" }}
+                        style={{ color: "var(--cl-neutral)" }}
                       >
                         <span className="mr-1.5 inline-block rounded bg-surface-subtle px-1.5 py-0.5 text-[10px] font-medium text-ink-muted">
                           {EVIDENCE_SOURCE_LABELS[item.source] || item.source}
@@ -565,7 +565,7 @@ export function QuickReview({
               onClick={() => setSkipOpen(true)}
               disabled={actionLoading || analyzing}
               className="text-[12.5px] disabled:opacity-50"
-              style={{ color: "#626660" }}
+              style={{ color: "var(--cl-neutral)" }}
             >
               跳过线索
             </button>

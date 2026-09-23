@@ -1,7 +1,7 @@
-import { eq, and, isNull, isNotNull } from "drizzle-orm";
+import { eq, and, isNull, isNotNull, desc } from "drizzle-orm";
 
 import { db } from "@/lib/db";
-import { contents, publications, teamMembers } from "@/lib/db/schema";
+import { contents, contentBriefs, publications, teamMembers } from "@/lib/db/schema";
 import { requireSingleBrand } from "@/lib/brand";
 import { ReviewError } from "@/lib/review";
 import { contentStatusLabel } from "@/lib/labels";
@@ -21,6 +21,40 @@ export interface ManualCreateInput {
   primaryPlatform: Platform;
   pillarId?: string | null;
   ownerId: string;
+}
+
+/**
+ * Content list read for the current Brand (Studio index, Home, and the
+ * M9 attention model share this — one query, no drift). Extracted from
+ * GET /api/contents in M9; field selection is the route's original.
+ */
+export async function listContents(archived: boolean) {
+  const brand = await requireSingleBrand();
+  return db
+    .select({
+      id: contents.id,
+      title: contents.title,
+      status: contents.status,
+      priority: contents.priority,
+      ownerId: contents.ownerId,
+      ownerName: teamMembers.name,
+      briefStatus: contentBriefs.status,
+      sourceSignalId: contents.sourceSignalId,
+      primaryPlatform: contents.primaryPlatform,
+      isDemo: contents.isDemo,
+      deletedAt: contents.deletedAt,
+      updatedAt: contents.updatedAt,
+    })
+    .from(contents)
+    .leftJoin(teamMembers, eq(contents.ownerId, teamMembers.id))
+    .leftJoin(contentBriefs, eq(contentBriefs.contentId, contents.id))
+    .where(
+      and(
+        eq(contents.brandId, brand.id),
+        archived ? isNotNull(contents.deletedAt) : isNull(contents.deletedAt)
+      )
+    )
+    .orderBy(desc(contents.updatedAt));
 }
 
 export async function createManualContent(input: ManualCreateInput) {

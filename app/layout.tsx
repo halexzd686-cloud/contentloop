@@ -44,9 +44,21 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="zh-CN"
+      suppressHydrationWarning
       className={`${notoSans.variable} ${notoSerif.variable} ${cormorant.variable} ${playfair.variable} h-full antialiased`}
     >
-      <body className="min-h-full">{children}</body>
+      <body className="min-h-full">
+        {/* M9 ③ anti-FOUC: apply the persisted theme before first paint.
+            SSR stays light; localStorage["cl-theme"] === "dark" flips
+            <html data-theme> synchronously during parse. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              'try{var t=localStorage.getItem("cl-theme");if(t!=="dark"&&new URLSearchParams(location.search).get("theme")==="dark"){t="dark"}if(t==="dark"){document.documentElement.dataset.theme="dark"}}catch(e){}',
+          }}
+        />
+        {children}
+      </body>
     </html>
   );
 }

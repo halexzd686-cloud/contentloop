@@ -1,53 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq, and, isNull, isNotNull, desc } from "drizzle-orm";
 
-import { createManualContent } from "@/lib/contents";
+import { createManualContent, listContents } from "@/lib/contents";
 import { ReviewError } from "@/lib/review";
 import { manualCreateSchema } from "@/lib/validation/content";
-
-import { db } from "@/lib/db";
-import { contents, contentBriefs, teamMembers } from "@/lib/db/schema";
-import { requireSingleBrand } from "@/lib/brand";
 
 /**
  * GET /api/contents
  * Lightweight content list for the current Brand (Studio index).
  * Includes brief status so the list can show "Brief: draft/approved/none".
+ * Query lives in lib/contents.listContents (shared with the M9
+ * attention read model — one source, no drift).
  */
 export async function GET(request: NextRequest) {
   try {
-    const brand = await requireSingleBrand();
     const archived =
       request.nextUrl.searchParams.get("archived") === "true";
-
-    const rows = await db
-      .select({
-        id: contents.id,
-        title: contents.title,
-        status: contents.status,
-        priority: contents.priority,
-        ownerId: contents.ownerId,
-        ownerName: teamMembers.name,
-        briefStatus: contentBriefs.status,
-        sourceSignalId: contents.sourceSignalId,
-        primaryPlatform: contents.primaryPlatform,
-        isDemo: contents.isDemo,
-        deletedAt: contents.deletedAt,
-        updatedAt: contents.updatedAt,
-      })
-      .from(contents)
-      .leftJoin(teamMembers, eq(contents.ownerId, teamMembers.id))
-      .leftJoin(contentBriefs, eq(contentBriefs.contentId, contents.id))
-      .where(
-        and(
-          eq(contents.brandId, brand.id),
-          archived
-            ? isNotNull(contents.deletedAt)
-            : isNull(contents.deletedAt)
-        )
-      )
-      .orderBy(desc(contents.updatedAt));
-
+    const rows = await listContents(archived);
     return NextResponse.json({ contents: rows });
   } catch (error) {
     console.error("GET /api/contents error:", error);

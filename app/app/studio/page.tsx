@@ -122,13 +122,13 @@ export default function StudioPage() {
       {/* Header — M7 P5: title + summary + primary action */}
       <div
         className="flex items-end justify-between px-8 pb-[18px] pt-6"
-        style={{ borderBottom: "1px solid rgba(200,201,203,0.65)" }}
+        style={{ borderBottom: "1px solid var(--border)" }}
       >
         <div>
           <h1 className="text-[24px] font-semibold leading-tight text-ink-primary">
             内容工作台
           </h1>
-          <p className="mt-1.5 text-[12.5px]" style={{ color: "#626660" }}>
+          <p className="mt-1.5 text-[12.5px]" style={{ color: "var(--cl-neutral)" }}>
             {archived
               ? `${contents.length} 条已归档`
               : `${contents.length} 条内容 · ${
@@ -146,7 +146,7 @@ export default function StudioPage() {
       <div className="px-8">
         <div
           className="flex gap-6"
-          style={{ borderBottom: "1px solid rgba(200,201,203,0.65)" }}
+          style={{ borderBottom: "1px solid var(--border)" }}
         >
           {(["active", "archived"] as const).map((v) => {
             const on = view === v;
@@ -156,7 +156,7 @@ export default function StudioPage() {
                 onClick={() => setView(v)}
                 className="relative pb-2 pt-3 text-[13px]"
                 style={{
-                  color: on ? "#20231F" : "#626660",
+                  color: on ? "var(--cl-ink-strong)" : "var(--cl-neutral)",
                   fontWeight: on ? 600 : 400,
                 }}
               >
@@ -164,7 +164,7 @@ export default function StudioPage() {
                 {on && (
                   <span
                     className="absolute inset-x-0 bottom-0 h-[2px]"
-                    style={{ background: "#7C9482" }}
+                    style={{ background: "var(--cl-primary)" }}
                   />
                 )}
               </button>
@@ -224,8 +224,8 @@ export default function StudioPage() {
               <Link
                 key={c.id}
                 href={`/app/studio/${c.id}`}
-                className="group flex items-center gap-4 px-2.5 py-[15px] transition-colors duration-150 hover:bg-[rgba(124,148,130,0.05)]"
-                style={{ borderBottom: "1px solid rgba(200,201,203,0.4)" }}
+                className="group flex items-center gap-4 px-2.5 py-[15px] transition-colors duration-150 hover:bg-[var(--mint-tint)]"
+                style={{ borderBottom: "1px solid var(--border-hairline)" }}
               >
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
@@ -236,7 +236,7 @@ export default function StudioPage() {
                   </div>
                   <div
                     className="mt-1 flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-xs"
-                    style={{ color: "#626660" }}
+                    style={{ color: "var(--cl-neutral)" }}
                   >
                     {c.ownerName && <span>负责人：{c.ownerName}</span>}
                     {c.primaryPlatform ? (
@@ -263,7 +263,7 @@ export default function StudioPage() {
                           ? "草稿"
                           : "未开始"}
                     </span>
-                    <span style={{ color: "#8B8E87" }}>
+                    <span style={{ color: "var(--ink-muted)" }}>
                       更新于 {new Date(c.updatedAt).toLocaleDateString()}
                     </span>
                   </div>

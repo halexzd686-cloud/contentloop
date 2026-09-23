@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { resolveTokens, onThemeChange } from "@/lib/theme";
 
 /**
  * ThinkingOrbs — ContentLoop AI reasoning motion (M7, human-approved V2).
@@ -18,16 +19,33 @@ import { useEffect, useRef } from "react";
  *
  * Engineering contract: zero per-frame React renders, RAF cleanup,
  * DPR ≤ 2, offscreen/hidden pause, reduced-motion static frame.
+ * M9 ③: colors resolve from theme tokens at runtime (canvas ignores
+ * var()); re-resolved on "cl-themechange" — the RAF loop picks them up
+ * next frame, the reduced-motion static frame repaints once.
  */
 
-const C = {
+const TOKEN_MAP = {
+  primary: "--cl-primary",
+  primaryDeep: "--cl-primary-deep", // front-of-depth primary — soft, not saturated
+  structural: "--cl-silver",
+  structuralDim: "--cl-silver-dim",
+  insight: "--cl-gold",
+  neutral: "--cl-neutral",
+  ring: "--cl-ring", // deep sage-gray machined track — one hue, depth-graded
+} as const;
+
+type PaletteKey = keyof typeof TOKEN_MAP;
+type Palette = Record<PaletteKey, string>;
+
+/* Original M7 hexes — fallbacks only, so light pixels never drift. */
+const FALLBACK: Palette = {
   primary: "#7C9482",
-  primaryDeep: "#5F7A68", // front-of-depth primary — soft, not saturated
+  primaryDeep: "#5F7A68",
   structural: "#C8C9CB",
   structuralDim: "#D6D7D9",
   insight: "#D4B26A",
   neutral: "#626660",
-  ring: "#8B978F", // deep sage-gray machined track — one hue, depth-graded
+  ring: "#8B978F",
 };
 
 const YAW_SPEED = 0.22; // global gyro precession (rad/s, calm per reference)
@@ -45,8 +63,8 @@ interface Particle {
   phase: number;
   speed: number;
   size: number;
-  color: string;
-  deepColor?: string;
+  color: PaletteKey;
+  deepColor?: PaletteKey;
   isInsight?: boolean;
 }
 
@@ -57,15 +75,15 @@ const PLANES: Plane[] = [
 ];
 
 const PARTICLES: Particle[] = [
-  { plane: 0, phase: 0.0, speed: 0.85, size: 0.085, color: C.primary, deepColor: C.primaryDeep },
-  { plane: 0, phase: 2.4, speed: 0.85, size: 0.06, color: C.structural },
-  { plane: 0, phase: 4.5, speed: 1.05, size: 0.055, color: C.neutral },
-  { plane: 1, phase: 0.9, speed: -0.95, size: 0.076, color: C.primary, deepColor: C.primaryDeep },
-  { plane: 1, phase: 3.1, speed: -0.8, size: 0.058, color: C.structural },
-  { plane: 2, phase: 1.7, speed: 1.15, size: 0.068, color: C.primary, deepColor: C.primaryDeep },
-  { plane: 2, phase: 5.0, speed: 1.15, size: 0.052, color: C.structural },
+  { plane: 0, phase: 0.0, speed: 0.85, size: 0.085, color: "primary", deepColor: "primaryDeep" },
+  { plane: 0, phase: 2.4, speed: 0.85, size: 0.06, color: "structural" },
+  { plane: 0, phase: 4.5, speed: 1.05, size: 0.055, color: "neutral" },
+  { plane: 1, phase: 0.9, speed: -0.95, size: 0.076, color: "primary", deepColor: "primaryDeep" },
+  { plane: 1, phase: 3.1, speed: -0.8, size: 0.058, color: "structural" },
+  { plane: 2, phase: 1.7, speed: 1.15, size: 0.068, color: "primary", deepColor: "primaryDeep" },
+  { plane: 2, phase: 5.0, speed: 1.15, size: 0.052, color: "structural" },
   // the single exceptional insight node
-  { plane: 1, phase: 5.6, speed: -0.62, size: 0.075, color: C.insight, isInsight: true },
+  { plane: 1, phase: 5.6, speed: -0.62, size: 0.075, color: "insight", isInsight: true },
 ];
 
 export function ThinkingOrbs({
@@ -94,6 +112,13 @@ export function ThinkingOrbs({
     let running = false;
     let inView = true;
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const pal = resolveTokens<Palette>(TOKEN_MAP, FALLBACK);
+    /* M9 ③: re-resolve on theme switch — RAF loop reads pal per frame;
+       the reduced-motion static frame repaints once. */
+    const offTheme = onThemeChange(() => {
+      Object.assign(pal, resolveTokens<Palette>(TOKEN_MAP, FALLBACK));
+      if (reduced) drawFrame(0.7);
+    });
 
     const resize = () => {
       canvas.width = size * dpr;
@@ -146,7 +171,7 @@ export function ThinkingOrbs({
         ctx.beginPath();
         ctx.moveTo(c + p0.x * R, c + p0.y * R);
         ctx.lineTo(c + p1.x * R, c + p1.y * R);
-        ctx.strokeStyle = C.ring;
+        ctx.strokeStyle = pal.ring;
         ctx.globalAlpha = base * (0.45 + depth * 0.85);
         ctx.lineWidth = (compact ? 0.9 : 1.05) + depth * (compact ? 0.3 : 0.4);
         ctx.stroke();
@@ -168,7 +193,7 @@ export function ThinkingOrbs({
       // center axis hub — the instrument's anchor
       ctx.beginPath();
       ctx.arc(c, c, Math.max(1.4, size * 0.032), 0, Math.PI * 2);
-      ctx.fillStyle = C.primary;
+      ctx.fillStyle = pal.primary;
       ctx.globalAlpha = 0.85;
       ctx.fill();
       ctx.globalAlpha = 1;
@@ -192,13 +217,13 @@ export function ThinkingOrbs({
         // far particles desaturate into structural silver (insight keeps gold)
         let fill: string;
         if (p.isInsight) {
-          fill = C.insight;
+          fill = pal.insight;
         } else if (depth < 0.42) {
-          fill = C.structuralDim;
+          fill = pal.structuralDim;
         } else if (p.deepColor && depth > 0.7) {
-          fill = p.deepColor;
+          fill = pal[p.deepColor];
         } else {
-          fill = p.color;
+          fill = pal[p.color];
         }
 
         ctx.beginPath();
@@ -212,7 +237,7 @@ export function ThinkingOrbs({
         if (p.isInsight && depth > 0.68) {
           ctx.beginPath();
           ctx.arc(px, py, r + size * 0.045 * depth, 0, Math.PI * 2);
-          ctx.strokeStyle = C.insight;
+          ctx.strokeStyle = pal.insight;
           ctx.globalAlpha = (depth - 0.68) * 2.2 * 0.75;
           ctx.lineWidth = Math.max(0.8, size * 0.018);
           ctx.stroke();
@@ -243,7 +268,10 @@ export function ThinkingOrbs({
     if (reduced) {
       const ro = new ResizeObserver(resize);
       ro.observe(canvas);
-      return () => ro.disconnect();
+      return () => {
+        ro.disconnect();
+        offTheme();
+      };
     }
 
     const io = new IntersectionObserver(
@@ -267,6 +295,7 @@ export function ThinkingOrbs({
       io.disconnect();
       ro.disconnect();
       document.removeEventListener("visibilitychange", onVisibility);
+      offTheme();
     };
   }, [size, staticFrame]);
 

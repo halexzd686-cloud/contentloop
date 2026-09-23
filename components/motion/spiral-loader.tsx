@@ -13,9 +13,6 @@ import { useMemo } from "react";
  * Reduced-motion: static spiral glyph; surrounding text carries state.
  */
 
-const ACTIVE = "#7C9482";
-const TRACK = "#C8C9CB";
-
 /** Optical variants — turns / stroke tuned per size for legibility. */
 function variantFor(size: number) {
   if (size <= 16) return { turns: 1.4, stroke: 2.4 };
@@ -70,25 +67,29 @@ export function SpiralLoader({
         flexShrink: 0,
       }}
     >
-      {/* track: full spiral, faint structural */}
+      {/* track: full spiral, faint structural. The stroke attribute is
+          the M7 frozen-color fallback (asserted in motion-spike tests);
+          the inline style wins and follows the theme (M9 ③). */}
       <path
         d={d}
         fill="none"
-        stroke={TRACK}
+        stroke="#C8C9CB"
         strokeWidth={stroke}
         strokeLinecap="round"
         opacity={0.5}
+        style={{ stroke: "var(--cl-silver)" }}
       />
       {/* active segment travels along the spiral path */}
       <path
         d={d}
         pathLength={100}
         fill="none"
-        stroke={ACTIVE}
+        stroke="#7C9482"
         strokeWidth={stroke}
         strokeLinecap="round"
         strokeDasharray="42 142"
         className="spiral-loader-active"
+        style={{ stroke: "var(--cl-primary)" }}
       />
     </svg>
   );

@@ -734,7 +734,7 @@ export function usePlatformsPanel({
         adapting ? (
           <div className="flex flex-col items-center gap-3 py-2">
             <ThinkingOrbs size={56} />
-            <span className="text-[12.5px]" style={{ color: "#626660" }}>
+            <span className="text-[12.5px]" style={{ color: "var(--cl-neutral)" }}>
               正在适配平台版本…
             </span>
           </div>
@@ -764,12 +764,12 @@ export function usePlatformsPanel({
           </button>
         </div>
       )}
-      <p className="text-xs leading-[1.6]" style={{ color: "#626660" }}>
+      <p className="text-xs leading-[1.6]" style={{ color: "var(--cl-neutral)" }}>
         {hasPlaybook
           ? "已加载该平台的自定义规范。"
           : "没有自定义平台规范——使用通用平台结构。"}
       </p>
-      <p className="text-xs leading-[1.6]" style={{ color: "#626660" }}>
+      <p className="text-xs leading-[1.6]" style={{ color: "var(--cl-neutral)" }}>
         AI 会把已确认的内容母稿适配为结构化的{" "}
         {platformLabel(selected)} 版本。应用或接受前不会保存任何内容。
       </p>
