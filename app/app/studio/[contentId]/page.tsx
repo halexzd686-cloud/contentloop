@@ -44,6 +44,7 @@ import {
 import { createSaveQueue, type SaveQueueState } from "@/lib/save-queue";
 import { briefStatusLabel, contentStatusLabel, platformLabel } from "@/lib/labels";
 import { AiActionButton } from "@/components/ui/ai-action-button";
+import { CollapsibleRail } from "@/components/layout/collapsible-rail";
 import { ArrowLeft, RefreshCw, Check, Lock } from "lucide-react";
 
 /**
@@ -565,28 +566,28 @@ export default function StudioContentPage({
           </h1>
           <span
             className="flex shrink-0 items-center gap-3.5 text-xs"
-            style={{ color: "#626660" }}
+            style={{ color: "var(--cl-neutral)" }}
           >
             <DemoBadge isDemo={content.isDemo} />
             <span className="flex items-center gap-1.5">
               <span
                 className="inline-block h-[5px] w-[5px] rounded-full"
-                style={{ background: "#7C9482" }}
+                style={{ background: "var(--cl-primary)" }}
               />
               {contentStatusLabel(content.status)}
             </span>
             {content.primaryPlatform && (
-              <span style={{ color: "#8B8E87" }}>
+              <span style={{ color: "var(--ink-muted)" }}>
                 待发布平台：{platformLabel(content.primaryPlatform)}
               </span>
             )}
             {content.owner && (
-              <span style={{ color: "#8B8E87" }}>
+              <span style={{ color: "var(--ink-muted)" }}>
                 负责人：{content.owner.name}
               </span>
             )}
             {approverName && (
-              <span style={{ color: "#8B8E87" }}>审核人：{approverName}</span>
+              <span style={{ color: "var(--ink-muted)" }}>审核人：{approverName}</span>
             )}
           </span>
         </div>
@@ -594,7 +595,7 @@ export default function StudioContentPage({
         {/* Tabs — M7 Index Tabs */}
         <div
           className="mt-4 flex gap-[26px]"
-          style={{ borderBottom: "1px solid rgba(200,201,203,0.65)" }}
+          style={{ borderBottom: "1px solid var(--border)" }}
         >
           {TABS.map((tab) => {
             const on = activeTab === tab;
@@ -604,7 +605,7 @@ export default function StudioContentPage({
                 onClick={() => setActiveTab(tab)}
                 className="relative pb-[9px] text-[13px]"
                 style={{
-                  color: on ? "#20231F" : "#626660",
+                  color: on ? "var(--cl-ink-strong)" : "var(--cl-neutral)",
                   fontWeight: on ? 600 : 400,
                 }}
               >
@@ -612,7 +613,7 @@ export default function StudioContentPage({
                 {on && (
                   <span
                     className="absolute inset-x-0 -bottom-px h-[2px]"
-                    style={{ background: "#7C9482" }}
+                    style={{ background: "var(--cl-primary)" }}
                   />
                 )}
               </button>
@@ -626,7 +627,7 @@ export default function StudioContentPage({
         {/* Sources rail */}
         <div
           className="w-[218px] shrink-0 overflow-y-auto"
-          style={{ borderRight: "1px solid rgba(200,201,203,0.65)" }}
+          style={{ borderRight: "1px solid var(--border)" }}
         >
           <SourcesPanel signal={signal} />
         </div>
@@ -636,14 +637,14 @@ export default function StudioContentPage({
           <div
             className="w-full max-w-[960px] self-start rounded-[5px] px-[38px] py-8"
             style={{
-              background: "#FBFBF8",
-              border: "1px solid rgba(200,201,203,0.4)",
+              background: "var(--cl-surface)",
+              border: "1px solid var(--border-hairline)",
             }}
           >
           {activeTab === "Brief" ? (
           <>
-          <div className="flex items-baseline justify-between">
-            <span className="flex items-center gap-2.5">
+          <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2">
+            <span className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
               <span
                 className="text-ink-primary"
                 style={{
@@ -658,11 +659,11 @@ export default function StudioContentPage({
                 (approved ? (
                   <span
                     className="inline-flex items-center gap-1.5 text-xs font-medium"
-                    style={{ color: "#626660" }}
+                    style={{ color: "var(--cl-neutral)" }}
                   >
                     <span
                       className="inline-block h-[5px] w-[5px] rounded-full"
-                      style={{ background: "#7C9482" }}
+                      style={{ background: "var(--cl-primary)" }}
                     />
                     已确认
                   </span>
@@ -706,7 +707,7 @@ export default function StudioContentPage({
                   <button
                     onClick={() => setEditConfirmOpen(true)}
                     className="inline-flex h-8 items-center rounded-[5px] px-3 text-[12.5px] font-medium text-ink-primary transition-colors hover:bg-surface-subtle"
-                    style={{ border: "1px solid #C8C9CB" }}
+                    style={{ border: "1px solid var(--cl-silver)" }}
                   >
                     编辑简报
                   </button>
@@ -727,16 +728,16 @@ export default function StudioContentPage({
             </span>
           </div>
 
-          <p className="mt-1.5 text-[12.5px]" style={{ color: "#626660" }}>
+          <p className="mt-1.5 text-[12.5px]" style={{ color: "var(--cl-neutral)" }}>
             这条内容为什么存在：写给谁、解决什么问题、用什么角度。
           </p>
 
-          <div className="mt-3.5" style={{ borderTop: "1px solid rgba(200,201,203,0.4)" }} />
+          <div className="mt-3.5" style={{ borderTop: "1px solid var(--border-hairline)" }} />
 
           {approved && brief?.approvedAt && (
             <p
               className="mb-4 pt-2.5 text-[12.5px] leading-[1.65]"
-              style={{ color: "#626660" }}
+              style={{ color: "var(--cl-neutral)" }}
             >
               已于 {new Date(brief.approvedAt).toLocaleString()}
               {approverName ? ` 由 ${approverName}` : ""} 确认。只读状态——需要修改请点“编辑简报”。
@@ -852,33 +853,35 @@ export default function StudioContentPage({
           </div>
         </div>
 
-        {/* Loop AI inspector — M7 P5: 248px document surface */}
-        <div
+        {/* Loop AI inspector — M7 P5: 248px document surface;
+            M9: collapses to an overlay rail below 1200px */}
+        <CollapsibleRail
+          label="Loop AI"
           className="w-[248px] shrink-0 overflow-y-auto p-[18px]"
           style={{
-            borderLeft: "1px solid rgba(200,201,203,0.65)",
-            background: "#FBFBF8",
+            borderLeft: "1px solid var(--border)",
+            background: "var(--cl-surface)",
           }}
         >
           <div className="text-[13px] font-semibold text-ink-primary">Loop AI</div>
           <div
             className="mt-1.5 flex items-center gap-1.5 text-[11.5px]"
-            style={{ color: "#8B8E87" }}
+            style={{ color: "var(--ink-muted)" }}
           >
             <span
               className="inline-block h-1 w-1 rounded-full"
-              style={{ background: "#D4B26A" }}
+              style={{ background: "var(--cl-gold)" }}
             />
             AI 提供建议，最终由你确认。
           </div>
           {activeTab === "Platforms" ? (
             <div className="mt-5">{platformsPanel.aiPanel}</div>
           ) : activeTab === "Review" ? (
-            <p className="mt-5 text-xs leading-[1.6]" style={{ color: "#626660" }}>
+            <p className="mt-5 text-xs leading-[1.6]" style={{ color: "var(--cl-neutral)" }}>
               审核只能由人完成。AI 不会替你勾选清单或批准内容。
             </p>
           ) : activeTab === "Master" ? (
-            <p className="mt-5 text-xs leading-[1.6]" style={{ color: "#626660" }}>
+            <p className="mt-5 text-xs leading-[1.6]" style={{ color: "var(--cl-neutral)" }}>
               母稿的 AI 操作暂未开放。
             </p>
           ) : (
@@ -887,7 +890,7 @@ export default function StudioContentPage({
             {generating ? (
               <div className="flex flex-col items-center gap-3 py-2">
                 <ThinkingOrbs size={56} />
-                <span className="text-[12.5px]" style={{ color: "#626660" }}>
+                <span className="text-[12.5px]" style={{ color: "var(--cl-neutral)" }}>
                   正在生成简报草稿…
                 </span>
               </div>
@@ -910,14 +913,14 @@ export default function StudioContentPage({
                 </button>
               </div>
             )}
-            <p className="text-xs leading-[1.6]" style={{ color: "#626660" }}>
+            <p className="text-xs leading-[1.6]" style={{ color: "var(--cl-neutral)" }}>
               {signal
                 ? "AI 会根据关联线索、品牌信息和平台规范起草。不应用就不会保存任何内容。"
                 : "AI 会根据这条内容、品牌信息和平台规范起草。不应用就不会保存任何内容。"}
             </p>
           </div>
           )}
-        </div>
+        </CollapsibleRail>
       </div>
 
       {/* Edit Brief confirm */}
@@ -1087,12 +1090,12 @@ function MasterWorkspace({
           内容母稿
         </span>
       </div>
-      <p className="mt-1.5 text-[12.5px]" style={{ color: "#626660" }}>
+      <p className="mt-1.5 text-[12.5px]" style={{ color: "var(--cl-neutral)" }}>
         所有平台版本的母本。模块即文稿结构。
       </p>
       <div
         className="mb-2 mt-3.5"
-        style={{ borderTop: "1px solid rgba(200,201,203,0.4)" }}
+        style={{ borderTop: "1px solid var(--border-hairline)" }}
       />
       <MasterEditor
         modules={modules}

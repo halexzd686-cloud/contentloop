@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { FountainLoader } from "@/components/motion/fountain-loader";
+import { ThinkingOrbs } from "@/components/motion/thinking-orbs";
+import { AiActionButton } from "@/components/ui/ai-action-button";
 import {
   Dialog,
   DialogContent,
@@ -17,6 +19,7 @@ import {
   type MetricFormat,
 } from "@/lib/metrics/engine";
 import { platformLabel, metricCautionLabel } from "@/lib/labels";
+import type { AIPlaybookDraft } from "@/lib/validation/playbook";
 
 /**
  * Settings → Metrics — M2.2 Metric Definition Engine.
@@ -54,6 +57,29 @@ interface TeamMember {
   title: string | null;
 }
 
+interface Playbook {
+  platform: string;
+  voice: string | null;
+  titleStyle: string | null;
+  hookStyle: string | null;
+  structure: string | null;
+  cta: string | null;
+  avoid: string[] | null;
+  goodExamples: { title: string; note?: string; url?: string }[] | null;
+  updatedAt: string;
+}
+
+const PLAYBOOK_FIELDS: {
+  key: "voice" | "titleStyle" | "hookStyle" | "structure" | "cta";
+  label: string;
+}[] = [
+  { key: "voice", label: "语气" },
+  { key: "titleStyle", label: "标题风格" },
+  { key: "hookStyle", label: "钩子" },
+  { key: "structure", label: "结构" },
+  { key: "cta", label: "行动召唤" },
+];
+
 const PLATFORMS = [
   { key: "xiaohongshu", label: "Xiaohongshu" },
   { key: "bilibili", label: "Bilibili" },
@@ -66,17 +92,18 @@ const FORMAT_LABEL: Record<MetricFormat, string> = {
   ratio: "比值",
 };
 
-const SECTIONS = ["指标定义", "内容方向", "团队成员"] as const;
+const SECTIONS = ["指标定义", "平台规范", "内容方向", "团队成员"] as const;
 type SectionKey = (typeof SECTIONS)[number];
 
-const INK2 = "#626660";
-const HAIRLINE = "1px solid rgba(200,201,203,0.4)";
-const RULE = "1px solid rgba(200,201,203,0.65)";
+const INK2 = "var(--cl-neutral)";
+const HAIRLINE = "1px solid var(--border-hairline)";
+const RULE = "1px solid var(--border)";
 
 export default function SettingsPage() {
   const [defs, setDefs] = useState<MetricDef[]>([]);
   const [pillars, setPillars] = useState<Pillar[]>([]);
   const [members, setMembers] = useState<TeamMember[]>([]);
+  const [playbooks, setPlaybooks] = useState<Playbook[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -87,20 +114,23 @@ export default function SettingsPage() {
 
   const load = useCallback(async () => {
     try {
-      const [mRes, pRes, tRes] = await Promise.all([
+      const [mRes, pRes, tRes, pbRes] = await Promise.all([
         fetch("/api/settings/metrics"),
         fetch("/api/settings/pillars"),
         fetch("/api/team-members"),
+        fetch("/api/settings/playbooks"),
       ]);
-      const [m, p, t] = await Promise.all([
+      const [m, p, t, pb] = await Promise.all([
         mRes.json(),
         pRes.json(),
         tRes.json(),
+        pbRes.json(),
       ]);
       if (!mRes.ok) throw new Error(m.error || "加载失败");
       setDefs(m.definitions);
       if (pRes.ok) setPillars(p.pillars ?? []);
       if (tRes.ok) setMembers(t.members ?? []);
+      if (pbRes.ok) setPlaybooks(pb.playbooks ?? []);
       setLoadError(null);
     } catch (err) {
       setLoadError(err instanceof Error ? err.message : "加载失败");
@@ -120,6 +150,10 @@ export default function SettingsPage() {
   );
   const rawDefs = platformDefs.filter((d) => d.type === "raw");
   const derivedDefs = platformDefs.filter((d) => d.type === "derived");
+  const playbook = useMemo(
+    () => playbooks.find((pb) => pb.platform === platform) ?? null,
+    [playbooks, platform]
+  );
 
   const nameOf = useCallback(
     (platform: string) => (key: string) =>
@@ -197,13 +231,13 @@ export default function SettingsPage() {
         >
           <span
             className="inline-block h-[5px] w-[5px] rounded-full"
-            style={{ background: d.isActive ? "#7C9482" : "#C8C9CB" }}
+            style={{ background: d.isActive ? "var(--cl-primary)" : "var(--cl-silver)" }}
           />
           {d.isActive ? "启用" : "停用"}
         </button>
         <button
           className="text-left text-xs font-medium"
-          style={{ color: "#3F7455" }}
+          style={{ color: "var(--cl-primary-strong)" }}
           onClick={() => setEditTarget(d)}
         >
           编辑
@@ -249,7 +283,7 @@ export default function SettingsPage() {
           {/* Utility Index */}
           <nav
             className="sticky top-0 w-[184px] shrink-0 self-start py-[18px]"
-            style={{ borderRight: RULE, background: "#EBECE7" }}
+            style={{ borderRight: RULE, background: "var(--surface-subtle)" }}
           >
             {SECTIONS.map((s) => {
               const on = section === s;
@@ -259,14 +293,14 @@ export default function SettingsPage() {
                   onClick={() => setSection(s)}
                   className="relative block w-full px-5 py-[9px] text-left text-[13px]"
                   style={{
-                    color: on ? "#20231F" : INK2,
+                    color: on ? "var(--cl-ink-strong)" : INK2,
                     fontWeight: on ? 600 : 400,
                   }}
                 >
                   {on && (
                     <span
                       className="absolute left-0 top-1/2 h-[18px] w-[2px] -translate-y-1/2 rounded-full"
-                      style={{ background: "#7C9482" }}
+                      style={{ background: "var(--cl-primary)" }}
                     />
                   )}
                   {s}
@@ -287,8 +321,8 @@ export default function SettingsPage() {
               <div
                 className="rounded-[5px] px-[26px] py-5"
                 style={{
-                  background: "#FBFBF8",
-                  border: "1px solid rgba(200,201,203,0.5)",
+                  background: "var(--cl-surface)",
+                  border: "1px solid var(--border-mid)",
                 }}
               >
                 {/* Platform Index Tabs + create */}
@@ -304,7 +338,7 @@ export default function SettingsPage() {
                         onClick={() => setPlatform(p.key)}
                         className="relative pb-2 text-[13px]"
                         style={{
-                          color: on ? "#20231F" : INK2,
+                          color: on ? "var(--cl-ink-strong)" : INK2,
                           fontWeight: on ? 600 : 400,
                         }}
                       >
@@ -312,7 +346,7 @@ export default function SettingsPage() {
                         {on && (
                           <span
                             className="absolute inset-x-0 -bottom-px h-[2px]"
-                            style={{ background: "#7C9482" }}
+                            style={{ background: "var(--cl-primary)" }}
                           />
                         )}
                       </button>
@@ -378,13 +412,61 @@ export default function SettingsPage() {
               </div>
             )}
 
+            {/* ── 平台规范: Playbook ledger (read) + human edit + AI draft ── */}
+            {section === "平台规范" && (
+              <div
+                className="rounded-[5px] px-[26px] py-5"
+                style={{
+                  background: "var(--cl-surface)",
+                  border: "1px solid var(--border-mid)",
+                }}
+              >
+                {/* Platform Index Tabs */}
+                <div
+                  className="flex gap-6"
+                  style={{ borderBottom: RULE }}
+                >
+                  {PLATFORMS.map((p) => {
+                    const on = platform === p.key;
+                    return (
+                      <button
+                        key={p.key}
+                        onClick={() => setPlatform(p.key)}
+                        className="relative pb-2 text-[13px]"
+                        style={{
+                          color: on ? "var(--cl-ink-strong)" : INK2,
+                          fontWeight: on ? 600 : 400,
+                        }}
+                      >
+                        {platformLabel(p.key)}
+                        {on && (
+                          <span
+                            className="absolute inset-x-0 -bottom-px h-[2px]"
+                            style={{ background: "var(--cl-primary)" }}
+                          />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* key 切换平台时重置编辑态 */}
+                <PlaybookPanel
+                  key={platform}
+                  platform={platform}
+                  playbook={playbook}
+                  onChanged={load}
+                />
+              </div>
+            )}
+
             {/* ── 内容方向 ── */}
             {section === "内容方向" && (
               <div
                 className="rounded-[5px] px-[26px] py-5"
                 style={{
-                  background: "#FBFBF8",
-                  border: "1px solid rgba(200,201,203,0.5)",
+                  background: "var(--cl-surface)",
+                  border: "1px solid var(--border-mid)",
                 }}
               >
                 {pillars.length === 0 ? (
@@ -415,8 +497,8 @@ export default function SettingsPage() {
               <div
                 className="rounded-[5px] px-[26px] py-5"
                 style={{
-                  background: "#FBFBF8",
-                  border: "1px solid rgba(200,201,203,0.5)",
+                  background: "var(--cl-surface)",
+                  border: "1px solid var(--border-mid)",
                 }}
               >
                 {members.length === 0 ? (
@@ -851,5 +933,646 @@ function CreateDerivedDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+// ─── Playbook panel (平台规范) ─────────────────────────
+
+interface PlaybookForm {
+  voice: string;
+  titleStyle: string;
+  hookStyle: string;
+  structure: string;
+  cta: string;
+  /** One avoid-rule per line. */
+  avoidText: string;
+  examples: { title: string; note: string; url: string }[];
+}
+
+const EMPTY_FORM: PlaybookForm = {
+  voice: "",
+  titleStyle: "",
+  hookStyle: "",
+  structure: "",
+  cta: "",
+  avoidText: "",
+  examples: [],
+};
+
+function formFromPlaybook(pb: Playbook | null): PlaybookForm {
+  if (!pb) return EMPTY_FORM;
+  return {
+    voice: pb.voice ?? "",
+    titleStyle: pb.titleStyle ?? "",
+    hookStyle: pb.hookStyle ?? "",
+    structure: pb.structure ?? "",
+    cta: pb.cta ?? "",
+    avoidText: (pb.avoid ?? []).join("\n"),
+    examples: (pb.goodExamples ?? []).map((e) => ({
+      title: e.title,
+      note: e.note ?? "",
+      url: e.url ?? "",
+    })),
+  };
+}
+
+function formFromDraft(d: AIPlaybookDraft): PlaybookForm {
+  return {
+    voice: d.voice,
+    titleStyle: d.titleStyle,
+    hookStyle: d.hookStyle,
+    structure: d.structure,
+    cta: d.cta,
+    avoidText: d.avoid.join("\n"),
+    examples: d.goodExamples.map((e) => ({
+      title: e.title,
+      note: e.note ?? "",
+      url: e.url ?? "",
+    })),
+  };
+}
+
+/**
+ * Playbook panel — read ledger + human edit + AI draft (AGENTS §21).
+ * AI drafts fill the edit form only; the PUT save is always a human
+ * action. AI never overwrites saved rules.
+ *
+ * Learning → Playbook (PRD §15.5, data-model §28 Rule 9): relevant
+ * learnings (this platform or platform-agnostic) surface as a light
+ * banner; "添加为规则" transcribes the learning text into a
+ * human-picked form field — never directly into the saved playbook.
+ * "忽略" is session-local (no association table in V1).
+ */
+function PlaybookPanel({
+  platform,
+  playbook,
+  onChanged,
+}: {
+  platform: string;
+  playbook: Playbook | null;
+  onChanged: () => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [drafting, setDrafting] = useState(false);
+  const [draftBanner, setDraftBanner] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [form, setForm] = useState<PlaybookForm>(EMPTY_FORM);
+  const [learnings, setLearnings] = useState<
+    { id: string; text: string; platform: string | null }[] | null
+  >(null);
+  const [ignored, setIgnored] = useState<Set<string>>(new Set());
+  const [ruleTargetFor, setRuleTargetFor] = useState<string | null>(null);
+  const [addedNote, setAddedNote] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/learnings")
+      .then((r) => (r.ok ? r.json() : { learnings: [] }))
+      .then((d) => {
+        if (!cancelled) setLearnings(d.learnings ?? []);
+      })
+      .catch(() => {
+        if (!cancelled) setLearnings([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const relevantLearnings = (learnings ?? []).filter(
+    (l) => (l.platform === platform || l.platform === null) && !ignored.has(l.id)
+  );
+
+  type RuleField =
+    | "voice"
+    | "titleStyle"
+    | "hookStyle"
+    | "structure"
+    | "cta"
+    | "avoid";
+
+  const RULE_FIELD_LABEL: Record<RuleField, string> = {
+    voice: "语气",
+    titleStyle: "标题风格",
+    hookStyle: "钩子",
+    structure: "结构",
+    cta: "行动召唤",
+    avoid: "避免",
+  };
+
+  /** Transcribe a learning into a human-picked field (edit draft only). */
+  function addAsRule(
+    l: { id: string; text: string },
+    field: RuleField
+  ) {
+    setForm((prev) => {
+      const base = editing ? prev : formFromPlaybook(playbook);
+      if (field === "avoid") {
+        return {
+          ...base,
+          avoidText: base.avoidText.trim()
+            ? `${base.avoidText.trimEnd()}\n${l.text}`
+            : l.text,
+        };
+      }
+      const cur = base[field].trim();
+      return { ...base, [field]: cur ? `${cur}\n${l.text}` : l.text };
+    });
+    setEditing(true);
+    setDraftBanner(false);
+    setRuleTargetFor(null);
+    setAddedNote(`已填入「${RULE_FIELD_LABEL[field]}」——请审阅、调整后保存。`);
+  }
+
+  function startEdit() {
+    setForm(formFromPlaybook(playbook));
+    setDraftBanner(false);
+    setError(null);
+    setEditing(true);
+  }
+
+  async function generateDraft() {
+    setDrafting(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/settings/playbooks/draft", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ platform }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "生成失败");
+      setForm(formFromDraft(data.draft));
+      setDraftBanner(true);
+      setEditing(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "生成失败");
+    } finally {
+      setDrafting(false);
+    }
+  }
+
+  async function save() {
+    setSaving(true);
+    setError(null);
+    try {
+      const text = (v: string) => {
+        const t = v.trim();
+        return t === "" ? null : t;
+      };
+      const avoid = form.avoidText
+        .split("\n")
+        .map((l) => l.trim())
+        .filter((l) => l !== "");
+      const examples = form.examples
+        .map((e) => ({
+          title: e.title.trim(),
+          note: e.note.trim(),
+          url: e.url.trim(),
+        }))
+        .filter((e) => e.title !== "")
+        .map((e) => ({
+          title: e.title,
+          ...(e.note ? { note: e.note } : {}),
+          ...(e.url ? { url: e.url } : {}),
+        }));
+      const res = await fetch("/api/settings/playbooks", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          platform,
+          voice: text(form.voice),
+          titleStyle: text(form.titleStyle),
+          hookStyle: text(form.hookStyle),
+          structure: text(form.structure),
+          cta: text(form.cta),
+          avoid: avoid.length > 0 ? avoid : null,
+          goodExamples: examples.length > 0 ? examples : null,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "保存失败");
+      setEditing(false);
+      setDraftBanner(false);
+      setAddedNote(null);
+      onChanged();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "保存失败");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const FIELD_LABEL: Record<Exclude<keyof PlaybookForm, "avoidText" | "examples">, string> = {
+    voice: "语气",
+    titleStyle: "标题风格",
+    hookStyle: "钩子",
+    structure: "结构",
+    cta: "行动召唤",
+  };
+
+  const inputCls =
+    "w-full rounded-[5px] border border-border bg-workspace px-3 py-2 text-[13px] text-ink-primary outline-none focus:border-mint-600";
+
+  return (
+    <div>
+      {/* Action row */}
+      <div className="flex items-center justify-end gap-4 pt-3">
+        {drafting ? (
+          <span
+            className="inline-flex items-center gap-2 text-xs"
+            style={{ color: INK2 }}
+          >
+            <ThinkingOrbs size={18} />
+            正在起草平台规范…
+          </span>
+        ) : editing ? (
+          <span className="text-[11.5px]" style={{ color: INK2 }}>
+            编辑中——保存后 AI 适配立即引用新规范
+          </span>
+        ) : (
+          <>
+            <div className="w-[168px]">
+              <AiActionButton label="AI 生成草稿" onClick={generateDraft} />
+            </div>
+            <button
+              className="text-[12.5px] font-medium"
+              style={{ color: "var(--cl-primary-strong)" }}
+              onClick={startEdit}
+            >
+              编辑
+            </button>
+          </>
+        )}
+      </div>
+
+      {/* Learning → Playbook 提示（PRD §15.5） */}
+      {relevantLearnings.length > 0 && (
+        <div
+          className="mt-3 rounded-[5px] px-3 py-2"
+          style={{
+            background: "var(--mint-tint)",
+            border: "1px solid var(--mint-line)",
+          }}
+        >
+          <p
+            className="text-[11px] font-semibold tracking-[0.14em]"
+            style={{ color: INK2 }}
+          >
+            {relevantLearnings.length} 条经验可能与本平台相关
+          </p>
+          {relevantLearnings.map((l) => (
+            <div
+              key={l.id}
+              className="mt-1.5 pt-1.5"
+              style={{ borderTop: HAIRLINE }}
+            >
+              <p className="text-xs leading-relaxed text-ink-primary">
+                {l.text}
+                {l.platform === null && (
+                  <span style={{ color: INK2 }}>（全平台经验）</span>
+                )}
+              </p>
+              <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11.5px]">
+                {ruleTargetFor === l.id ? (
+                  <>
+                    <span style={{ color: INK2 }}>添加到字段：</span>
+                    {(
+                      Object.keys(RULE_FIELD_LABEL) as RuleField[]
+                    ).map((f) => (
+                      <button
+                        key={f}
+                        className="font-medium"
+                        style={{ color: "var(--cl-primary-strong)" }}
+                        onClick={() => addAsRule(l, f)}
+                      >
+                        {RULE_FIELD_LABEL[f]}
+                      </button>
+                    ))}
+                    <button
+                      style={{ color: INK2 }}
+                      onClick={() => setRuleTargetFor(null)}
+                    >
+                      返回
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      className="font-medium"
+                      style={{ color: "var(--cl-primary-strong)" }}
+                      onClick={() => setRuleTargetFor(l.id)}
+                    >
+                      添加为规则
+                    </button>
+                    <button
+                      style={{ color: INK2 }}
+                      onClick={() =>
+                        setIgnored((prev) => new Set(prev).add(l.id))
+                      }
+                    >
+                      忽略
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {addedNote && editing && (
+        <p
+          className="mt-3 rounded-[5px] px-3 py-2 text-xs"
+          style={{
+            color: INK2,
+            background: "var(--mint-tint)",
+            border: "1px solid var(--mint-line)",
+          }}
+        >
+          {addedNote}
+        </p>
+      )}
+
+      {error && (
+        <div className="mt-3 rounded-[5px] border border-danger/20 bg-danger/5 p-3 text-xs text-danger">
+          {error}
+        </div>
+      )}
+
+      {editing && draftBanner && (
+        <div
+          className="mt-3 rounded-[5px] px-3 py-2 text-xs"
+          style={{
+            color: INK2,
+            background: "var(--gold-tint)",
+            border: "1px solid var(--gold-line)",
+          }}
+        >
+          AI 草稿——请逐条审阅、修改后保存。保存前不会写入，也不会覆盖现有规范。
+        </div>
+      )}
+
+      {editing ? (
+        <div className="mt-2">
+          {(
+            Object.keys(FIELD_LABEL) as (keyof typeof FIELD_LABEL)[]
+          ).map((k) => (
+            <div
+              key={k}
+              className="grid gap-3 px-1 py-[11px]"
+              style={{
+                gridTemplateColumns: "120px 1fr",
+                borderBottom: HAIRLINE,
+              }}
+            >
+              <span
+                className="pt-2 text-[11px] font-semibold tracking-[0.14em]"
+                style={{ color: INK2 }}
+              >
+                {FIELD_LABEL[k]}
+              </span>
+              <textarea
+                className={inputCls}
+                rows={2}
+                value={form[k]}
+                onChange={(e) =>
+                  setForm((prev) => ({ ...prev, [k]: e.target.value }))
+                }
+              />
+            </div>
+          ))}
+          <div
+            className="grid gap-3 px-1 py-[11px]"
+            style={{
+              gridTemplateColumns: "120px 1fr",
+              borderBottom: HAIRLINE,
+            }}
+          >
+            <span
+              className="pt-2 text-[11px] font-semibold tracking-[0.14em]"
+              style={{ color: INK2 }}
+            >
+              避免
+            </span>
+            <div>
+              <textarea
+                className={inputCls}
+                rows={3}
+                value={form.avoidText}
+                onChange={(e) =>
+                  setForm((prev) => ({ ...prev, avoidText: e.target.value }))
+                }
+              />
+              <p className="mt-1 text-[11.5px]" style={{ color: INK2 }}>
+                每行一条
+              </p>
+            </div>
+          </div>
+          <div
+            className="grid gap-3 px-1 py-[11px]"
+            style={{ gridTemplateColumns: "120px 1fr" }}
+          >
+            <span
+              className="pt-2 text-[11px] font-semibold tracking-[0.14em]"
+              style={{ color: INK2 }}
+            >
+              优秀案例
+            </span>
+            <div className="space-y-2">
+              {form.examples.map((ex, i) => (
+                <div key={i} className="flex items-start gap-2">
+                  <div className="flex-1 space-y-1.5">
+                    <input
+                      className={inputCls}
+                      placeholder="标题 *"
+                      value={ex.title}
+                      onChange={(e) =>
+                        setForm((prev) => ({
+                          ...prev,
+                          examples: prev.examples.map((x, j) =>
+                            j === i ? { ...x, title: e.target.value } : x
+                          ),
+                        }))
+                      }
+                    />
+                    <div className="flex gap-2">
+                      <input
+                        className={inputCls}
+                        placeholder="备注（可选）"
+                        value={ex.note}
+                        onChange={(e) =>
+                          setForm((prev) => ({
+                            ...prev,
+                            examples: prev.examples.map((x, j) =>
+                              j === i ? { ...x, note: e.target.value } : x
+                            ),
+                          }))
+                        }
+                      />
+                      <input
+                        className={inputCls}
+                        placeholder="URL（可选）"
+                        value={ex.url}
+                        onChange={(e) =>
+                          setForm((prev) => ({
+                            ...prev,
+                            examples: prev.examples.map((x, j) =>
+                              j === i ? { ...x, url: e.target.value } : x
+                            ),
+                          }))
+                        }
+                      />
+                    </div>
+                  </div>
+                  <button
+                    className="pt-2 text-xs"
+                    style={{ color: INK2 }}
+                    onClick={() =>
+                      setForm((prev) => ({
+                        ...prev,
+                        examples: prev.examples.filter((_, j) => j !== i),
+                      }))
+                    }
+                  >
+                    移除
+                  </button>
+                </div>
+              ))}
+              <button
+                className="text-[12.5px]"
+                style={{ color: INK2 }}
+                onClick={() =>
+                  setForm((prev) => ({
+                    ...prev,
+                    examples: [
+                      ...prev.examples,
+                      { title: "", note: "", url: "" },
+                    ],
+                  }))
+                }
+              >
+                <Plus className="mr-1 inline h-3 w-3" />
+                添加案例
+              </button>
+            </div>
+          </div>
+
+          <div className="mt-4 flex justify-end gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setEditing(false);
+                setDraftBanner(false);
+                setAddedNote(null);
+                setError(null);
+              }}
+            >
+              取消
+            </Button>
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={save}
+              disabled={saving}
+            >
+              {saving ? "保存中…" : "保存规范"}
+            </Button>
+          </div>
+        </div>
+      ) : !playbook ? (
+        <p className="px-1 py-4 text-xs" style={{ color: INK2 }}>
+          该平台还没有平台规范——点击「编辑」手动填写，或用「AI 生成草稿」起草后审阅保存。
+        </p>
+      ) : (
+        <>
+          {PLAYBOOK_FIELDS.map((f) => (
+            <div
+              key={f.key}
+              className="grid gap-3 px-1 py-[11px]"
+              style={{
+                gridTemplateColumns: "120px 1fr",
+                borderBottom: HAIRLINE,
+              }}
+            >
+              <span
+                className="text-[11px] font-semibold tracking-[0.14em]"
+                style={{ color: INK2 }}
+              >
+                {f.label}
+              </span>
+              <span className="text-[13px] leading-relaxed text-ink-primary">
+                {playbook[f.key] ?? "—"}
+              </span>
+            </div>
+          ))}
+          <div
+            className="grid gap-3 px-1 py-[11px]"
+            style={{
+              gridTemplateColumns: "120px 1fr",
+              borderBottom: HAIRLINE,
+            }}
+          >
+            <span
+              className="text-[11px] font-semibold tracking-[0.14em]"
+              style={{ color: INK2 }}
+            >
+              避免
+            </span>
+            <span className="text-[13px] leading-relaxed text-ink-primary">
+              {playbook.avoid && playbook.avoid.length > 0
+                ? playbook.avoid.join("；")
+                : "—"}
+            </span>
+          </div>
+          <div
+            className="grid gap-3 px-1 py-[11px]"
+            style={{ gridTemplateColumns: "120px 1fr" }}
+          >
+            <span
+              className="text-[11px] font-semibold tracking-[0.14em]"
+              style={{ color: INK2 }}
+            >
+              优秀案例
+            </span>
+            <div>
+              {playbook.goodExamples && playbook.goodExamples.length > 0 ? (
+                playbook.goodExamples.map((ex, i) => (
+                  <div
+                    key={i}
+                    className="text-[13px] leading-relaxed text-ink-primary"
+                  >
+                    {ex.url ? (
+                      <a
+                        href={ex.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="underline decoration-mint-600/40 underline-offset-2"
+                      >
+                        {ex.title}
+                      </a>
+                    ) : (
+                      ex.title
+                    )}
+                    {ex.note && (
+                      <span
+                        className="block text-[11.5px]"
+                        style={{ color: INK2 }}
+                      >
+                        {ex.note}
+                      </span>
+                    )}
+                  </div>
+                ))
+              ) : (
+                <span className="text-[13px] text-ink-primary">—</span>
+              )}
+            </div>
+          </div>
+        </>
+      )}
+    </div>
   );
 }

@@ -28,7 +28,10 @@ import {
 import { ImportMetricsModal } from "@/components/analytics/import-modal";
 import { TestsSection, type TestCreateRequest } from "@/components/analytics/tests-section";
 import { LearningsSection } from "@/components/analytics/learnings-section";
-import { platformLabel, snapshotStatusLabel, BASELINE_COHORT_HELPER, DEMO_NOTICE } from "@/lib/labels";
+import { HAIRLINE, RULE, Sec, StatusDot } from "@/components/analytics/ledger";
+import { buildObservations } from "@/lib/metrics/observations";
+import { CollapsibleRail } from "@/components/layout/collapsible-rail";
+import { platformLabel, snapshotStatusLabel, checkpointLabel, BASELINE_COHORT_HELPER, DEMO_NOTICE } from "@/lib/labels";
 import { DemoBadge } from "@/components/ui/demo-badge";
 
 /**
@@ -50,6 +53,7 @@ interface IndexPublication {
   isDemo: boolean;
   has24h: boolean;
   has72h: boolean;
+  hasManual: boolean;
   checkpoints: { checkpoint: Checkpoint; status: "submitted" | "not_due" | "due" }[];
 }
 
@@ -73,6 +77,15 @@ interface BaselineScope {
   metrics: Record<string, BaselineMetric>;
 }
 
+interface Observation {
+  key: string;
+  label: string;
+  kind: "above" | "below";
+  ratio: number | null;
+  value: number;
+  baselineMedian: number;
+}
+
 interface Detail {
   fact: {
     publicationId: string;
@@ -85,7 +98,7 @@ interface Detail {
     checkpoint: string;
     publishedAt: string;
     url: string;
-    targetAt: string;
+    targetAt: string | null;
     capturedAt: string | null;
     captureDeltaMinutes: number | null;
     hasSnapshot: boolean;
@@ -95,6 +108,7 @@ interface Detail {
   accountBaseline: BaselineScope | null;
   pillarBaseline: (BaselineScope & { pillarId: string | null }) | { unavailable: string } | null;
   baselineError: string | null;
+  observations: Observation[];
   diagnosis: DiagnosisRecord | null;
   diagnosisStale: boolean;
 }
@@ -109,33 +123,7 @@ function formatCaptureDelta(minutes: number | null): string {
 }
 
 // ─── M7 section chrome (approved analytics-final-v2) ───
-
-function Motif({ gold }: { gold?: boolean }) {
-  const c = gold ? "#D4B26A" : "#7C9482";
-  return (
-    <svg width="22" height="10" viewBox="0 0 22 10" aria-hidden>
-      <line x1="0" y1="5" x2="12" y2="5" stroke={c} strokeWidth="2" strokeLinecap="round" />
-      <circle cx="18" cy="5" r="3" fill={c} />
-    </svg>
-  );
-}
-
-function Sec({ title, note, gold }: { title: string; note?: string; gold?: boolean }) {
-  return (
-    <div className="mb-1 flex items-center gap-2">
-      <Motif gold={gold} />
-      <span className="text-[15px] font-semibold text-ink-primary">{title}</span>
-      {note && (
-        <span className="ml-auto text-xs" style={{ color: "#626660" }}>
-          {note}
-        </span>
-      )}
-    </div>
-  );
-}
-
-const HAIRLINE = "1px solid rgba(200,201,203,0.4)";
-const RULE = "1px solid rgba(200,201,203,0.65)";
+// Shared with the Tests / Learnings sections via components/analytics/ledger.
 
 export default function AnalyticsPage() {
   const [index, setIndex] = useState<IndexPublication[]>([]);
@@ -171,8 +159,16 @@ export default function AnalyticsPage() {
    *   to create mode, never risks a duplicate POST.
    */
   async function openSnapshotEntry(pub: IndexPublication, cp: Checkpoint) {
-    const status = pub.checkpoints.find((c) => c.checkpoint === cp)?.status;
-    const mode = snapshotEntryMode(status ?? "not_due");
+    // manual has no schedule: mode comes straight from existence.
+    const mode =
+      cp === "manual"
+        ? pub.hasManual
+          ? ("edit" as const)
+          : ("create" as const)
+        : snapshotEntryMode(
+            pub.checkpoints.find((c) => c.checkpoint === cp)?.status ??
+              "not_due"
+          );
     if (!mode) return;
 
     if (mode === "create") {
@@ -272,6 +268,12 @@ export default function AnalyticsPage() {
               accountBaseline: data.account,
               pillarBaseline: data.pillar,
               baselineError: null,
+              // Same deterministic rules as the server read; keeps the
+              // observation section consistent after a baseline retry.
+              observations: buildObservations(
+                prev.fact.metrics,
+                data.account
+              ),
             }
           : prev
       );
@@ -311,6 +313,10 @@ export default function AnalyticsPage() {
     () => detail?.fact.metrics.filter((m) => m.type === "derived") ?? [],
     [detail]
   );
+  const formatByKey = useMemo(
+    () => new Map(detail?.fact.metrics.map((m) => [m.key, m.format]) ?? []),
+    [detail]
+  );
 
   function baselineFor(scope: BaselineScope | null | { unavailable: string }, key: string) {
     if (!scope || "unavailable" in scope) return null;
@@ -330,7 +336,7 @@ export default function AnalyticsPage() {
       >
         <span className="text-[13px] text-ink-primary">{m.label}</span>
         {m.formulaPreview && (
-          <span className="text-xs" style={{ color: "#626660" }}>
+          <span className="text-xs" style={{ color: "var(--cl-neutral)" }}>
             {m.formulaPreview}
           </span>
         )}
@@ -357,7 +363,7 @@ export default function AnalyticsPage() {
         <span className="text-right text-[13.5px] font-semibold tabular-nums text-ink-primary">
           {formatMetricValue(m.format, m.value)}
         </span>
-        <span className="text-right tabular-nums" style={{ color: "#626660" }}>
+        <span className="text-right tabular-nums" style={{ color: "var(--cl-neutral)" }}>
           {account ? (
             <>
               {formatMetricValue(m.format, account.median)}{" "}
@@ -370,7 +376,7 @@ export default function AnalyticsPage() {
             "N/A"
           )}
         </span>
-        <span className="text-right tabular-nums" style={{ color: "#626660" }}>
+        <span className="text-right tabular-nums" style={{ color: "var(--cl-neutral)" }}>
           {detail?.pillarBaseline && "unavailable" in detail.pillarBaseline ? (
             <span className="text-[11.5px]">未设置内容方向</span>
           ) : pillar ? (
@@ -441,23 +447,23 @@ export default function AnalyticsPage() {
                       const cp: Checkpoint = p.has72h ? "72h" : "24h";
                       select(p.publicationId, cp);
                     }}
-                    className="relative flex w-full items-center gap-4 px-3 py-[13px] text-left transition-colors duration-150 hover:bg-[rgba(124,148,130,0.05)]"
+                    className="relative flex w-full items-center gap-4 px-3 py-[13px] text-left transition-colors duration-150 hover:bg-[var(--mint-tint)]"
                     style={{
                       borderBottom: HAIRLINE,
-                      background: sel ? "rgba(124,148,130,0.07)" : undefined,
+                      background: sel ? "var(--mint-tint)" : undefined,
                     }}
                   >
                     {sel && (
                       <span
                         className="absolute left-0 top-1/2 h-6 w-[2px] -translate-y-1/2 rounded-full"
-                        style={{ background: "#7C9482" }}
+                        style={{ background: "var(--cl-primary)" }}
                       />
                     )}
                     <span
                       className="w-5 shrink-0 text-[14px]"
                       style={{
                         fontFamily: "var(--font-cormorant), serif",
-                        color: "#8B8E87",
+                        color: "var(--ink-muted)",
                       }}
                     >
                       {String(i + 1).padStart(2, "0")}
@@ -471,7 +477,7 @@ export default function AnalyticsPage() {
                       </div>
                       <div
                         className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs"
-                        style={{ color: "#626660" }}
+                        style={{ color: "var(--cl-neutral)" }}
                       >
                         <span>{platformLabel(p.platform)}</span>
                         {p.pillarName && <span>· {p.pillarName}</span>}
@@ -523,6 +529,36 @@ export default function AnalyticsPage() {
                             )}
                           </span>
                         ))}
+                        {p.hasManual && (
+                          <span>
+                            · {checkpointLabel("manual")} {snapshotStatusLabel("submitted")}
+                            <span
+                              className="ml-1 hover:text-ink-primary"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openSnapshotEntry(p, "manual");
+                              }}
+                            >
+                              {snapEntryLoading === `${p.publicationId}:manual`
+                                ? "加载中…"
+                                : "编辑"}
+                            </span>
+                            {snapEntryError?.key === `${p.publicationId}:manual` && (
+                              <span className="ml-1 text-danger">
+                                {snapEntryError.message}
+                                <span
+                                  className="ml-1 underline"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    openSnapshotEntry(p, "manual");
+                                  }}
+                                >
+                                  重试
+                                </span>
+                              </span>
+                            )}
+                          </span>
+                        )}
                       </div>
                     </div>
                   </button>
@@ -535,10 +571,10 @@ export default function AnalyticsPage() {
               <div className="mt-7">
                 {/* Checkpoint Index Tabs */}
                 <div
-                  className="flex items-center gap-6"
+                  className="flex items-center gap-6 whitespace-nowrap"
                   style={{ borderBottom: RULE }}
                 >
-                  {(["24h", "72h"] as Checkpoint[]).map((c) => {
+                  {(["24h", "72h", "manual"] as Checkpoint[]).map((c) => {
                     const on = selected.checkpoint === c;
                     return (
                       <button
@@ -546,23 +582,23 @@ export default function AnalyticsPage() {
                         onClick={() => select(selected.publicationId, c)}
                         className="relative pb-2 text-[13px]"
                         style={{
-                          color: on ? "#20231F" : "#626660",
+                          color: on ? "var(--cl-ink-strong)" : "var(--cl-neutral)",
                           fontWeight: on ? 600 : 400,
                         }}
                       >
-                        {c} 数据
+                        {checkpointLabel(c)} 数据
                         {on && (
                           <span
                             className="absolute inset-x-0 -bottom-px h-[2px]"
-                            style={{ background: "#7C9482" }}
+                            style={{ background: "var(--cl-primary)" }}
                           />
                         )}
                       </button>
                     );
                   })}
                   <span
-                    className="ml-auto truncate pb-2 text-xs"
-                    style={{ color: "#8B8E87" }}
+                    className="ml-auto min-w-0 truncate pb-2 text-xs"
+                    style={{ color: "var(--ink-muted)" }}
                   >
                     {selectedPub?.finalTitle}
                   </span>
@@ -602,12 +638,12 @@ export default function AnalyticsPage() {
                             </div>
                             <div
                               className="mt-1 text-[11px]"
-                              style={{ color: "#626660" }}
+                              style={{ color: "var(--cl-neutral)" }}
                             >
                               {platformLabel(detail.fact.platform)} ·{" "}
                               {detail.fact.pillarName ?? "无内容方向"} · 发布于{" "}
                               {new Date(detail.fact.publishedAt).toLocaleDateString()} ·{" "}
-                              {selected.checkpoint}
+                              {checkpointLabel(selected.checkpoint)}
                             </div>
                           </div>
                           {[...raws, ...deriveds].slice(0, 4).map((m) => {
@@ -627,7 +663,7 @@ export default function AnalyticsPage() {
                                 </div>
                                 <div
                                   className="mt-1 text-[10.5px]"
-                                  style={{ color: "#626660" }}
+                                  style={{ color: "var(--cl-neutral)" }}
                                 >
                                   {m.label}
                                   {account && account.median !== null && (
@@ -642,7 +678,7 @@ export default function AnalyticsPage() {
                           })}
                         </div>
                       ) : (
-                        <div className="text-xs" style={{ color: "#626660" }}>
+                        <div className="text-xs" style={{ color: "var(--cl-neutral)" }}>
                           <span className="text-sm font-medium text-ink-primary">
                             {detail.fact.finalTitle}
                           </span>
@@ -666,11 +702,37 @@ export default function AnalyticsPage() {
                         <div
                           className="mt-4 rounded-[5px] px-6 py-8 text-center"
                           style={{
-                            background: "#FBFBF8",
-                            border: "1px dashed #C8C9CB",
+                            background: "var(--cl-surface)",
+                            border: "1px dashed var(--cl-silver)",
                           }}
                         >
-                          {selectedPub?.checkpoints.find(
+                          {selected.checkpoint === "manual" ? (
+                            <>
+                              <p className="text-[13.5px] font-semibold text-ink-primary">
+                                还没有手动观察数据
+                              </p>
+                              <p
+                                className="mt-2 text-xs leading-[1.7]"
+                                style={{ color: "var(--cl-neutral)" }}
+                              >
+                                手动观察点没有目标时间——发布后任何时候查看平台数据都可以补录。
+                                <br />
+                                基线对照与诊断将在有当前值后出现。
+                              </p>
+                              <div className="mt-4 flex justify-center">
+                                <Button
+                                  variant="primary"
+                                  size="sm"
+                                  onClick={() =>
+                                    selectedPub &&
+                                    openSnapshotEntry(selectedPub, "manual")
+                                  }
+                                >
+                                  录入手动数据
+                                </Button>
+                              </div>
+                            </>
+                          ) : selectedPub?.checkpoints.find(
                             (c) => c.checkpoint === selected.checkpoint
                           )?.status === "due" ? (
                             <>
@@ -679,7 +741,7 @@ export default function AnalyticsPage() {
                               </p>
                               <p
                                 className="mt-2 text-xs leading-[1.7]"
-                                style={{ color: "#626660" }}
+                                style={{ color: "var(--cl-neutral)" }}
                               >
                                 这里显示的是「待录入」，不是 0。基线对照与诊断将在有当前值后出现。
                               </p>
@@ -702,7 +764,7 @@ export default function AnalyticsPage() {
                               </p>
                               <p
                                 className="mt-2 text-xs leading-[1.7]"
-                                style={{ color: "#626660" }}
+                                style={{ color: "var(--cl-neutral)" }}
                               >
                                 这里显示的是「待录入」，不是 0——指标会在到期后可录入。
                                 <br />
@@ -712,7 +774,7 @@ export default function AnalyticsPage() {
                                 <button
                                   disabled
                                   className="inline-flex h-[30px] items-center rounded-[5px] px-[11px] text-xs font-medium text-ink-primary opacity-50"
-                                  style={{ border: "1px solid #C8C9CB" }}
+                                  style={{ border: "1px solid var(--cl-silver)" }}
                                 >
                                   录入 {selected.checkpoint} 数据（未到时间）
                                 </button>
@@ -722,16 +784,71 @@ export default function AnalyticsPage() {
                         </div>
                       ) : (
                         <>
+                          {/* 关键观察 — deterministic value-vs-account-median
+                              rules (lib/metrics/observations), never AI. */}
+                          <div className="mt-5">
+                            <Sec title="关键观察" note="确定性规则 · 非 AI" />
+                            {detail.observations.length > 0 ? (
+                              <div style={{ borderTop: RULE }}>
+                                {detail.observations.map((o) => {
+                                  const fmt = formatByKey.get(o.key) ?? "count";
+                                  const n =
+                                    detail.accountBaseline?.metrics[o.key]
+                                      ?.sampleCount;
+                                  return (
+                                    <div
+                                      key={o.key}
+                                      className="flex items-baseline gap-2.5 px-1 py-[9px]"
+                                      style={{ borderBottom: HAIRLINE }}
+                                    >
+                                      <StatusDot gold={o.kind === "below"} />
+                                      <span className="text-[13px] text-ink-primary">
+                                        {o.label} {formatMetricValue(fmt, o.value)}，
+                                        {o.ratio === null
+                                          ? `高于账号基线 ${formatMetricValue(fmt, o.baselineMedian)}`
+                                          : o.kind === "above"
+                                            ? `为账号基线 ${formatMetricValue(fmt, o.baselineMedian)} 的 ${o.ratio.toFixed(1)}×`
+                                            : `仅为账号基线 ${formatMetricValue(fmt, o.baselineMedian)} 的 ${o.ratio.toFixed(1)}×`}
+                                      </span>
+                                      {n !== undefined && (
+                                        <span
+                                          className="ml-auto text-[11px]"
+                                          style={{ color: "var(--cl-neutral)" }}
+                                        >
+                                          n={n}
+                                        </span>
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            ) : (
+                              <p
+                                className="px-1 py-2 text-xs"
+                                style={{ color: "var(--cl-neutral)" }}
+                              >
+                                {detail.accountBaseline &&
+                                detail.accountBaseline.candidateCount > 0
+                                  ? "全部指标与基线相当"
+                                  : "还没有可对比的历史数据"}
+                              </p>
+                            )}
+                          </div>
+
                           {/* 表现事实 */}
                           <div className="mt-5">
                             <Sec
-                              title={`表现事实 · ${selected.checkpoint}`}
-                              note={`目标 ${new Date(detail.fact.targetAt).toLocaleString()} · 采集 ${new Date(detail.fact.capturedAt!).toLocaleString()} ${formatCaptureDelta(detail.fact.captureDeltaMinutes)}`}
+                              title={`表现事实 · ${checkpointLabel(selected.checkpoint)}`}
+                              note={
+                                detail.fact.targetAt
+                                  ? `目标 ${new Date(detail.fact.targetAt).toLocaleString()} · 采集 ${new Date(detail.fact.capturedAt!).toLocaleString()} ${formatCaptureDelta(detail.fact.captureDeltaMinutes)}`
+                                  : `采集 ${new Date(detail.fact.capturedAt!).toLocaleString()}（发布后 ${formatCaptureDelta(detail.fact.captureDeltaMinutes).replace("（相对目标）", "")}）`
+                              }
                             />
                             <div style={{ borderTop: RULE }}>
                               <div
                                 className="px-1 pb-1.5 pt-3 text-[11px] font-semibold tracking-[0.14em]"
-                                style={{ color: "#626660" }}
+                                style={{ color: "var(--cl-neutral)" }}
                               >
                                 原始指标
                               </div>
@@ -739,7 +856,7 @@ export default function AnalyticsPage() {
                               {deriveds.length > 0 && (
                                 <div
                                   className="px-1 pb-1.5 pt-3.5 text-[11px] font-semibold tracking-[0.14em]"
-                                  style={{ color: "#626660" }}
+                                  style={{ color: "var(--cl-neutral)" }}
                                 >
                                   派生指标
                                 </div>
@@ -761,7 +878,7 @@ export default function AnalyticsPage() {
                                           ? ` · 中位采集 ${formatCaptureDelta(detail.accountBaseline.medianCaptureDeltaMinutes)}`
                                           : ""
                                       }`
-                                    : `还没有历史 ${selected.checkpoint} 数据`
+                                    : `还没有历史 ${checkpointLabel(selected.checkpoint)} 数据`
                               }
                             />
                             {detail.baselineError ? (
@@ -777,7 +894,7 @@ export default function AnalyticsPage() {
                                   className="grid gap-2.5 px-1 py-2 text-[11.5px]"
                                   style={{
                                     gridTemplateColumns: "1.2fr 1fr 1fr 1fr",
-                                    color: "#626660",
+                                    color: "var(--cl-neutral)",
                                     borderBottom: RULE,
                                   }}
                                 >
@@ -791,7 +908,7 @@ export default function AnalyticsPage() {
                             )}
                             <p
                               className="mt-2 px-1 text-xs"
-                              style={{ color: "#626660" }}
+                              style={{ color: "var(--cl-neutral)" }}
                             >
                               {BASELINE_COHORT_HELPER}
                             </p>
@@ -821,10 +938,12 @@ export default function AnalyticsPage() {
         <LearningsSection />
       </div>
 
-      {/* Loop AI inspector — M7: 320px document surface */}
-      <div
+      {/* Loop AI inspector — M7: 320px document surface;
+          M9: collapses to an overlay rail below 1200px */}
+      <CollapsibleRail
+        label="Loop AI"
         className="w-[320px] shrink-0 overflow-y-auto p-5"
-        style={{ borderLeft: RULE, background: "#FBFBF8" }}
+        style={{ borderLeft: RULE, background: "var(--cl-surface)" }}
       >
         {detail && selected ? (
           <LoopAnalysis
@@ -843,7 +962,7 @@ export default function AnalyticsPage() {
               setTestCreateRequest({
                 platform: detail.fact.platform,
                 checkpoint: selected.checkpoint,
-                contextLabel: `${detail.fact.finalTitle} · ${selected.checkpoint}`,
+                contextLabel: `${detail.fact.finalTitle} · ${checkpointLabel(selected.checkpoint)}`,
               })
             }
           />
@@ -857,7 +976,7 @@ export default function AnalyticsPage() {
             </p>
           </div>
         )}
-      </div>
+      </CollapsibleRail>
 
       <ImportMetricsModal
         open={importOpen}
