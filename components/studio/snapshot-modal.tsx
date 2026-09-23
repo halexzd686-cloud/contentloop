@@ -277,7 +277,11 @@ export function MetricSnapshotModal({
     }
   }
 
-  const dueAt = checkpointDueAt(publication.publishedAt, checkpoint);
+  // manual observations have no target time (data-model §19.3).
+  const isManual = checkpoint === "manual";
+  const dueAt = isManual
+    ? null
+    : checkpointDueAt(publication.publishedAt, checkpoint);
 
   return (
     <Dialog
@@ -289,15 +293,24 @@ export function MetricSnapshotModal({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>
-            {isEdit ? `编辑 ${checkpoint} 数据` : `录入 ${checkpoint} 数据`}
+            {isEdit
+              ? `编辑${isManual ? "手动" : ` ${checkpoint} `}数据`
+              : `录入${isManual ? "手动" : ` ${checkpoint} `}数据`}
           </DialogTitle>
           <DialogDescription>
             {publication.finalTitle} · {platformLabel(publication.platform)} · 发布于{" "}
-            {new Date(publication.publishedAt).toLocaleString()} · {checkpoint}{" "}
-            目标时间 {dueAt.toLocaleString()}
+            {new Date(publication.publishedAt).toLocaleString()}
+            {dueAt && (
+              <>
+                {" "}
+                · {checkpoint} 目标时间 {dueAt.toLocaleString()}
+              </>
+            )}
           </DialogDescription>
           <p className="text-xs text-ink-faint">
-            发布后约 {checkpoint === "24h" ? "24" : "72"} 小时读取的数据。
+            {isManual
+              ? "手动观察点——任何发布后时间补录的数据，无目标时间。"
+              : `发布后约 ${checkpoint === "24h" ? "24" : "72"} 小时读取的数据。`}
           </p>
         </DialogHeader>
 

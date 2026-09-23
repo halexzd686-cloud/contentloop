@@ -1,0 +1,2 @@
+ALTER TABLE "tests" DROP CONSTRAINT "tests_checkpoint_24h_72h";--> statement-breakpoint
+ALTER TABLE "tests" ADD CONSTRAINT "tests_checkpoint_24h_72h_manual" CHECK ("checkpoint" IN ('24h', '72h', 'manual'));

@@ -110,6 +110,14 @@ export const snapshotStatusLabel = fromMap({
   not_due: "未到时间",
 });
 
+// ─── Checkpoints（24h / 72h / 手动）─────────────────────
+
+export const checkpointLabel = fromMap({
+  "24h": "24h",
+  "72h": "72h",
+  manual: "手动",
+});
+
 // ─── Helpers (static product copy) ─────────────────────
 
 export const TEST_METHOD_HELPERS: Record<string, string> = {
@@ -129,7 +137,7 @@ export const TEST_ROLE_HELPER =
   "角色只是用于解读的组织标记，不影响证据计算和结论条件。";
 
 export const CHECKPOINT_HELPER =
-  "选择读取哪个数据点：发布后约 24 或 72 小时。";
+  "选择读取哪个数据点：发布后约 24 或 72 小时，或一次手动记录。";
 
 export const PRIMARY_METRIC_HELPER =
   "你判断这次测试时主要看的那项指标，它不会自动决定结论。";

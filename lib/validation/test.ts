@@ -1,11 +1,16 @@
 import { z } from "zod";
 
+import { CHECKPOINTS } from "@/lib/validation/snapshot";
+
 /**
  * Test validation — M3.1 (data-model §23, AGENTS §19).
  *
  * Test identity = Brand + Platform + Primary Metric + Checkpoint +
  * method/hypothesis. Client never submits status (server = running),
  * outcome, conclusion, concludedAt, or any result data.
+ *
+ * Checkpoint accepts the full Checkpoint set (24h / 72h / manual) —
+ * a Test may be evaluated on an ad-hoc manual observation.
  */
 
 export const TEST_METHODS = [
@@ -20,7 +25,7 @@ export const TEST_ROLES = ["control", "variant", "comparison"] as const;
 export const createTestSchema = z
   .object({
     platform: z.enum(["xiaohongshu", "bilibili", "douyin"]),
-    checkpoint: z.enum(["24h", "72h"]),
+    checkpoint: z.enum(CHECKPOINTS),
     method: z.enum(TEST_METHODS),
     title: z.string().trim().min(1).max(500),
     hypothesis: z.string().trim().min(1).max(2000),

@@ -26,6 +26,7 @@ import {
   checkpointDueAt,
   checkpointStatus,
   type Checkpoint,
+  type TimedCheckpoint,
 } from "@/lib/validation/snapshot";
 import { platformLabel, versionStatusLabel } from "@/lib/labels";
 
@@ -426,7 +427,7 @@ export function ReviewPanel({
                         )}
                         {/* M2.3: checkpoint metric entry */}
                         <div className="mt-2 space-y-1">
-                          {(["24h", "72h"] as Checkpoint[]).map((c) => {
+                          {(["24h", "72h"] as TimedCheckpoint[]).map((c) => {
                             const snap = metricSnapshots.find(
                               (sn) =>
                                 sn.publicationId === pub.id && sn.checkpoint === c

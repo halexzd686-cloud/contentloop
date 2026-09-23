@@ -12,6 +12,7 @@ import { ReviewError } from "@/lib/review";
 import {
   isCaptureOnTime,
   CAPTURED_AT_FUTURE_SKEW_MS,
+  CHECKPOINT_TOLERANCE_MS,
   type Checkpoint,
   type SnapshotUpsertInput,
 } from "@/lib/validation/snapshot";
@@ -91,6 +92,17 @@ function toSummary(s: typeof metricSnapshots.$inferSelect) {
 function assertCapturedAtValid(publishedAt: Date, checkpoint: Checkpoint, capturedAt: Date) {
   if (capturedAt.getTime() > Date.now() + CAPTURED_AT_FUTURE_SKEW_MS) {
     throw new ReviewError("采集时间不能在未来。", 400);
+  }
+  if (checkpoint === "manual") {
+    // Manual observations have no target time; the only floor is the
+    // publication itself — metrics cannot be observed before publish.
+    if (
+      capturedAt.getTime() <
+      publishedAt.getTime() - CHECKPOINT_TOLERANCE_MS
+    ) {
+      throw new ReviewError("采集时间早于发布时间。", 400);
+    }
+    return;
   }
   if (!isCaptureOnTime(publishedAt, checkpoint, capturedAt)) {
     throw new ReviewError(

@@ -38,13 +38,17 @@ export function median(values: number[]): number | null {
   return Number.isFinite(result) ? result : null;
 }
 
-/** Minutes between the checkpoint target and the actual capture. */
+/**
+ * Minutes between the checkpoint target and the actual capture.
+ * manual has no target — the delta is measured from publishedAt.
+ */
 export function captureDeltaMinutes(
   candidate: BaselineCandidate,
   checkpoint: Checkpoint
 ): number {
-  const dueAt =
-    new Date(candidate.publishedAt).getTime() + CHECKPOINT_OFFSET_MS[checkpoint];
+  const offset =
+    checkpoint === "manual" ? 0 : CHECKPOINT_OFFSET_MS[checkpoint];
+  const dueAt = new Date(candidate.publishedAt).getTime() + offset;
   return (new Date(candidate.capturedAt).getTime() - dueAt) / 60000;
 }
 

@@ -163,4 +163,12 @@ describe("captureDeltaMinutes", () => {
     );
     expect(d).toBeCloseTo(30);
   });
+
+  it("manual has no target — delta is measured from publishedAt (M8 B2)", () => {
+    const d = captureDeltaMinutes(
+      cand({}, "2026-08-01T10:00:00.000Z", "2026-08-03T16:00:00.000Z"),
+      "manual"
+    );
+    expect(d).toBeCloseTo(54 * 60);
+  });
 });

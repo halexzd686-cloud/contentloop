@@ -7,6 +7,8 @@ import {
   checkpointStatus,
   isCaptureOnTime,
   parseCountText,
+  CHECKPOINTS,
+  TIMED_CHECKPOINTS,
 } from "@/lib/validation/snapshot";
 
 /**
@@ -55,11 +57,16 @@ describe("snapshotUpsertSchema", () => {
 });
 
 describe("checkpoint model", () => {
-  it("only 24h / 72h are open in M2.3 (manual rejected)", () => {
+  it("24h / 72h / manual are valid checkpoints (M8 B2, data-model §19.3)", () => {
     expect(isCheckpoint("24h")).toBe(true);
     expect(isCheckpoint("72h")).toBe(true);
-    expect(isCheckpoint("manual")).toBe(false);
+    expect(isCheckpoint("manual")).toBe(true);
     expect(isCheckpoint("1h")).toBe(false);
+  });
+
+  it("manual has no schedule: due/status/timing stay timed-only", () => {
+    expect(TIMED_CHECKPOINTS).toEqual(["24h", "72h"]);
+    expect(CHECKPOINTS).toEqual(["24h", "72h", "manual"]);
   });
 
   it("dueAt derives from publishedAt", () => {

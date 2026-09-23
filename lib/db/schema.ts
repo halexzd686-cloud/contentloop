@@ -597,7 +597,7 @@ export const tests = pgTable("tests", {
   change: text("change").notNull(),
   primaryMetricKey: varchar("primary_metric_key", { length: 100 }).notNull(),
   // M3.1: Test identity includes platform + checkpoint (primaryMetricKey is
-  // NOT cross-platform unique). Manual checkpoint is not valid for Tests.
+  // NOT cross-platform unique). Checkpoint accepts 24h / 72h / manual.
   platform: platformEnum("platform").notNull(),
   checkpoint: metricCheckpointEnum("checkpoint").notNull(),
   keepConsistent: text("keep_consistent"),

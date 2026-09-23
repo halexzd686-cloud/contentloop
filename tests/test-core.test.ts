@@ -27,8 +27,12 @@ describe("createTestSchema", () => {
     expect(createTestSchema.safeParse(VALID).success).toBe(true);
   });
 
-  it("requires explicit platform + checkpoint (24h/72h only, no manual)", () => {
-    expect(createTestSchema.safeParse({ ...VALID, checkpoint: "manual" }).success).toBe(false);
+  it("accepts the full Checkpoint set (24h / 72h / manual)", () => {
+    expect(createTestSchema.safeParse({ ...VALID, checkpoint: "manual" }).success).toBe(true);
+    expect(createTestSchema.safeParse({ ...VALID, checkpoint: "72h" }).success).toBe(true);
+  });
+
+  it("requires explicit platform + valid checkpoint", () => {
     expect(createTestSchema.safeParse({ ...VALID, checkpoint: "1h" }).success).toBe(false);
     const noPlatform = { ...VALID } as Record<string, unknown>;
     delete noPlatform.platform;

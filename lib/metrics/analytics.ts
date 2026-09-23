@@ -17,10 +17,11 @@ import {
 } from "@/lib/metrics/engine";
 import { getBaselineForSnapshot } from "@/lib/metrics/baseline-service";
 import { captureDeltaMinutes } from "@/lib/metrics/baseline";
+import { buildObservations } from "@/lib/metrics/observations";
 import {
   checkpointDueAt,
   checkpointStatus,
-  CHECKPOINTS,
+  TIMED_CHECKPOINTS,
   type Checkpoint,
 } from "@/lib/validation/snapshot";
 import { subjectFingerprint } from "@/lib/metrics/fingerprint";
@@ -103,7 +104,9 @@ export async function getAnalyticsIndex() {
       isDemo: r.isDemo,
       has24h: snapSet.has(`${r.publicationId}:24h`),
       has72h: snapSet.has(`${r.publicationId}:72h`),
-      checkpoints: CHECKPOINTS.map((c) => ({
+      hasManual: snapSet.has(`${r.publicationId}:manual`),
+      // Due tracking is timed-only; manual observations have no schedule.
+      checkpoints: TIMED_CHECKPOINTS.map((c) => ({
         checkpoint: c,
         status: checkpointStatus(
           r.publishedAt,
@@ -221,7 +224,10 @@ export async function getAnalyticsDetail(
     checkpoint,
     publishedAt: target.publishedAt.toISOString(),
     url: target.url,
-    targetAt: checkpointDueAt(target.publishedAt, checkpoint).toISOString(),
+    targetAt:
+      checkpoint === "manual"
+        ? null
+        : checkpointDueAt(target.publishedAt, checkpoint).toISOString(),
     snapshot: target.snapshotId
       ? {
           id: target.snapshotId,
@@ -278,11 +284,20 @@ export async function getAnalyticsDetail(
     }
   }
 
+  // Key observations: deterministic rules over fact × account baseline.
+  // Same failure boundary as the baseline — a baseline error (or no
+  // baseline cohort) yields an empty array, never destroys the fact.
+  const observations =
+    baselineError || !accountBaseline
+      ? []
+      : buildObservations(metrics, accountBaseline);
+
   return {
     fact,
     accountBaseline,
     pillarBaseline,
     baselineError,
+    observations,
     diagnosis,
     diagnosisStale,
   };

@@ -170,6 +170,7 @@ describe("semantic boundaries (Chinese)", () => {
 
   it("checkpoint / primary metric helpers 符合冻结语义", () => {
     expect(CHECKPOINT_HELPER).toContain("发布后约 24 或 72 小时");
+    expect(CHECKPOINT_HELPER).toContain("手动");
     expect(PRIMARY_METRIC_HELPER).toContain("不会自动决定结论");
   });
 

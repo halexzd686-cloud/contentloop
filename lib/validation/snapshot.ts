@@ -14,7 +14,15 @@ import { z } from "zod";
  * - source is always server-derived "manual" in M2.3.
  */
 
-export const CHECKPOINTS = ["24h", "72h"] as const;
+export const TIMED_CHECKPOINTS = ["24h", "72h"] as const;
+export type TimedCheckpoint = (typeof TIMED_CHECKPOINTS)[number];
+
+/**
+ * data-model §19.3: "24h" | "72h" | "manual".
+ * manual = ad-hoc observation — no target time, never "due", one row
+ * per publication (same UNIQUE(publication_id, checkpoint) semantics).
+ */
+export const CHECKPOINTS = [...TIMED_CHECKPOINTS, "manual"] as const;
 export type Checkpoint = (typeof CHECKPOINTS)[number];
 
 export function isCheckpoint(value: string): value is Checkpoint {
@@ -47,7 +55,7 @@ export type SnapshotUpsertInput = z.infer<typeof snapshotUpsertSchema>;
 
 // ─── Timing ────────────────────────────────────────────
 
-export const CHECKPOINT_OFFSET_MS: Record<Checkpoint, number> = {
+export const CHECKPOINT_OFFSET_MS: Record<TimedCheckpoint, number> = {
   "24h": 24 * 3600 * 1000,
   "72h": 72 * 3600 * 1000,
 };
@@ -60,7 +68,7 @@ export const CAPTURED_AT_FUTURE_SKEW_MS = 2 * 60 * 1000;
 
 export function checkpointDueAt(
   publishedAt: string | Date,
-  checkpoint: Checkpoint
+  checkpoint: TimedCheckpoint
 ): Date {
   return new Date(
     new Date(publishedAt).getTime() + CHECKPOINT_OFFSET_MS[checkpoint]
@@ -68,14 +76,15 @@ export function checkpointDueAt(
 }
 
 /**
- * UI status derivation (no DB status field):
+ * UI status derivation (no DB status field) — timed checkpoints only;
+ * manual observations have no schedule and are never "due":
  * - snapshot exists → Submitted
  * - no snapshot + now < dueAt → Not Due
  * - no snapshot + now >= dueAt → Due
  */
 export function checkpointStatus(
   publishedAt: string | Date,
-  checkpoint: Checkpoint,
+  checkpoint: TimedCheckpoint,
   hasSnapshot: boolean,
   now: Date = new Date()
 ): "submitted" | "not_due" | "due" {
@@ -86,13 +95,14 @@ export function checkpointStatus(
 }
 
 /**
- * Server timing gate: the observation time (capturedAt) must be at or
- * after the checkpoint target (minus tolerance). Submission time is
- * irrelevant — late entry with an on-time capture is legitimate.
+ * Server timing gate (timed checkpoints only): the observation time
+ * (capturedAt) must be at or after the checkpoint target (minus
+ * tolerance). Submission time is irrelevant — late entry with an
+ * on-time capture is legitimate.
  */
 export function isCaptureOnTime(
   publishedAt: string | Date,
-  checkpoint: Checkpoint,
+  checkpoint: TimedCheckpoint,
   capturedAt: string | Date
 ): boolean {
   const due = checkpointDueAt(publishedAt, checkpoint).getTime();

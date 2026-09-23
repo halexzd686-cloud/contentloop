@@ -3,7 +3,7 @@
  */
 
 import type { Platform } from "@/lib/validation/platform-version";
-import type { Checkpoint } from "@/lib/validation/snapshot";
+import type { TimedCheckpoint } from "@/lib/validation/snapshot";
 
 // ─── Platform values ───────────────────────────────────
 
@@ -26,14 +26,16 @@ export function parsePlatformValue(value: unknown): Platform | null {
 
 // ─── Checkpoint ────────────────────────────────────────
 
-const CHECKPOINT_ALIASES: Record<string, Checkpoint> = {
+// CSV/XLSX import stays timed-only; manual observations are entered
+// in the app (they have no schedule to batch-import against).
+const CHECKPOINT_ALIASES: Record<string, TimedCheckpoint> = {
   "24": "24h",
   "24h": "24h",
   "72": "72h",
   "72h": "72h",
 };
 
-export function parseCheckpointValue(value: unknown): Checkpoint | null {
+export function parseCheckpointValue(value: unknown): TimedCheckpoint | null {
   if (value === null || value === undefined) return null;
   const key = String(value).trim().toLowerCase();
   return CHECKPOINT_ALIASES[key] ?? null;
