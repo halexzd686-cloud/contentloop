@@ -137,3 +137,5 @@ Vercel: set env vars, deploy as-is. AI routes declare `maxDuration = 60`. Fallba
 ## Security boundary
 
 V1 has no application-level auth by design (single-team private tool). Do not expose a writable instance to the public internet without hosting-level access control. Human confirmation is a workflow boundary, not authentication.
+
+Live demo: https://contentloop-howard15.vercel.app
